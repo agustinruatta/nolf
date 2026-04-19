@@ -30,7 +30,7 @@
 #   Superseded entries:     Grep pattern="status: superseded"
 
 version: 1
-last_updated: ""
+last_updated: "2026-04-19"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -43,7 +43,17 @@ last_updated: ""
 # interface: how other systems access this state (read-only property, method call,
 #   signal, shared resource, etc.) — this is the contract other ADRs depend on.
 
-state_ownership: []
+state_ownership:
+  - state: save_data
+    status: active
+    owner_system: save-load-service
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    interface: "SaveGame Resource (binary .res, sectional scope, ResourceSaver.FLAG_COMPRESS). Caller assembles SaveGame from owning systems' state and passes to SaveLoadService.save_to_slot(slot, save_game). Loaded saves MUST be processed via Resource.duplicate_deep() before assigning state to live systems."
+    write_access: save-load-service-only   # only SaveLoadService writes to disk; only owning systems write to their *_State Resource fields before assembly
+    referenced_by:
+      - docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-04-19
+    revised: ""
 
 # Example:
 #
@@ -71,7 +81,106 @@ state_ownership: []
 #
 # pattern options: signal | direct_call | event_bus | shared_resource | rpc | none
 
-interfaces: []
+interfaces:
+  - contract: outline_tier_assignment
+    status: active
+    pattern: direct_call
+    producer: outline-pipeline-system
+    consumers:
+      - player-character-system
+      - stealth-ai-system
+      - combat-and-damage-system
+      - inventory-and-gadgets-system
+      - document-collection-system
+      - civilian-ai-system
+      - mission-and-level-scripting-system
+    adr: docs/architecture/adr-0001-stencil-id-contract.md
+    signal_signature: "OutlineTier.set_tier(mesh: MeshInstance3D, tier: int) -> void  # tier ∈ {0=NONE, 1=HEAVIEST, 2=MEDIUM, 3=LIGHT}"
+    referenced_by:
+      - docs/architecture/adr-0001-stencil-id-contract.md
+    added: 2026-04-19
+    revised: ""
+
+  - contract: gameplay_event_dispatch
+    status: active
+    pattern: event_bus
+    producer: any-system  # see ADR-0002 for which system publishes which signal
+    consumers:
+      - audio-system
+      - stealth-ai-system
+      - combat-and-damage-system
+      - inventory-and-gadgets-system
+      - document-collection-system
+      - mission-and-level-scripting-system
+      - failure-and-respawn-system
+      - civilian-ai-system
+      - dialogue-and-subtitles-system
+      - hud-core-system
+      - hud-state-signaling-system
+      - cutscenes-and-mission-cards-system
+      - save-load-system
+      - settings-and-accessibility-system
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    signal_signature: "32 typed signals declared on Events.gd autoload (subject_verb_past naming, qualified enum types). See ADR-0002 Key Interfaces for the full taxonomy."
+    referenced_by:
+      - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+    revised: ""
+
+  - contract: save_load_service_api
+    status: active
+    pattern: direct_call
+    producer: save-load-service
+    consumers:
+      - mission-and-level-scripting-system   # calls save_to_slot at section transitions
+      - failure-and-respawn-system            # calls load_from_slot on respawn
+      - menu-system                           # calls slot_metadata for save card display; load_from_slot from menu
+      - player-character-system               # may call save_to_slot on explicit player save action
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    signal_signature: |
+      SaveLoad.save_to_slot(slot: int, save_game: SaveGame) -> bool
+      SaveLoad.load_from_slot(slot: int) -> SaveGame  # returns null on failure; caller MUST .duplicate_deep() before live use
+      SaveLoad.slot_exists(slot: int) -> bool
+      SaveLoad.slot_metadata(slot: int) -> Dictionary  # reads slot_N_meta.cfg sidecar (does NOT load full Resource)
+      # Slot range: 0 = autosave; 1-7 = manual saves (8 slots total)
+    referenced_by:
+      - docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-04-19
+    revised: ""
+
+  - contract: ui_surface_lifecycle
+    status: active
+    pattern: direct_call
+    producer: ui-framework  # InputContext autoload + FontRegistry static + Theme inheritance chain
+    consumers:
+      - hud-core-system
+      - hud-state-signaling-system
+      - document-overlay-ui-system
+      - menu-system
+      - settings-and-accessibility-system
+      - cutscenes-and-mission-cards-system
+      - dialogue-and-subtitles-system
+      - post-process-stack-system   # called by Document Overlay for sepia dim (enable/disable)
+    adr: docs/architecture/adr-0004-ui-framework.md
+    signal_signature: |
+      # Theme inheritance: each surface theme sets base_theme = preload("project_theme.tres")
+      InputContext.push(ctx: InputContext.Context) -> void
+      InputContext.pop() -> void
+      InputContext.current() -> InputContext.Context
+      InputContext.is_active(ctx: InputContext.Context) -> bool
+      FontRegistry.hud_numeral(rendered_size_px: int) -> Font  # static; substitutes DIN below 18px floor
+      FontRegistry.hud_label() -> Font  # static
+      FontRegistry.document_body() -> Font  # static
+      FontRegistry.document_header() -> Font  # static
+      FontRegistry.menu_title() -> Font  # static
+      PostProcessStack.enable_sepia_dim() -> void  # called by Document Overlay open()
+      PostProcessStack.disable_sepia_dim() -> void  # called by Document Overlay close()
+      # Modal dismiss: _unhandled_input() + event.is_action_pressed(&"ui_cancel")
+      # Subtitle suppression: when InputContext.is_active(DOCUMENT_OVERLAY) → suppress ambient VO subtitles
+    referenced_by:
+      - docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
+    revised: ""
 
 # Example:
 #
@@ -100,7 +209,24 @@ interfaces: []
 # Register a budget when an ADR explicitly claims a frame time allocation.
 # The registry lets /architecture-review verify the total doesn't exceed the target.
 
-performance_budgets: []
+performance_budgets:
+  - target_fps: 60
+    total_frame_budget_ms: 16.6
+    platform: PC
+    adr: docs/architecture/adr-0001-stencil-id-contract.md
+    notes: "Project-wide frame budget per Art Bible 8 / technical-preferences.md. First registered in ADR-0001 because it constrains the outline pass; future ADRs may reference."
+    added: 2026-04-19
+    revised: ""
+
+  - system: outline-pipeline
+    status: active
+    budget_ms: 2.0
+    adr: docs/architecture/adr-0001-stencil-id-contract.md
+    notes: "Full-screen outline CompositorEffect. Target 0.8–1.5 ms on RTX 2060 at 1080p; up to 2.0 ms allowed on Iris Xe with 75% resolution scale (default-on for integrated graphics)."
+    referenced_by:
+      - docs/architecture/adr-0001-stencil-id-contract.md
+    added: 2026-04-19
+    revised: ""
 
 # Example:
 #
@@ -131,7 +257,50 @@ performance_budgets: []
 # Register an API decision when the choice is non-obvious and other ADRs might
 # make a different choice for the same purpose without knowing this was decided.
 
-api_decisions: []
+api_decisions:
+  - purpose: outline_tier_marker
+    status: active
+    api: "GPU stencil buffer 8-bit values, reserved 0–3 (0=none, 1=heaviest, 2=medium, 3=light)"
+    not: "VisualInstance3D.layers bitmask, vertex color channels, multi-pass discard masking"
+    adr: docs/architecture/adr-0001-stencil-id-contract.md
+    reason: "Single-pass per-pixel stencil branching is the cheapest runtime cost option that preserves the 3-tier outline weight hierarchy from Art Bible 3.4 / 8C. Visual layers would require N full-screen passes; vertex colors burden the art pipeline; multi-pass discard adds startup cost. Stencil buffer added in Godot 4.5 — HIGH knowledge risk; see ADR Risks section."
+    referenced_by:
+      - docs/architecture/adr-0001-stencil-id-contract.md
+    added: 2026-04-19
+    revised: ""
+
+  - purpose: cross_system_event_dispatch
+    status: active
+    api: "Events autoload (Godot 4.0+ typed signals, callable-based connect, subject_verb_past names, qualified enum-type payloads)"
+    not: "direct system-to-system Node references; autoload service-locator coupling; group broadcast (call_group); RefCounted Event objects with pattern-matching"
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    reason: "Single-autoload typed-signal hub provides type safety + discoverability + zero coupling between publishers and subscribers. Direct refs are fragile; service-locator is a known Godot anti-pattern; group broadcast loses type safety; Event objects are over-engineered for 32 signals. Per godot-gdscript-specialist: idiomatic for Godot 4.6, no superior 4.5/4.6 mechanism."
+    referenced_by:
+      - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+    revised: ""
+
+  - purpose: persistence_format
+    status: active
+    api: "Binary Resource (.res) via ResourceSaver.save(save, path, ResourceSaver.FLAG_COMPRESS) and ResourceLoader.load(path); SaveGame extends Resource with @export typed *_State sub-resources; sectional checkpoint scope; refuse-load-on-mismatch versioning via SaveGame.FORMAT_VERSION (in-code const) compared against save_format_version: int (serialized field); atomic write via DirAccess.rename(tmp_path, final_path); 8-slot scheme (slot_0 = autosave, slot_1-7 = manual)"
+    not: "JSON via FileAccess; custom binary serialization; ConfigFile for save data (ConfigFile retained ONLY for user://settings.cfg and slot_N_meta.cfg metadata sidecars); NodePath or Node references in saved Resources (use stable actor_id: StringName instead)"
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    reason: "Resource + @export gives free type safety and editor preview. Binary .res is ~2-3x smaller than .tres and JSON. Sectional scope keeps saves <10 KB and matches NOLF1 player expectations. Refuse-load-on-mismatch is acceptable trade-off for single-shot indie ship (documented Tier 2 risk in ADR-0003). Atomic write prevents corrupt-save-on-crash. duplicate_deep() (4.5+) handles state isolation on load."
+    referenced_by:
+      - docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-04-19
+    revised: ""
+
+  - purpose: ui_framework
+    status: active
+    api: "Single base project_theme.tres + per-surface inherited Themes (Theme.base_theme inheritance). InputContext autoload (push/pop stack: GAMEPLAY, MENU, DOCUMENT_OVERLAY, PAUSE, SETTINGS) for modal input routing. FontRegistry as static class (NOT autoload) with typed getters that substitute DIN 1451 Engschrift below 18 px size floor for Futura Condensed Bold. Modal dismiss via _unhandled_input() + Input.is_action_pressed(&\"ui_cancel\") (Esc + B/Circle in InputMap). Document Overlay sepia dim via PostProcessStack.enable_sepia_dim() / disable_sepia_dim() lifecycle calls. Subtitle suppression rule: when InputContext.is_active(DOCUMENT_OVERLAY) → ambient VO subtitles suppressed."
+    not: "Multiple independent Themes per surface (drift risk); FontRegistry as autoload (anti-pattern boundary); modal dismiss via focused Button widget (4.6 dual-focus complexity); UI-owned sepia dim shader (separation of concerns: Post-Process Stack owns shaders); UI surfaces emitting their own signals (use Events.gd from ADR-0002); UI surfaces polling game state (use Events bus subscriptions)"
+    adr: docs/architecture/adr-0004-ui-framework.md
+    reason: "Theme inheritance prevents Art Bible 7 typography/color drift across 7 UI surfaces. FontRegistry static class avoids the autoload-singleton-coupling anti-pattern boundary that an autoload version would straddle. InputContext as autoload is justified by the same principled distinction as SaveLoadService (ADR-0003): owns the input-routing domain, fenced from service-locator drift. Modal dismiss via _unhandled_input() sidesteps Godot 4.6's dual-focus mouse/keyboard split entirely. Document Overlay dim delegated to Post-Process Stack preserves separation of concerns."
+    referenced_by:
+      - docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
+    revised: ""
 
 # Example:
 #
@@ -157,7 +326,104 @@ api_decisions: []
 # Register a pattern when an ADR explicitly bans it AND other ADRs might
 # unknowingly use it (i.e., it's a tempting but wrong approach for this project).
 
-forbidden_patterns: []
+forbidden_patterns:
+  - pattern: unmarked_visible_mesh
+    status: active
+    description: "A spawning system must not instantiate a MeshInstance3D (or any VisualInstance3D producing a visible surface) without a paired OutlineTier.set_tier(mesh, tier) call. The default cleared stencil value is 0 (no outline)."
+    why: "Unmarked meshes will write stencil 0, receiving no outline rendering. This silently breaks Art Bible Section 1 Principle 2 (Silhouette Owns Readability) and the figure-ground hierarchy that Pillar 3 (Stealth is Theatre) depends on. The break is invisible in code review unless this rule is explicit."
+    adr: docs/architecture/adr-0001-stencil-id-contract.md
+    added: 2026-04-19
+
+  - pattern: autoload_singleton_coupling
+    status: active
+    description: "Systems must not reach into autoload singletons by name to call business-logic methods. The Events autoload exists to dispatch typed signals — not to be called as a service locator. Use Events.signals or dependency injection for cross-system communication."
+    why: "Tight coupling to Autoloads makes systems untestable in isolation, creates hidden dependencies that break when Autoload load order changes, and produces a service-locator god-object. The Events autoload is exempt only because it has no methods or state — only signal declarations."
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+
+  - pattern: events_with_state_or_methods
+    status: active
+    description: "The Events.gd autoload must contain ONLY typed signal declarations. No state variables, no methods (including emit helpers), no node references, no business logic. Adding any of these turns the bus into the autoload-singleton-coupling anti-pattern."
+    why: "Signal declarations are a contract. Adding state or methods on top of the contract conflates the bus with a service layer, encourages polling-style usage, and makes the bus untestable. The discipline must be enforced at code-review time on every PR touching events.gd."
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+
+  - pattern: wrapper_emit_methods
+    status: active
+    description: "Publishers must emit signals directly (Events.player_damaged.emit(amount, source, is_critical)). Wrapper methods on the bus (e.g., Events.emit_player_damaged(args)) are forbidden — they provide no type-safety benefit and start treating the bus as a service layer."
+    why: "Direct emit is the Godot 4.x idiomatic pattern. Wrappers add boilerplate, hide the signal, and make refactoring harder (renaming a signal requires updating both the signal and its wrapper). The signal declaration already enforces types."
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+
+  - pattern: reemit_engine_signals_through_bus
+    status: active
+    description: "Built-in Godot signals (SceneTree.node_added, Window.size_changed, Input.joy_connection_changed, etc.) must NOT be re-emitted through the Events bus. Systems that need engine signals connect to them directly via get_tree() or the relevant singleton."
+    why: "Re-emitting engine signals creates double-dispatch overhead and ambiguity (is a subscriber reacting to an engine event or a game event?). The bus is for game-domain events only. The Godot engine has its own signal system; do not shadow it."
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+
+  - pattern: synchronous_request_response_through_bus
+    status: active
+    description: "The Events bus is fire-and-forget. Do not implement synchronous request-response patterns through signals (e.g., emitting a query signal expecting a callback to be set on the payload, or polling a result property after emit). For request-response, use direct method calls or async patterns (await) on the owning system."
+    why: "Signal dispatch order is not guaranteed across multiple subscribers, and there is no single 'response' from a broadcast. Trying to force RPC-like semantics through a broadcast bus produces race conditions and brittle ordering dependencies."
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-19
+
+  - pattern: save_service_assembles_state
+    status: active
+    description: "SaveLoadService MUST NOT query game systems to assemble a SaveGame. The caller (Mission Scripting at section transitions, Failure & Respawn on death, or a player-triggered save action) reads current state from each owning system and constructs the SaveGame, then passes it to SaveLoad.save_to_slot(slot, save_game). SaveLoadService writes/reads files only."
+    why: "If SaveLoadService held references to PlayerCharacter, StealthAI, etc., it would become a service-locator god-object — the exact autoload-singleton-coupling anti-pattern banned in ADR-0002. By accepting a pre-assembled SaveGame, SaveLoadService stays in its persistence lane and remains testable in isolation."
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-04-19
+
+  - pattern: save_state_uses_node_references
+    status: active
+    description: "Saved Resources MUST NOT contain NodePath, Node, or any other reference type that depends on a live scene tree. Use stable actor_id: StringName values set on the actor's script via @export, with section-scene authoring enforcing uniqueness. Per-actor state is stored as Dictionary[StringName, Resource] keyed by actor_id."
+    why: "NodePath / Node references cannot be resolved at file-load time because the scene tree does not exist yet. Saving a NodePath produces a string that may or may not resolve after section reload — silent failure mode. Stable string IDs survive reload and are explicit."
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-04-19
+
+  - pattern: forgotten_duplicate_deep_on_load
+    status: active
+    description: "After ResourceLoader.load(slot_path) returns a SaveGame, the caller MUST call .duplicate_deep() before assigning nested *_State Resources to live systems. The deep-duplicated copy is what live systems mutate; the loaded original may be cached for 'reload section' functionality."
+    why: "If live systems mutate the loaded SaveGame's nested Resources directly, the cached loaded resource becomes dirty. A subsequent reload-from-cached-resource would restore post-mutation state, not checkpoint state. duplicate_deep() (added in Godot 4.5) is the explicit deep-copy API; old duplicate() does not deep-copy nested Resources."
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-04-19
+
+  - pattern: input_context_service_locator
+    status: active
+    description: "InputContext autoload MUST contain ONLY the push/pop stack and current/is_active query methods. No node references, no methods that act on UI surfaces, no signals (cross-system reactions go through Events.gd). The principled exemption from autoload_singleton_coupling is the same one that justifies SaveLoadService: it owns its domain (input routing), it is not a service locator."
+    why: "If InputContext starts holding UI surface references or emitting its own signals, it becomes a parallel signal bus and a service locator god-object. The forbidden_pattern fence prevents drift; code review on every PR touching input_context.gd."
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
+
+  - pattern: font_registry_as_autoload
+    status: active
+    description: "FontRegistry MUST be a static class (class_name FontRegistry extends RefCounted) with static functions and preloaded font constants. It MUST NOT be registered as an autoload. Callers invoke FontRegistry.hud_numeral(size_px), etc., as static method calls."
+    why: "An autoload FontRegistry would straddle the autoload_singleton_coupling boundary — font resolution is asset infrastructure but it would be reachable as a node by name, opening service-locator drift. A static class with preload constants achieves the identical API without crossing the anti-pattern boundary; it is testable in isolation and has no node lifecycle."
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
+
+  - pattern: hardcoded_visible_string
+    status: active
+    description: "Every visible string in the UI MUST go through tr() (or equivalent localization-aware function) from day one. Hardcoded strings in Label.text, Button.text, RichTextLabel.text, or any user-facing display field are forbidden — even if the project ships English-only at MVP."
+    why: "Retrofitting tr() across the entire UI codebase later is a project-wide refactor. The scaffold cost is one tr() call per string at authoring time; the retrofit cost is unbounded. Localization Scaffold (system 7) provides the string-table mechanism; this fence enforces its use."
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
+
+  - pattern: modal_dismiss_via_focused_button
+    status: active
+    description: "Modal UI surface dismiss (Document Overlay, Menu, Settings, Pause) MUST be handled via the surface's root node's _unhandled_input() catching event.is_action_pressed(&\"ui_cancel\"). It MUST NOT be implemented via a focused Close Button widget that the player must click or activate."
+    why: "Godot 4.6's dual-focus split (mouse/touch focus separate from keyboard/gamepad focus) makes focused-Button dismiss fragile. The _unhandled_input() + ui_cancel action approach works identically for both input methods (Esc + B/Circle mapped to ui_cancel in InputMap) without requiring any control to hold focus. Simpler, more robust, idiomatic for 4.6."
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
+
+  - pattern: ui_surface_polls_game_state
+    status: active
+    description: "UI surfaces MUST subscribe to Events bus signals (per ADR-0002) for state updates. They MUST NOT poll game systems directly (e.g., calling PlayerCharacter.get_health() in _process()) or hold direct references to game system nodes. Health, ammo, alert state, document collection, mission state — all flow through Events.gd."
+    why: "Polling couples UI to specific system implementations and creates per-frame work even when state has not changed. Direct system references re-introduce the autoload-singleton-coupling anti-pattern. The Events bus exists precisely to decouple UI from game systems; using it is mandatory."
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-19
 
 # Example:
 #

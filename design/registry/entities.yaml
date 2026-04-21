@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: 2026-04-19
+last_updated: 2026-04-21
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -49,6 +49,29 @@ last_updated: 2026-04-19
 #   (health, damage, drops, faction, etc.)
 
 entities:
+  - name: phantom_guard
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    role: npc_antagonist
+    faction: PHANTOM
+    affiliation: PHANTOM_criminal_syndicate
+    uniform: black_red_per_art_bible_4.4
+    outline_tier: MEDIUM  # ADR-0001
+    body_height_standing_m: 1.8  # taller than Eve (1.7) for visual contrast
+    eye_height_m: 1.7
+    health_hp: 100  # MVP stub; Combat & Damage GDD will finalise
+    perception_channels: [sight, sound]
+    alert_states: [UNAWARE, SUSPICIOUS, SEARCHING, COMBAT, DEAD]
+    takedowns_valid_in: [UNAWARE, SUSPICIOUS]
+    patrol_speed_m_per_s: 1.2
+    investigate_speed_m_per_s: 1.6
+    combat_sprint_speed_m_per_s: 3.0
+    notes: "Generic antagonist archetype. Per-variant uniforms (caterer, custodian) and voice pools owned by Mission Scripting + Dialogue & Subtitles GDDs."
+    added: 2026-04-21
+    revised: ""
+
   - name: eve_sterling
     status: active
     source: design/gdd/player-character.md
@@ -58,6 +81,7 @@ entities:
       - design/gdd/audio.md
       - design/gdd/save-load.md
       - design/gdd/outline-pipeline.md
+      - design/gdd/stealth-ai.md
     role: player_character
     era: 1965
     affiliation: BQA_field_agent
@@ -238,10 +262,13 @@ constants:
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
-    value: 9.0
+      - design/gdd/audio.md
+      - design/gdd/stealth-ai.md
+    value: 12.0
     unit: m
+    notes: "Raised from 9.0 → 12.0 in Session F (2026-04-21 re-draft) to close GD-B3 Sprint dominance. Speed-per-noise at 12 m = 0.46, strictly worse than Walk (0.70) and Crouch (0.60) — restores Sneak/Crouch as dominant stealth strategy (Pillar 3)."
     added: 2026-04-19
-    revised: ""
+    revised: "2026-04-21"
   - name: player_noise_crouch
     status: active
     source: design/gdd/player-character.md
@@ -268,19 +295,31 @@ constants:
       - design/gdd/player-character.md
     value: 4.0
     unit: m
-    notes: "Discrete spike. Latched as NoiseEvent{type=JUMP_TAKEOFF, radius_m=4.0, origin=<position at takeoff>}; auto-expires after spike_latch_duration_sec (default 0.1 s = 6 frames @ 60 Hz = one AI tick window at 10 Hz). Session E-Prime AI-1 / R-17: latch is idempotent-read (every guard within the window sees the same event; auto-expiry is sole clear); duration parameterized in seconds for physics-tick-rate independence. Session E-Prime SD-2: radius is multiplied by noise_global_multiplier at get_noise_level() return."
+    notes: "Discrete spike. Latched as NoiseEvent{type=JUMP_TAKEOFF, radius_m=4.0, origin=<position at takeoff>}; auto-expires after spike_latch_duration_sec. **Default raised 0.1 → 0.15 s (6 → 9 frames @ 60 Hz) on 2026-04-21 per ai-programmer B-2 fix** — 6-frame window did not cover every 10 Hz guard phase offset. 9 frames = 1.5× AI-tick window at 10 Hz. Idempotent-read (every guard within the window sees the same event; auto-expiry is sole clear); physics-tick-rate-independent. `noise_global_multiplier` is ship-locked to 1.0 per game-designer B-2 closure 2026-04-21, so the returned radius equals the base value."
     added: 2026-04-19
-    revised: "2026-04-20"
-  - name: player_noise_hard_landing
+    revised: "2026-04-21"
+  - name: player_noise_hard_landing_base
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/audio.md
     value: 8.0
     unit: m
-    notes: "Discrete spike. Triggered when |velocity.y| > v_land_hard, where v_land_hard = sqrt(2 * player_gravity * player_hard_land_height) — runtime-derived per F.3. Binary at MVP (see OQ-7). Latched as NoiseEvent{type=LANDING_HARD, radius_m=8.0, origin=<landing site>}; auto-expires after spike_latch_duration_sec (default 0.1 s). Session E-Prime AI-1 / R-17: idempotent-read, physics-tick-rate-independent. Session E-Prime SD-2: radius is multiplied by noise_global_multiplier at get_noise_level() return."
+    notes: "Base radius of a hard-landing spike. Triggered when |velocity.y| > v_land_hard, where v_land_hard = sqrt(2 * player_gravity * player_hard_land_height) — runtime-derived per F.3. **Scaled per OQ-7 closure 2026-04-21**: noise_radius = 8.0 × clamp(|velocity.y|/v_land_hard, 1.0, 2.0). Emitted radius range: 8.0 (at threshold) to 16.0 (at 2× threshold, capped). Latched as NoiseEvent{type=LANDING_HARD, radius_m=scaled value, origin=<landing site>}; auto-expires after spike_latch_duration_sec (0.15 s = 9 frames @ 60 Hz). Renamed from player_noise_hard_landing (was value=8.0, unit=m, binary) to player_noise_hard_landing_base — the 8.0 is now the floor of a scaled range, not a fixed value."
     added: 2026-04-19
-    revised: "2026-04-20"
+    revised: "2026-04-21"
+  - name: player_noise_hard_landing_cap
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+      - design/gdd/audio.md
+    value: 16.0
+    unit: m
+    notes: "Maximum emitted radius of a hard-landing spike after F.3 scaling (2× base). Prevents pathological values from falls beyond 2× v_land_hard. Documented 2026-04-21 as part of OQ-7 closure. Audio 4-bucket scheme (adopted 2026-04-21) routes this to the `extreme` stem bucket (>10 m)."
+    added: 2026-04-21
+    revised: ""
   - name: player_noise_landing_soft
     status: active
     source: design/gdd/player-character.md
@@ -288,9 +327,9 @@ constants:
       - design/gdd/player-character.md
     value: 5.0
     unit: m
-    notes: "Discrete spike. Triggered on landing when |velocity.y| ≤ v_land_hard (i.e., any landing below the hard threshold). Latched as NoiseEvent{type=LANDING_SOFT, radius_m=5.0, origin=<landing site>}; auto-expires after spike_latch_duration_sec. Implicit in prior versions via the noise table; registered explicitly in Session D so Combat & Damage + Stealth AI consume a single source of truth. Session E-Prime AI-1 / R-17 / SD-2: idempotent-read, physics-tick-rate-independent, multiplied by noise_global_multiplier."
+    notes: "Discrete spike. Triggered on landing when |velocity.y| ≤ v_land_hard (i.e., any landing below the hard threshold). Latched as NoiseEvent{type=LANDING_SOFT, radius_m=5.0, origin=<landing site>}; auto-expires after spike_latch_duration_sec (0.15 s on 2026-04-21). Idempotent-read, physics-tick-rate-independent. `noise_global_multiplier` ship-locked to 1.0 on 2026-04-21, so emitted radius equals base."
     added: 2026-04-20
-    revised: "2026-04-20"
+    revised: "2026-04-21"
 
   # ── Physics ──
   - name: player_gravity
@@ -381,6 +420,100 @@ constants:
     value: 5
     unit: layer_index
     added: 2026-04-19
+    revised: ""
+
+  # ── Silhouette height (read by Stealth AI for line-of-sight tests) ──
+  - name: player_silhouette_height_standing
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 1.7
+    unit: m
+    notes: "Full collider height when standing. Returned by PlayerCharacter.get_silhouette_height() (F.8, added 2026-04-21 per ai-programmer B-3). Matches Godot 4.6 CapsuleShape3D.height (total, including hemispherical caps, per godot-specialist verification)."
+    added: 2026-04-21
+    revised: ""
+  - name: player_silhouette_height_crouched
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 1.1
+    unit: m
+    notes: "Full collider height when crouched. Returned by PlayerCharacter.get_silhouette_height() during CROUCH state. Linearly interpolated during the 120 ms crouch drop/rise transition via _crouch_transition_progress ∈ [0, 1]."
+    added: 2026-04-21
+    revised: ""
+
+  # ── Latch duration (read by Stealth AI for perception-tick synchronisation) ──
+  - name: player_spike_latch_duration_sec
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+      - design/gdd/stealth-ai.md
+    value: 0.15
+    unit: s
+    notes: "Duration a discrete NoiseEvent stays latched (auto-expiry is sole clear). **Raised from 0.1 → 0.15 s on 2026-04-21** per ai-programmer B-2 fix — 6 frames @ 60 Hz did not cover every 10 Hz guard phase offset (guards with tick phase N+7 would read null). 9 frames = 1.5× AI-tick window + jitter headroom. Runtime frame conversion: spike_latch_duration_frames = int(0.15 × Engine.physics_ticks_per_second). Physics-tick-rate-independent. Idempotent-read per F.4."
+    added: 2026-04-21
+    revised: ""
+
+  # ── Stealth AI (read by Audio, Mission Scripting, Dialogue, HUD State Signaling) ──
+  - name: stealth_ai_alert_propagation_radius_m
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    value: 25.0
+    unit: m
+    notes: "F.4 guard-to-guard alert propagation radius on callout. One-hop only. Consumed by Mission & Level Scripting when authoring guard clusters — two guards > 25 m apart will NOT mutually alert on initial stimulus. Level designers must design encounters with this in mind."
+    added: 2026-04-21
+    revised: ""
+  - name: stealth_ai_t_suspicious
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    value: 0.3
+    unit: accumulator_threshold
+    notes: "F.5 UNAWARE → SUSPICIOUS escalation threshold. Consumed by tests and by balance tuning passes."
+    added: 2026-04-21
+    revised: ""
+  - name: stealth_ai_t_searching
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    value: 0.6
+    unit: accumulator_threshold
+    added: 2026-04-21
+    revised: ""
+  - name: stealth_ai_t_combat
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    value: 0.95
+    unit: accumulator_threshold
+    added: 2026-04-21
+    revised: ""
+  - name: stealth_ai_vision_max_range_m
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    value: 18.0
+    unit: m
+    notes: "F.1 guard vision cone length. Consumed by level designers for sightline-critical encounter geometry."
+    added: 2026-04-21
+    revised: ""
+  - name: stealth_ai_vision_fov_deg
+    status: active
+    source: design/gdd/stealth-ai.md
+    referenced_by:
+      - design/gdd/stealth-ai.md
+    value: 90.0
+    unit: deg
+    added: 2026-04-21
     revised: ""
 
   # ── Kill plane (read by Level Streaming for level-bounds validation) ──

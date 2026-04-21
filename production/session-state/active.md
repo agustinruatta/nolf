@@ -1,6 +1,6 @@
 # Session State
 
-**Last updated:** 2026-04-21 (Session F pillar-compliance re-draft COMPLETE — pending fresh-session `/design-review`)
+**Last updated:** 2026-04-21 (Session F re-draft + `/design-review` revision pass COMPLETE · Stealth AI GDD authored, 606 lines, pending `/design-review` in fresh session)
 
 ## Current task
 
@@ -67,12 +67,27 @@
 
 ## Next steps (fresh session)
 
-1. **Primary**: `/clear` — context used across 4 sub-agent spawns + GDD rewrites.
-2. **In fresh session**: Run `/design-review design/gdd/player-character.md`. Target verdict: APPROVED with ≤5 recommendeds.
-3. **Parallel in fresh session**: Run `/design-review design/gdd/footstep-component.md`. Target verdict: APPROVED with ≤5 recommendeds (it's a smaller doc, should be cleaner).
-4. **If BOTH APPROVED**: unblock Stealth AI GDD authoring (`/design-system stealth-ai`). PC + FC together form the full interface Stealth AI consumes.
-5. **If APPROVED with concerns**: address inline (should be surgical at this point — no structural issues expected) and re-run.
-6. **If MAJOR REVISION NEEDED returns**: escalate to creative-director; do NOT iterate further without re-scoping.
+**All prior Player Character + FootstepComponent / design-review work is RESOLVED**. PC + FC are APPROVED in systems-index. Stealth AI was authored in the same session (606 lines; 8 sections + Visual/Audio + UI + Open Qs).
+
+1. **Primary**: `/clear` — session carried PC re-draft + full /design-review (7 specialists + CD synthesis) + 21-blocker revision + FC sibling + Stealth AI authoring.
+2. **In fresh session**: Run `/design-review design/gdd/stealth-ai.md --depth lean` to validate the graduated-suspicion GDD. Lean depth is sufficient — the authoring pass baked in most concerns the full-depth review would surface.
+3. **Alternatives** (can happen in parallel with #2 or next):
+   - `/consistency-check` — confirm Stealth AI's values align with the refreshed registry.
+   - `/design-system combat-damage` — next MVP system (#11). Closes the Stealth AI forward-dep for guard health + silenced-pistol damage.
+   - `/gate-check pre-production` — 9 of 16 MVP GDDs now designed; see if the gate can advance.
+
+## Stealth AI authoring summary (for fresh-session context)
+
+- **Design decisions made (user-approved, 2026-04-21)**:
+  - 4 alert states (NOLF1 classic): UNAWARE → SUSPICIOUS → SEARCHING → COMBAT + DEAD terminal
+  - Takedowns: melee non-lethal + silenced pistol (lethal)
+  - Perception: dual-channel (vision cone + hearing polling at 10 Hz), independent suspicion accumulators
+  - Implementation: hand-rolled GDScript state machine + scoring (no behaviour-tree addon at MVP)
+  - Overview framing: both data-layer + player-facing (guards are co-stars)
+- **Formulas authored**: F.1 sight fill (5 factors), F.2a/b sound fill (continuous + spike), F.3 state-keyed decay, F.4 one-hop propagation, F.5 threshold table (5 thresholds).
+- **Forward deps (explicitly documented)**: Combat & Damage (`apply_damage_to_actor`), Inventory & Gadgets (takedown verb), Civilian AI (`civilian_witnessed_event`), Mission Scripting (patrol routes), Dialogue & Subtitles (voice pool), HUD State Signaling (VS-tier alert indicator).
+- **Six OQs deferred**: civilian propagation bidirectionality, cover-to-cover pathfinding, cross-section memory, silenced-pistol hearing (Combat & Damage-gated), BT addon post-MVP, ragdoll vs slump poses.
+- **Key registry additions**: `phantom_guard` entity; 6 stealth_ai_* constants (propagation radius, 3 thresholds, vision range, FOV).
 
 ## Open design questions (active)
 

@@ -2,7 +2,7 @@
 
 > **Status**: Revised — director feedback incorporated
 > **Created**: 2026-04-19
-> **Last Updated**: 2026-04-21 (Player Character + FootstepComponent APPROVED after `/design-review` revision pass — 21 blockers resolved inline across 4 files; see `design/gdd/reviews/player-character-review-log.md` for the full revision audit)
+> **Last Updated**: 2026-04-21 (Player Character + FootstepComponent APPROVED after `/design-review` revision pass + Stealth AI (System 10, MVP) designed — 606 lines, pending `/design-review` in fresh session; see `design/gdd/stealth-ai.md`)
 > **Source Concept**: design/gdd/game-concept.md
 > **Source Art Bible**: design/art/art-bible.md
 
@@ -49,7 +49,7 @@ These 4 ADRs are authored via `/architecture-decision`, not `/design-system`. Th
 | 8 | Player Character | Core | MVP | **Approved 2026-04-21** (Session F re-draft + `/design-review` revision pass: 957 lines; 21 blockers from 7-specialist adversarial review resolved inline. Session F closed GD-B3 / OQ-7 / OQ-8 / CapsuleShape3D; revision pass added F.8 `get_silhouette_height`, same-frame DEAD latch clear, 4-bucket audio scheme, `noise_global_multiplier` ship-lock, F.5 distance tie-break, ShapeCast3D spec, AC-determinism rewrites; ADR-0005 `material_override`→`material_overlay` corrected. Ready for downstream authoring.) | `design/gdd/player-character.md` · `design/gdd/player-character-v0.3-frozen.md` (frozen baseline, read-only) | Input, Outline Pipeline, Post-Process Stack, FootstepComponent, Stencil ID Contract (ADR-1) |
 | 8b | **FootstepComponent** *(Session F sibling of Player Character)* | Core | MVP | **Approved 2026-04-21** (R-19 AI/Audio seam resolved — PC owns `get_noise_level`/`get_noise_event` AI channel; FC owns `player_footstep` Audio channel; 4-bucket stem scheme aligned with Audio GDD; explicit forbidden-pattern: Stealth AI MUST NOT subscribe to `player_footstep`. Approved as part of PC `/design-review` revision pass.) | `design/gdd/footstep-component.md` | Player Character, Signal Bus, Audio, ADR-2, ADR-6 |
 | 9 | Level Streaming | Core | MVP | Not Started | — | Save/Load |
-| 10 | Stealth AI | Gameplay | MVP | Not Started | — | Player Character, Audio, Signal Bus, ADR-1, ADR-2, ADR-3 |
+| 10 | Stealth AI | Gameplay | MVP | **Designed 2026-04-21** (606 lines; graduated-suspicion engine with 4-state lattice UNAWARE→SUSPICIOUS→SEARCHING→COMBAT, dual-channel perception, hand-rolled state machine + scoring, one-hop propagation, takedowns melee + silenced pistol. Consumes PC F.4/F.8 interface. Pending `/design-review` in fresh session.) | `design/gdd/stealth-ai.md` | Player Character, Audio, Signal Bus, ADR-1, ADR-2, ADR-3 |
 | 11 | Combat & Damage | Gameplay | MVP | Not Started | — | Player Character, Stealth AI, Audio, ADR-1 |
 | 12 | Inventory & Gadgets | Gameplay | MVP | Not Started | — | Player Character, Input, ADR-3 |
 | 13 | Mission & Level Scripting | Gameplay | MVP | Not Started | — | Stealth AI, Combat, Level Streaming, Save/Load, Signal Bus, ADR-2, ADR-3 |

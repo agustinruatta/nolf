@@ -18,7 +18,17 @@ User (project owner) · godot-gdscript-specialist (technical validation) · `/ar
 
 ## Summary
 
-All cross-system events in *The Paris Affair* flow through a single typed-signal autoload (`Events.gd`, flat namespace, `subject_verb_past` naming) — 32 events organized in 8 domains. Publishers emit directly (`Events.player_damaged.emit(args)`), subscribers connect/disconnect via the `_ready`/`_exit_tree` lifecycle pattern, and enum types live on the system that owns the concept (not on the bus). The bus contains only signal declarations — no methods, no state, no node references — to prevent the autoload-singleton-coupling anti-pattern.
+All cross-system events in *The Paris Affair* flow through a single typed-signal autoload (`Events.gd`, flat namespace, `subject_verb_past` naming) — **34 events organized in 9 domains** (a Player domain was added 2026-04-19 during Session B of the Player Character GDD revision; see Revision History below). Publishers emit directly (`Events.player_damaged.emit(args)`), subscribers connect/disconnect via the `_ready`/`_exit_tree` lifecycle pattern, and enum types live on the system that owns the concept (not on the bus). The bus contains only signal declarations — no methods, no state, no node references — to prevent the autoload-singleton-coupling anti-pattern.
+
+### Revision History
+
+- **2026-04-19 (Session B of Player Character GDD revision, resolving review finding B-2)**: Added **Player** domain with two signals:
+  - `player_interacted(target: Node3D)` — fires on reach-complete of a context-sensitive interact. `target` may be `null` (PC GDD edge case E.5: target destroyed during reach animation). Subscribers MUST call `is_instance_valid(target)` before dereferencing, per Implementation Guideline 4.
+  - `player_footstep(surface: StringName, noise_radius_m: float)` — fires once per footstep from PlayerCharacter's FootstepComponent. `surface` is a tag from the surface set defined in the Player Character GDD (e.g., `&"marble"`, `&"tile"`). `noise_radius_m` is the noise radius in meters (0–9 m per PC GDD noise table), used by Stealth AI and by Audio to pick SFX variant.
+
+  Neither signal is per-physics-frame: `player_interacted` fires rarely (once per interact); `player_footstep` peaks at ~3.5 Hz during Sprint. Both are safe per Implementation Guideline 5's cadence analysis.
+
+  Rationale for new Player domain (instead of folding into Combat alongside existing `player_damaged/died/health_changed`): the existing Combat-domain `player_*` signals are combat *outcomes* (damage events, death triggered by damage), whereas `player_interacted` and `player_footstep` are player *verbs* (actions the player takes). They belong in a separate domain by publisher intent. The existing Combat `player_*` signals are not moved by this amendment to avoid touching signatures that Session C of the PC GDD revision (B-1) will update independently.
 
 ## Engine Compatibility
 
@@ -78,7 +88,7 @@ Project is in pre-production. No source code exists. No existing event-dispatch 
 
 ## Decision
 
-**Establish a single autoload `Events.gd` containing only typed signal declarations**, organized in a flat namespace using `subject_verb_past` naming. Define 32 events across 8 gameplay domains. Enum types used in signal payloads are defined as inner enums on the **system that owns the concept** (e.g., `StealthAI.AlertState`), not on the bus.
+**Establish a single autoload `Events.gd` containing only typed signal declarations**, organized in a flat namespace using `subject_verb_past` naming. Define **34 events across 9 gameplay domains** (Player domain added 2026-04-19 via revision B-2 — see Revision History). Enum types used in signal payloads are defined as inner enums on the **system that owns the concept** (e.g., `StealthAI.AlertState`), not on the bus.
 
 ### Architecture
 
@@ -143,6 +153,12 @@ signal enemy_damaged(enemy: Node, amount: float, source: Node)
 signal enemy_killed(enemy: Node, killer: Node)
 signal weapon_fired(weapon: Resource, position: Vector3, direction: Vector3)
 signal player_died(cause: CombatSystem.DeathCause)
+
+# ─── Player domain ───────────────────────────────────────────────────
+# Player verbs (actions the player takes). Combat outcomes (damage/death)
+# remain in the Combat domain above. Added 2026-04-19 (amendment B-2).
+signal player_interacted(target: Node3D)  # target may be null — see Implementation Guideline 4
+signal player_footstep(surface: StringName, noise_radius_m: float)
 
 # ─── Inventory domain ────────────────────────────────────────────────
 signal gadget_equipped(gadget_id: StringName)
@@ -212,7 +228,7 @@ func _on_player_damaged(amount: float, source: Node, is_critical: bool) -> void:
 2. **Enum ownership**: every enum used in a signal payload is defined as an inner enum on the system class that owns the concept. The signal declaration uses the qualified name (`StealthAI.AlertState`). Do NOT define enums on `Events.gd`. Do NOT create a shared `Types.gd` autoload.
 3. **Subscriber lifecycle**: every subscriber MUST connect in `_ready` and disconnect in `_exit_tree` with `is_connected` guards. This is non-negotiable for memory-leak prevention and Godot signal hygiene.
 4. **Node payload validity**: any subscriber receiving a `Node`-typed parameter MUST call `is_instance_valid(node)` before dereferencing it. Signals can be queued and the source node may be freed before the subscriber runs.
-5. **High-frequency events**: all 32 events in this taxonomy are safe to route through the bus at their expected frequencies (per godot-gdscript-specialist analysis: weapon_fired at full-auto rate × 4 subscribers ≈ 0.02 ms/frame). No event in this taxonomy is per-physics-frame.
+5. **High-frequency events**: all 34 events in this taxonomy are safe to route through the bus at their expected frequencies (per godot-gdscript-specialist analysis: weapon_fired at full-auto rate × 4 subscribers ≈ 0.02 ms/frame; `player_footstep` peaks at ~3.5 Hz during Sprint × typical 2–3 subscribers ≈ negligible). No event in this taxonomy is per-physics-frame.
 6. **Engine signals**: do NOT re-emit built-in Godot signals (`SceneTree.node_added`, etc.) through the bus. Systems that need engine signals connect to them directly via `get_tree()`.
 7. **`setting_changed` Variant exception**: this is the only Variant payload in the taxonomy. Settings values are genuinely heterogeneous. Future ADRs introducing new signals MUST use explicit types unless they can document an equivalently strong justification.
 8. **Debug logger pattern**: `EventLogger.gd` connects to every signal at startup and prints emit timestamps via `print()`. It removes itself in non-debug builds. Do not let production code call `EventLogger` methods.
@@ -239,7 +255,7 @@ func _on_player_damaged(amount: float, source: Node, is_critical: bool) -> void:
 
 - **Description**: Define `RefCounted` Event subclasses (`PlayerDamagedEvent`, `AlertStateChangedEvent`, etc.). Publishers emit instances; receivers use `match` to dispatch on type.
 - **Pros**: Events are first-class objects; carry rich metadata; can be queued and replayed for debug.
-- **Cons**: Significantly more boilerplate per event (one class per event, plus payload fields). Receivers need pattern-matching boilerplate. GDScript's `match` is workable but verbose for this. Over-engineered for a single-player game with 32 events.
+- **Cons**: Significantly more boilerplate per event (one class per event, plus payload fields). Receivers need pattern-matching boilerplate. GDScript's `match` is workable but verbose for this. Over-engineered for a single-player game with ~30 events.
 - **Estimated Effort**: 3–4× the chosen approach.
 - **Rejection Reason**: Standard Java-pattern overkill for a project this size. Typed signals already provide type safety + discoverability without the class explosion.
 
@@ -302,7 +318,7 @@ func _on_player_damaged(amount: float, source: Node, is_critical: bool) -> void:
 
 This is the project's second ADR. No existing code to migrate. Implementation order:
 
-1. Create `res://src/core/signal_bus/events.gd` with the 32 typed signal declarations.
+1. Create `res://src/core/signal_bus/events.gd` with the 34 typed signal declarations.
 2. Define stub enum classes for the systems that own them (`StealthAI.AlertState`, etc.) so the signal declarations compile. Stubs may be empty enum bodies until the owning system's GDD is authored — they serve as type placeholders.
 3. Register `Events` as autoload in `project.godot`, load order 1.
 4. Create `res://src/core/signal_bus/event_logger.gd` with self-removal logic. Register as autoload, load order 2.
@@ -315,7 +331,7 @@ This is the project's second ADR. No existing code to migrate. Implementation or
 ## Validation Criteria
 
 - [ ] `Events.gd` autoload registered in `project.godot`, load order 1.
-- [ ] All 32 typed signals declared with qualified enum-type parameters (where applicable).
+- [ ] All 34 typed signals declared with qualified enum-type parameters (where applicable).
 - [ ] Stub enum classes exist for `StealthAI.AlertState`, `StealthAI.AlertCause`, `CombatSystem.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason` — they may be empty enum bodies until the owning system is designed.
 - [ ] `EventLogger.gd` autoload registered, load order 2; self-removes in non-debug build (verify with a release export).
 - [ ] One smoke test: emit one signal, confirm subscriber receives it AND `EventLogger` prints it.

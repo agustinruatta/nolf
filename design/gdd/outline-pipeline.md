@@ -104,7 +104,7 @@ Every system that spawns `MeshInstance3D` objects MUST write the correct tier:
 
 | System | Objects spawned | Tier assignment |
 |---|---|---|
-| Player Character (8) | Eve's FPS hands mesh | Tier 1 (heaviest) |
+| Player Character (8) | *No stencil-writing meshes at MVP.* Eve's FPS hands mesh is the **single documented exception** to ADR-0001 per **ADR-0005 (FPS Hands Outline Rendering)** — it renders inside a `SubViewport` at FOV 55° using an inverted-hull shader (`HandsOutlineMaterial`), does NOT write the stencil buffer, and does NOT call `OutlineTier.set_tier`. The outline visually matches Tier 1 (4 px at 1080p, `#1A1A1A`) but the mechanism is hull extrusion, not stencil kernel. Eve's full body mesh is deferred to VS tier. Any non-hands `MeshInstance3D` Player Character ever spawns must follow the ADR-0001 contract. Carve-out added 2026-04-20 per cross-review B1. |
 | Stealth AI (10) | PHANTOM guards (bowl-helmet, open-face, elite variants) | Tier 2 (medium) |
 | Combat & Damage (11) | Weapon meshes (when visible); NPC death props | Weapons: Tier 1 if held by Eve, Tier 2 if held by guard. Death props: Tier 3. |
 | Inventory & Gadgets (12) | Gadget pickups in world; equipped gadget visible on Eve | Pickups: Tier 1. Equipped-to-Eve: Tier 1. |
@@ -241,7 +241,7 @@ The shader's actual cost is measured via `Performance.RENDER_SHADER_COMPILES` an
 | System | Nature |
 |---|---|
 | **Post-Process Stack** (5) | Sepia-dim composition order depends on outline pass running first. Outline writes to color buffer; sepia-dim multiplies over it. |
-| **All 11 stencil-writing systems** | Player Character, Stealth AI, Combat & Damage, Inventory & Gadgets, Document Collection, Civilian AI, Mission & Level Scripting, Level Streaming, plus any future system that spawns a MeshInstance3D. Each must call `OutlineTier.set_tier()` per ADR-0001. |
+| **All stencil-writing systems (10 at MVP)** | Stealth AI, Combat & Damage, Inventory & Gadgets, Document Collection, Civilian AI, Mission & Level Scripting, Level Streaming, plus any future system that spawns a stencil-path `MeshInstance3D`. Each must call `OutlineTier.set_tier()` per ADR-0001. **Player Character's FPS hands mesh is explicitly out of scope** per ADR-0005 (inverted-hull exception; carve-out added 2026-04-20 cross-review B1). Count revised from 11 → 10 at MVP. |
 | **Settings & Accessibility** (23) | Owns `graphics.resolution_scale` setting that Outline Pipeline reads. Detects hardware at startup (Iris Xe = 0.75 default; RTX 2060+ = 1.0 default). |
 | **Scene authors / level designers** | Set stencil tier on static environment geometry via scene editor (bake at design time, not runtime). |
 
@@ -310,6 +310,7 @@ No in-game UI displays outline state, tier hierarchy, or stencil values. Those a
 | This Document References | Target | Specific Element | Nature |
 |---|---|---|---|
 | Stencil ID Contract | `docs/architecture/adr-0001-stencil-id-contract.md` | 4 stencil values, tier→weight mapping, `OutlineTier.set_tier` API, 4 verification gates | Implementation contract — this GDD inherits all decisions |
+| FPS Hands Outline Exception | `docs/architecture/adr-0005-fps-hands-outline-rendering.md` | Inverted-hull shader technique for Eve's FPS hands mesh; single project-wide exception to ADR-0001. Hands render in a SubViewport; outline is extruded hull geometry, not stencil kernel. Cross-reference added 2026-04-20 per cross-review B1. | Exception contract — carves `player-character.md`'s hands out of this GDD's scope |
 | Visual identity principles | `design/art/art-bible.md` Section 1 | *"Silhouette Owns Readability"* (Principle 2), *"Comedy Is a Visual Category"* (Principle 3) | Visual direction |
 | Outline weight hierarchy | `design/art/art-bible.md` Section 3.4 | Tier 1 = heaviest, Tier 2 = medium, Tier 3 = light | Rule dependency |
 | Pixel weight values | `design/art/art-bible.md` Section 8C | 4 / 2.5 / 1.5 px at 1080p | Numeric source of truth |
@@ -331,7 +332,7 @@ No in-game UI displays outline state, tier hierarchy, or stencil values. Those a
 
 ### Tier behavior
 
-5. **GIVEN** Eve's FPS hands mesh (Tier 1), **WHEN** rendered, **THEN** the outline around her silhouette is exactly 4 px thick at 1080p native resolution.
+5. **GIVEN** a **non-hands** Tier 1 mesh (gadget pickup, hero prop, bomb device), **WHEN** rendered through this pipeline at 1080p native, **THEN** the outline is exactly 4 px thick. **Exception — Eve's FPS hands mesh is NOT tested by this AC**: hands outline is governed by ADR-0005 (inverted-hull shader in `SubViewport`) and verified by Player Character GDD AC-10.1. This AC covers only stencil-path Tier 1 meshes. Cross-review B1 carve-out added 2026-04-20.
 6. **GIVEN** a PHANTOM guard (Tier 2), **WHEN** rendered, **THEN** the outline is exactly 2.5 px thick at 1080p native.
 7. **GIVEN** Eiffel ironwork (Tier 3), **WHEN** rendered, **THEN** the outline is exactly 1.5 px thick at 1080p native.
 8. **GIVEN** a comedic signage prop with stencil tier 1 (heaviest local tier), **WHEN** rendered in the Plaza (surrounded by tier-3 environment), **THEN** the signage's outline is 4 px (heaviest) while the surrounding environment's is 1.5 px.

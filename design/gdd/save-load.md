@@ -98,7 +98,7 @@ Because save latency is ≤10 ms synchronous, `SAVING` is effectively invisible 
 |---|---|---|---|
 | **Mission & Level Scripting** | Triggers save on `section_entered`; triggers load after slot selection | `MissionState`: `section_id`, `objectives_completed: Array[StringName]`, `triggers_fired: Array[StringName]` | Restores mission progress, marks suppressed triggers as "already fired", loads correct section via Level Streaming |
 | **Failure & Respawn** | Triggers save (slot 0) on `player_died`, before respawn sequence; triggers load from slot 0 during respawn | Reads from all systems; assembles full `SaveGame` | Calls `SaveLoad.load_from_slot(0)`, hands deep-duplicated state to each system, initiates scene reload |
-| **Player Character** | Passive contributor (does NOT trigger saves) | `PlayerState`: `position: Vector3`, `rotation: Vector3`, `health: float`, `stamina: float` | Position and health restored before fade-in; player spawns at saved position |
+| **Player Character** | Passive contributor (does NOT trigger saves) | `PlayerState`: `position: Vector3`, `rotation: Vector3`, `health: int`, `current_state: int` (stored as `PlayerCharacter.MovementState` enum value). Types reconciled with PC GDD in Session C (2026-04-19): `health` `float` → `int`; `current_state` `String` → `int` enum. Stamina field removed 2026-04-19 (Session A, review B-14). | Position and health restored before fade-in; player spawns at saved position |
 | **Inventory & Gadgets** | Passive contributor | `InventoryState`: equipped gadget, `ammo: Dictionary[StringName, int]`, collected gadget flags | Equipped state and ammo counts restored; no pickup animations replayed |
 | **Stealth AI** | Passive contributor; subscribes to `game_loaded` to re-apply restored patrol state | `StealthAIState.guards: Dictionary[StringName, GuardRecord]` — per-guard alert level, patrol index, position, last-known-target | Each guard reads its `GuardRecord` by `actor_id` and snaps to saved state; guards never "remember" the player across a load unless the save captured that state |
 | **Civilian AI** | Passive contributor (MVP scope: stub — panic state only) | `CivilianAIState`: per-civilian panic flag keyed by `actor_id` | Panicked civilians restored to panic; calm civilians restored to idle |
@@ -162,7 +162,7 @@ Because save latency is ≤10 ms synchronous, `SAVING` is effectively invisible 
 
 - **ADR-0001 (Stencil)**: independent.
 - **ADR-0004 (UI Framework)**: Menu System (which owns the save card UI) depends on ADR-0004 for its UI architecture; Save/Load does NOT depend on ADR-0004 directly. UI Framework knows nothing about save formats.
-- **Audio**: no interaction. Save/Load does not emit audio events. Audio may subscribe to `game_saved` / `game_loaded` for UI SFX (save-confirm chime, load-start sound), but those are Audio-side decisions per its own GDD's Signal Bus subscriptions.
+- **Audio**: publisher-subscriber only (no direct calls). Save/Load publishes `game_saved` / `game_loaded` / `save_failed`; Audio subscribes via its Persistence domain (confirmed in Audio GDD Rule 3 + Interactions §Persistence, reconciled 2026-04-20 cross-review B6). Audio plays: save-confirm chime on `game_saved`, descending minor error sting on `save_failed`, and no SFX on `game_loaded` (Save-Load flow proceeds straight to `section_entered` which handles music swap).
 - **Input**: Quicksave/Quickload keys are defined in Input's action catalog (`quicksave = F5`, `quickload = F9`); Input has no other interaction with Save/Load.
 
 ### Settings file scope
@@ -221,7 +221,8 @@ Settings (volume, input rebindings, accessibility toggles) are persisted in a se
 
 **Minimal** — Save/Load owns no VFX and no audio assets directly. Player-facing feedback for save/load events is owned by downstream systems:
 
-- **Save-confirm chime** (short "period bell" SFX on Quicksave success) — owned by Audio system, triggered by Audio's subscription to `Events.game_saved`. See Audio GDD Section C.3 Mission domain.
+- **Save-confirm chime** (short "period bell" SFX on Quicksave success) — owned by Audio system, triggered by Audio's subscription to `Events.game_saved` (SFX bus, ~200 ms). See **Audio GDD §Interactions → Persistence domain** (added 2026-04-20 as cross-review B6 resolution — section reference updated from the obsolete "Section C.3 Mission domain" that never existed).
+- **Save-failed error sting** (descending minor two-note) — owned by Audio system, triggered by Audio's subscription to `Events.save_failed`. Plays on SFX bus in addition to the Menu System dialog below.
 - **Save-failed error dialog** — owned by Menu System. Shown as a period mission-dossier card (per Art Bible 7D). Menu System subscribes to `Events.save_failed`.
 - **Scene fade-to-black on load** — owned by Level Streaming (system 9). Timing: 0.3 s fade out → section load → 0.5 s fade in.
 - **HUD toast for Quicksave/Quickload** — owned by HUD State Signaling (system 19). Brief center-lower strip text ("Quicksave to slot 0" / "No quicksave available").

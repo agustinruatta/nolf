@@ -2,7 +2,7 @@
 
 > **Status**: Revised — director feedback incorporated
 > **Created**: 2026-04-19
-> **Last Updated**: 2026-04-19
+> **Last Updated**: 2026-04-21 (Player Character + FootstepComponent APPROVED after `/design-review` revision pass — 21 blockers resolved inline across 4 files; see `design/gdd/reviews/player-character-review-log.md` for the full revision audit)
 > **Source Concept**: design/gdd/game-concept.md
 > **Source Art Bible**: design/art/art-bible.md
 
@@ -39,14 +39,15 @@ These 4 ADRs are authored via `/architecture-decision`, not `/design-system`. Th
 
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|---|---|---|---|---|---|
-| 1 | **Signal Bus** *(new — TD recommendation)* | Core | MVP | Designed (pending review) | `design/gdd/signal-bus.md` | ADR-2 |
+| 1 | **Signal Bus** *(new — TD recommendation)* | Core | MVP | Revised 2026-04-20 (B3 fix: 32→34 / 8→9 + Player domain row+column; re-review pending) | `design/gdd/signal-bus.md` | ADR-2 |
 | 2 | Input | Core | MVP | Designed (pending review) | `design/gdd/input.md` | — |
-| 3 | Audio | Audio | MVP | Designed (pending review) | `design/gdd/audio.md` | Signal Bus, ADR-2 |
-| 4 | **Outline Pipeline** *(split from Visual Effects)* | Core | MVP | Designed (pending review) | `design/gdd/outline-pipeline.md` | ADR-1 |
+| 3 | Audio | Audio | MVP | Revised 2026-04-20 (all 8 blockers resolved — Footstep Surface Map authored, Player + Persistence subscriptions added, Formula 4 locked to fixed 90 bpm, VO publisher role clarified; re-review pending) | `design/gdd/audio.md` | Signal Bus, ADR-2 |
+| 4 | **Outline Pipeline** *(split from Visual Effects)* | Core | MVP | Revised 2026-04-20 (B1 fix: ADR-0005 hands exception carved out of Stencil-writing table + AC-5; ADR-0001 Related section updated; re-review pending) | `design/gdd/outline-pipeline.md` | ADR-1, ADR-5 |
 | 5 | **Post-Process Stack** *(split from Visual Effects)* | Core | MVP | Designed (pending review) | `design/gdd/post-process-stack.md` | — |
-| 6 | Save / Load *(L effort — TD escalation)* | Persistence | MVP | Designed (pending review) | `design/gdd/save-load.md` | Localization Scaffold, ADR-3 |
+| 6 | Save / Load *(L effort — TD escalation)* | Persistence | MVP | Revised 2026-04-20 (B6 spot-check complete — Audio subscription reciprocal wording aligned with Audio's new Persistence domain; re-review pending) | `design/gdd/save-load.md` | Localization Scaffold, ADR-3 |
 | 7 | Localization Scaffold | Meta | MVP | Designed (pending review) | `design/gdd/localization-scaffold.md` | — |
-| 8 | Player Character | Core | MVP | Not Started | — | Input, Outline Pipeline, Post-Process Stack, Stencil ID Contract (ADR-1) |
+| 8 | Player Character | Core | MVP | **Approved 2026-04-21** (Session F re-draft + `/design-review` revision pass: 957 lines; 21 blockers from 7-specialist adversarial review resolved inline. Session F closed GD-B3 / OQ-7 / OQ-8 / CapsuleShape3D; revision pass added F.8 `get_silhouette_height`, same-frame DEAD latch clear, 4-bucket audio scheme, `noise_global_multiplier` ship-lock, F.5 distance tie-break, ShapeCast3D spec, AC-determinism rewrites; ADR-0005 `material_override`→`material_overlay` corrected. Ready for downstream authoring.) | `design/gdd/player-character.md` · `design/gdd/player-character-v0.3-frozen.md` (frozen baseline, read-only) | Input, Outline Pipeline, Post-Process Stack, FootstepComponent, Stencil ID Contract (ADR-1) |
+| 8b | **FootstepComponent** *(Session F sibling of Player Character)* | Core | MVP | **Approved 2026-04-21** (R-19 AI/Audio seam resolved — PC owns `get_noise_level`/`get_noise_event` AI channel; FC owns `player_footstep` Audio channel; 4-bucket stem scheme aligned with Audio GDD; explicit forbidden-pattern: Stealth AI MUST NOT subscribe to `player_footstep`. Approved as part of PC `/design-review` revision pass.) | `design/gdd/footstep-component.md` | Player Character, Signal Bus, Audio, ADR-2, ADR-6 |
 | 9 | Level Streaming | Core | MVP | Not Started | — | Save/Load |
 | 10 | Stealth AI | Gameplay | MVP | Not Started | — | Player Character, Audio, Signal Bus, ADR-1, ADR-2, ADR-3 |
 | 11 | Combat & Damage | Gameplay | MVP | Not Started | — | Player Character, Stealth AI, Audio, ADR-1 |
@@ -194,7 +195,7 @@ These systems are **intentionally absent** from this index. Document them to pre
 |---|---|---|
 | Photo Mode | Post-launch polish; no MVP/VS value | Scope |
 | Hint UI / Tutorial Overlay | Pillar 5 violation (modern UX paternalism). Diegetic tutorialization handled by Mission Scripting in the Plaza section. | Pillar 5 |
-| Difficulty Tiers / Difficulty Selection | Tier 3 Full Vision; MVP ships at one well-tuned difficulty | Scope |
+| Difficulty Tiers / Difficulty Selection | Tier 3 Full Vision; MVP ships at one well-tuned difficulty. Clarification 2026-04-20 (cross-review GD-B1): the existing `noise_global_multiplier` (PC Tuning Knobs, safe 0.7–1.3) is a **designer-tuning scalar only**, NOT a player-facing difficulty selector. Likewise `clock_tick_enabled` (Audio) is a pure accessibility toggle, not difficulty. No player UI for either. Any future accessibility-facing noise scaling requires explicit scope expansion + new ADR. | Scope |
 | Disguise System | Tier 3 Full Vision (concept doc Tier 3) | Scope |
 | Progression / XP / Skill Trees | Anti-pillar (game-concept.md) | Anti-pillar |
 | Economy / Currency / Crafting / Shops | Anti-pillar — no resource economy | Anti-pillar |
@@ -231,10 +232,10 @@ These systems are **intentionally absent** from this index. Document them to pre
 |---|---|
 | Required ADRs | **4/4 ALL AUTHORED** (all Proposed; verification gates pending — see individual ADRs and `production/session-state/active.md` for status) |
 | Total systems identified | 23 |
-| Design docs started | 7 |
-| Design docs reviewed | 0 |
-| Design docs approved | 0 |
-| MVP systems designed | 7/16 (**ALL 7 MVP Foundation GDDs DONE**) |
+| Design docs started | 8 |
+| Design docs reviewed | 8 (cross-review 2026-04-20 — see `gdd-cross-review-2026-04-20.md`; verdict FAIL, 6 GDDs flagged Needs Revision) |
+| Design docs approved | 0 (Player Character was marked Approved 2026-04-20 mid-day; subsequent cross-review downgraded to Needs Revision for propagation/sweep issues — see B4/B5/GD-B3) |
+| MVP systems designed | 8/16 (5 Needs Revision, 3 Designed pending review) |
 | Vertical Slice systems designed | 0/7 |
 
 ---

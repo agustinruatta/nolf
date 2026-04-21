@@ -1,0 +1,1 @@
+- [Player Character GDD AC review](project_player_character_ac_review.md) — adversarial AC review found 9 BLOCKING gaps and 3 structural issues (no test file paths, no story-type labels, false preamble)

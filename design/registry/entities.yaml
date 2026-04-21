@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: ""
+last_updated: 2026-04-19
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -48,7 +48,30 @@ last_updated: ""
 # Attribute fields: any key stats that could appear in another GDD
 #   (health, damage, drops, faction, etc.)
 
-entities: []
+entities:
+  - name: eve_sterling
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+      - design/gdd/input.md
+      - design/gdd/audio.md
+      - design/gdd/save-load.md
+      - design/gdd/outline-pipeline.md
+    role: player_character
+    era: 1965
+    affiliation: BQA_field_agent
+    outfit: Courrèges_navy_single_outfit_entire_mission  # Art Bible §5.1
+    body_height_standing_m: 1.7
+    body_height_crouched_m: 1.1
+    body_radius_m: 0.3
+    eye_height_standing_m: 1.6
+    eye_height_crouched_m: 1.0
+    outline_tier: HEAVIEST  # ADR-0001
+    gameplay_perspective: first_person_exclusive
+    full_body_mesh_status: deferred_to_VS  # mirror reflections use silhouette decal at MVP
+    added: 2026-04-19
+    revised: ""
 
 # Example (remove when first real entry is added):
 #
@@ -139,7 +162,238 @@ formulas: []
 #
 # Required fields: name, status, source, referenced_by, value, unit, added
 
-constants: []
+constants:
+  # ── Movement speeds (read by Stealth AI for perception balance, Combat for range calcs) ──
+  - name: player_walk_speed
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 3.5
+    unit: m/s
+    added: 2026-04-19
+    revised: ""
+  - name: player_sprint_speed
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 5.5
+    unit: m/s
+    added: 2026-04-19
+    revised: ""
+  - name: player_crouch_speed
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 1.8
+    unit: m/s
+    added: 2026-04-19
+    revised: ""
+  - name: player_crouch_sprint_speed
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 2.4
+    unit: m/s
+    notes: "Must stay below player_walk_speed to preserve stealth/speed tradeoff."
+    added: 2026-04-19
+    revised: ""
+
+  # ── Health (read by Combat & Damage for balance, HUD Core for readout) ──
+  - name: player_max_health
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 100
+    unit: hp
+    added: 2026-04-19
+    revised: ""
+  - name: player_critical_health_threshold
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 25
+    unit: hp
+    notes: "Below this, HUD shifts numeric readout to Alarm Orange (Art Bible §4.4)."
+    added: 2026-04-19
+    revised: ""
+
+  # ── Noise radii (read by Stealth AI for AI perception — CRITICAL cross-system contract) ──
+  - name: player_noise_walk
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 5.0
+    unit: m
+    added: 2026-04-19
+    revised: ""
+  - name: player_noise_sprint
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 9.0
+    unit: m
+    added: 2026-04-19
+    revised: ""
+  - name: player_noise_crouch
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 3.0
+    unit: m
+    added: 2026-04-19
+    revised: ""
+  - name: player_noise_crouch_sprint
+    status: deprecated
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 9.0
+    unit: m
+    notes: "DEPRECATED 2026-04-20 (orphan cleanup): CrouchSprint state was cut entirely in Session A (2026-04-19) per review item R-4 — strictly slower than Walk and with the same noise as Sprint, it served no tactical niche. Entry retained for audit trail only; do NOT reference in new GDDs."
+    added: 2026-04-19
+    revised: "2026-04-20"
+  - name: player_noise_jump_takeoff
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 4.0
+    unit: m
+    notes: "Discrete spike. Latched as NoiseEvent{type=JUMP_TAKEOFF, radius_m=4.0, origin=<position at takeoff>}; auto-expires after spike_latch_duration_sec (default 0.1 s = 6 frames @ 60 Hz = one AI tick window at 10 Hz). Session E-Prime AI-1 / R-17: latch is idempotent-read (every guard within the window sees the same event; auto-expiry is sole clear); duration parameterized in seconds for physics-tick-rate independence. Session E-Prime SD-2: radius is multiplied by noise_global_multiplier at get_noise_level() return."
+    added: 2026-04-19
+    revised: "2026-04-20"
+  - name: player_noise_hard_landing
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 8.0
+    unit: m
+    notes: "Discrete spike. Triggered when |velocity.y| > v_land_hard, where v_land_hard = sqrt(2 * player_gravity * player_hard_land_height) — runtime-derived per F.3. Binary at MVP (see OQ-7). Latched as NoiseEvent{type=LANDING_HARD, radius_m=8.0, origin=<landing site>}; auto-expires after spike_latch_duration_sec (default 0.1 s). Session E-Prime AI-1 / R-17: idempotent-read, physics-tick-rate-independent. Session E-Prime SD-2: radius is multiplied by noise_global_multiplier at get_noise_level() return."
+    added: 2026-04-19
+    revised: "2026-04-20"
+  - name: player_noise_landing_soft
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 5.0
+    unit: m
+    notes: "Discrete spike. Triggered on landing when |velocity.y| ≤ v_land_hard (i.e., any landing below the hard threshold). Latched as NoiseEvent{type=LANDING_SOFT, radius_m=5.0, origin=<landing site>}; auto-expires after spike_latch_duration_sec. Implicit in prior versions via the noise table; registered explicitly in Session D so Combat & Damage + Stealth AI consume a single source of truth. Session E-Prime AI-1 / R-17 / SD-2: idempotent-read, physics-tick-rate-independent, multiplied by noise_global_multiplier."
+    added: 2026-04-20
+    revised: "2026-04-20"
+
+  # ── Physics ──
+  - name: player_gravity
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 12.0
+    unit: m/s^2
+    notes: "Heavier than Earth (9.8) for tighter feel."
+    added: 2026-04-19
+    revised: ""
+  - name: player_jump_velocity
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 3.8
+    unit: m/s
+    notes: "Yields ~0.60 m apex with player_gravity = 12.0."
+    added: 2026-04-19
+    revised: ""
+  - name: player_hard_land_height
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 1.5
+    unit: m
+    notes: "Drop height above which camera dip + hard-landing noise spike trigger. Runtime velocity threshold is computed: v_land_hard = sqrt(2 * player_gravity * player_hard_land_height); at default gravity=12.0 this yields 6.0 m/s. Renamed from player_hard_land_threshold (was value=6.0, unit=m/s) per Session D B-8 to decouple from gravity."
+    added: 2026-04-19
+    revised: "2026-04-19"
+
+  # ── Interact (read by Document Collection, Inventory, Mission Scripting for prompt placement) ──
+  - name: player_interact_ray_length
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 2.0
+    unit: m
+    notes: "Interactables must be authored within this distance from likely player positions."
+    added: 2026-04-19
+    revised: ""
+
+  # ── Collision layers (CANONICAL — all systems with colliders or raycasts reference these) ──
+  - name: collision_layer_world
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 1
+    unit: layer_index
+    added: 2026-04-19
+    revised: ""
+  - name: collision_layer_player
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 2
+    unit: layer_index
+    added: 2026-04-19
+    revised: ""
+  - name: collision_layer_ai
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 3
+    unit: layer_index
+    added: 2026-04-19
+    revised: ""
+  - name: collision_layer_interactables
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 4
+    unit: layer_index
+    added: 2026-04-19
+    revised: ""
+  - name: collision_layer_projectiles
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: 5
+    unit: layer_index
+    added: 2026-04-19
+    revised: ""
+
+  # ── Kill plane (read by Level Streaming for level-bounds validation) ──
+  - name: kill_plane_y
+    status: active
+    source: design/gdd/player-character.md
+    referenced_by:
+      - design/gdd/player-character.md
+    value: -50.0
+    unit: m
+    notes: "World Y below which player_died fires. Bug-recovery safety net, not gameplay."
+    added: 2026-04-19
+    revised: ""
 
 # Example:
 #

@@ -1,31 +1,32 @@
 # Audio
 
-> **Status**: In Design
-> **Author**: User + `/design-system` skill + specialists (game-designer, audio-director, sound-designer per routing)
-> **Last Updated**: 2026-04-19
-> **Last Verified**: 2026-04-19
+> **Status**: In Design — pending 3rd `/design-review` after ADR-0002 amendment lands
+> **Author**: User + `/design-system` skill + specialists (audio-director, sound-designer, game-designer, systems-designer, qa-lead, godot-specialist per 2026-04-21 adversarial re-review; creative-director synthesis)
+> **Last Updated**: 2026-04-21 (2nd `/design-review` revision pass — 15 blockers resolved inline; 6 Stealth AI pre-impl-gate items closed; 4 load-bearing design decisions locked: Formula 2 diegetic-recedes, SCRIPTED-cause stinger suppression, 2.0 s respawn fade, state-keyed per-layer VO duck)
+> **Last Verified**: 2026-04-21
 > **Implements Pillar**: Pillar 3 (Stealth is Theatre — alert state via music); Pillar 1 (Comedy Without Punchlines — guard banter, absurd SFX); Pillar 5 (Period Authenticity — 1960s jazz/lounge score)
 
 ## Summary
 
-Audio is *The Paris Affair*'s most identity-defining Foundation system — it carries the game's NOLF1 fidelity commitment by signaling AI alert state through **dynamic music transitions** (never through visuals) and delivers the 1960s jazz-lounge score, guard banter VO, spatialized gunfire, and period SFX that the game's tone lives or dies on. Audio subscribes to 5 event domains on the Signal Bus (AI/Stealth, Combat, Mission, Civilian, Dialogue); it publishes nothing. Implementation uses Godot 4.6's audio bus system with pooled `AudioStreamPlayer3D` for spatial SFX and `AudioStreamPlayer` for BGM/UI. Settings & Accessibility owns volume persistence.
+Audio is *The Paris Affair*'s most identity-defining Foundation system — it carries the game's NOLF1 fidelity commitment by signaling AI alert state through **dynamic music transitions** (never through visuals) and delivers the 1960s jazz-lounge score, guard banter VO, spatialized gunfire, and period SFX that the game's tone lives or dies on. Audio subscribes to **30 signals across 9 gameplay event domains + Settings** on the Signal Bus (AI/Stealth, Combat, Player, Mission, Failure/Respawn, Civilian, Dialogue, Documents, Persistence); it publishes nothing. Implementation uses Godot 4.6's audio bus system with pooled `AudioStreamPlayer3D` for spatial SFX and `AudioStreamPlayer` for BGM/UI. Settings & Accessibility owns volume persistence.
 
-> **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `Signal Bus (ADR-0002)` · Key subscriptions: AI/Stealth + Combat + Mission + Civilian + Dialogue event domains
+> **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `Signal Bus (ADR-0002)` · Key subscriptions: AI/Stealth + Combat + Player + Mission + Failure/Respawn + Civilian + Dialogue + Documents + Persistence + Settings (30 signals, 9 gameplay domains + Settings)
 
 ## Overview
 
 Audio is the backbone of *The Paris Affair*'s atmosphere and the carrier of its most important design rule: **alert state is signaled through music, not visuals** (per the NOLF1 fidelity commitment locked in `feedback_visual_state_signaling` memory). When Eve slips from unaware into "suspicious" AI range, the music shifts. When a guard spots her, it swells. When she slips back into cover and the alert de-escalates, the music settles. The player learns to trust their ears more than the HUD — which is exactly what stealth theatre requires.
 
-Architecturally, Audio is a **subscriber-only** system. It listens to the Signal Bus (ADR-0002) for events in **eight domains** (revised 2026-04-20 re-review — added Player + Documents + Persistence):
+Architecturally, Audio is a **subscriber-only** system. It listens to the Signal Bus (ADR-0002) for events in **nine gameplay domains + Settings** (revised 2026-04-21 re-review — Failure/Respawn separated from Mission per ADR-0002:183; `section_exited` added for dominant-guard-dict cleanup):
 
-- **AI/Stealth** — `alert_state_changed` drives music; `actor_became_alerted` drives positional stingers
+- **AI/Stealth** — `alert_state_changed` drives music; `actor_became_alerted` drives positional stingers (filtered by severity + cause per §Concurrency Policies)
 - **Combat** — `weapon_fired`, `player_damaged`, `player_health_changed` drive SFX and critical-health clock-tick
-- **Player** *(ADR-0002 amendment 2026-04-19)* — `player_footstep` drives surface-mapped footstep SFX; `player_interacted` drives interact-confirmation SFX
-- **Mission** — `section_entered`, `objective_completed` drive music-location transitions + sting hits
-- **Civilian** — `civilian_panicked` drives distress SFX + music bedlam-layer
-- **Dialogue** — `dialogue_line_started` / `dialogue_line_finished` drive VO playback and music ducking
+- **Player** — `player_footstep` drives surface-mapped footstep SFX; `player_interacted` drives interact-confirmation SFX
+- **Mission** — `section_entered`, `section_exited`, `objective_completed` drive music-location transitions + dict cleanup + sting hits
+- **Failure/Respawn** — `respawn_triggered` drives the 2.0 s ease-in reset to `*_calm`
+- **Civilian** — `civilian_panicked` drives distress SFX + bedlam response (diegetic recedes, non-diegetic holds)
+- **Dialogue** — `dialogue_line_started` / `dialogue_line_finished` drive VO playback and state-keyed per-layer music ducking
 - **Documents** — `document_collected` drives pickup SFX; `document_opened` / `document_closed` drive overlay music duck
-- **Persistence** *(added 2026-04-20)* — `game_saved` / `save_failed` drive confirm/error chimes on save
+- **Persistence** — `game_saved` / `save_failed` drive confirm/error chimes on save
 
 Audio does NOT publish cross-system events. Audio does NOT know about individual systems — it reacts to typed signals. **VO playback clarification (2026-04-20 re-review)**: Audio plays VO audio files but does not own dialogue-timing semantics. `dialogue_line_started` and `dialogue_line_finished` are both emitted by Dialogue & Subtitles GDD (VS-tier, unwritten) using VO-metadata duration fields — NOT by Audio via `AudioStreamPlayer.finished` callback. Audio stays strictly subscriber-only; the two systems react to the same signals independently.
 
@@ -53,20 +54,24 @@ Reference touchstones, per the Art Bible: Mancini (*Peter Gunn*, *Pink Panther*,
 
 1. **Bus structure is the volume contract.** Five `AudioServer` buses exist: `Music`, `SFX`, `Ambient`, `Voice`, `UI`. Every `AudioStreamPlayer` / `AudioStreamPlayer3D` in the game sets its `bus` property to one of these five names at node creation. No node routes to `Master` directly. Settings & Accessibility maps one slider per bus: `setting_changed("audio", "[bus]_volume", value_db)` → `AudioServer.set_bus_volume_db(AudioServer.get_bus_index(&"[bus]"), value_db)`.
 2. **Per-section reverb buses.** Each section (Plaza, Lower Scaffolds, Restaurant, Upper Structure, Bomb Chamber) has one `AudioEffectReverb` preset applied as a bus effect on the `SFX` bus. The preset is swapped on `section_entered`. Plaza = exterior open; Scaffolds = metal-resonant medium; Restaurant = warm medium room; Upper Structure = exterior cold (long tail); Bomb Chamber = small hard-surface (bright, short).
-3. **Audio connects to Events at startup; disconnects on exit.** `AudioManager.gd` is a scene-tree `Node`, NOT an autoload (settled 2026-04-20 — closes prior OQ; subscriber lifecycle fits a Node better; autoload reserved for truly global contracts like `Events`, `SaveLoad`). It connects all subscriptions in `_ready()` and disconnects with `is_connected` guards in `_exit_tree()` — the mandatory Signal Bus subscriber lifecycle from ADR-0002. Subscriptions (**27 signals across 6 domains + Settings**, 2026-04-20 re-review):
-   - **AI/Stealth (4)**: `alert_state_changed`, `actor_became_alerted`, `actor_lost_target`, `takedown_performed`
-   - **Combat (5)**: `weapon_fired`, `player_damaged`, `player_health_changed`, `enemy_damaged`, `enemy_killed`, `player_died` (6 total — `player_health_changed` added 2026-04-20 re-review to drive the 25%-threshold clock-tick trigger in Critical Health section)
-   - **Player (2)** *(ADR-0002 amendment 2026-04-19 / Audio GDD revision 2026-04-20)*: `player_footstep`, `player_interacted`
-   - **Mission (5)**: `section_entered`, `objective_started`, `objective_completed`, `mission_started`, `mission_completed`, `respawn_triggered` (6 total — `respawn_triggered` was always subscribed; list corrected)
+3. **Audio connects to Events at startup; disconnects on exit.** `AudioManager.gd` is a scene-tree `Node`, NOT an autoload (settled 2026-04-20 — subscriber lifecycle fits a Node better; autoload reserved for truly global contracts like `Events`, `SaveLoad`). `AudioManager` lives in the **persistent root scene** (a child of the main scene node, never a child of a per-section scene that gets freed on transition) so `_exit_tree()` fires only on game quit, not on section change. It connects all subscriptions in `_ready()` and disconnects with `is_connected` guards in `_exit_tree()` — the mandatory Signal Bus subscriber lifecycle from ADR-0002. Subscriptions (**30 signals across 9 gameplay domains + Settings**, revised 2026-04-21 re-review — added Failure/Respawn domain split, added `section_exited`, updated to post-ADR-0002-amendment 4-param/3-param signatures for AI/Stealth):
+
+   > **⚠️ ADR-0002 amendment is a hard prerequisite for these handler signatures.** The 4-param / 3-param forms below reflect the post-amendment signal signatures mandated by the Stealth AI GDD (approved 2026-04-21). ADR-0002 amendment (owned by `technical-director` per Stealth AI pre-implementation gate #1) MUST land before Audio implementation begins — otherwise handler arities will not match and `AudioManager` will crash on first signal emission. Until ADR-0002 is amended, AC-2 and the AI/Stealth handler ACs are gated on that work.
+
+   - **AI/Stealth (4)** — post-amendment signatures: `alert_state_changed(actor: Node, old_state: StealthAI.AlertState, new_state: StealthAI.AlertState, severity: StealthAI.Severity)`, `actor_became_alerted(actor: Node, cause: StealthAI.AlertCause, source_position: Vector3, severity: StealthAI.Severity)`, `actor_lost_target(actor: Node, severity: StealthAI.Severity)`, `takedown_performed(actor: Node, attacker: Node, takedown_type: StealthAI.TakedownType)`
+   - **Combat (6)**: `weapon_fired`, `player_damaged`, `player_health_changed`, `enemy_damaged`, `enemy_killed`, `player_died` (`player_health_changed` added 2026-04-20 to drive the 25%-threshold clock-tick trigger)
+   - **Player (2)** *(ADR-0002 amendment 2026-04-19)*: `player_footstep`, `player_interacted`
+   - **Mission (6)**: `section_entered`, `section_exited`, `objective_started`, `objective_completed`, `mission_started`, `mission_completed` — `section_exited` is 2026-04-21 addition; AudioManager uses it to clear the dominant-guard dict before the new section's `section_entered` fires (see §Concurrency Policies)
+   - **Failure/Respawn (1)** *(moved from Mission 2026-04-21 — ADR-0002:183 places `respawn_triggered` in this domain)*: `respawn_triggered`
    - **Civilian (2)**: `civilian_panicked`, `civilian_witnessed_event`
    - **Dialogue (2)**: `dialogue_line_started`, `dialogue_line_finished` *(subscribed-only — Audio plays the VO file; Dialogue & Subtitles GDD owns emission timing via VO-metadata duration fields, not via `AudioStreamPlayer.finished`. Audio remains subscriber-only.)*
-   - **Documents (3)**: `document_collected`, `document_opened`, `document_closed` (added `document_collected` 2026-04-20 re-review — the SFX catalog already defined the envelope-slide SFX for this signal; subscription list now matches)
-   - **Persistence (3)** *(added 2026-04-20 re-review, resolves cross-review B6)*: `game_saved`, `game_loaded`, `save_failed`
+   - **Documents (3)**: `document_collected`, `document_opened`, `document_closed`
+   - **Persistence (3)**: `game_saved`, `game_loaded`, `save_failed`
    - **Settings (1)**: `setting_changed`
 4. **Music is two simultaneous layers, not one track.** The Music bus carries three persistent `AudioStreamPlayer` nodes: `MusicDiegetic` (in-world source — quartet, combo, city hum), `MusicNonDiegetic` (non-diegetic score — upright bass, brushed snare, stealth cool), and `MusicSting` (one-shot alert stabs and victory stings). The `MusicDiegetic` and `MusicNonDiegetic` volume_db values are driven independently by the state machine (below). `MusicSting` is fire-and-forget and returns to silence on `finished`.
 5. **Spatial SFX uses one global pool of 16 `AudioStreamPlayer3D` nodes.** Pre-created in `_ready()`, all routed to `SFX` bus. A single global pool (not per-category) — this game's SFX density does not stress 16 slots. Anti-starvation: if all slots are occupied, the new request steals the oldest-started slot that is not gameplay-critical (voice and UI are exempt; they use non-spatial `AudioStreamPlayer`).
 6. **Music crossfade rule: Tween on `volume_db`, never stop-and-start.** All music transitions use `create_tween().tween_property(player, "volume_db", target_db, duration)`. In-coming layer fades up; out-going layer fades down in parallel. **Default crossfade: 2.0 s ease-in-out** for non-alert transitions (section changes, document-overlay restores). Silence-cut only for mission-complete sting and cutscene track swap. Alert-state crossfades use the table in C.2.
-7. **Voice (VO) ducking.** When `dialogue_line_started` fires, `AudioManager` tweens `Music` bus volume by **−8 dB** and `Ambient` bus volume by **−6 dB** over 0.3 s. When `dialogue_line_finished` fires, both buses restore over 0.5 s. The `Voice` bus is not ducked (it is the source). The `UI` bus is not ducked. `MusicDiegetic` and `MusicNonDiegetic` duck equally.
+7. **Voice (VO) ducking.** When `dialogue_line_started` fires, `AudioManager` ducks the two music layers independently per Formula 1's state-keyed per-layer table — `MusicDiegetic` ducks deeper during calm states (comedy priority when jazz is loud), `MusicNonDiegetic` ducks lighter during combat states (signal preservation when the score IS the alert cue). `Ambient` bus ducks a flat −6 dB. Attack 0.3 s, release 0.5 s (tuning knobs). On `dialogue_line_finished` all three restore to stored setting values over 0.5 s. The `Voice` bus is not ducked (it is the source). The `UI` bus is not ducked.
 8. **Music is preloaded per section, not streamed.** Both music layers (diegetic + non-diegetic) for the current section are fully loaded into memory when `section_entered` fires. Total budget: ~8–12 MB per section, two stereo OGG layers. Rationale: tight crossfades are load-bearing for Pillar 3 (music signals alert state); a 30–80 ms seek-latency gap undermines the design promise. Memory cost is negligible on PC.
 9. **Anti-pattern fences.**
    - NEVER call `AudioStreamPlayer.new()` at runtime for SFX — all SFX nodes are pre-allocated.
@@ -101,28 +106,44 @@ Music state is `[location]_[alert_level]`. Location ∈ `{plaza, scaffolds, rest
 | `alert_state_changed` | `new == StealthAI.AlertState.SEARCHING` | `*_searching` | 0.8 s linear |
 | `alert_state_changed` | `new == StealthAI.AlertState.COMBAT` | `*_combat` | 0.3 s cut |
 | `alert_state_changed` | `new == StealthAI.AlertState.UNAWARE` | `*_calm` | 3.0 s ease-in-out |
-| `actor_became_alerted` | any | sting plays on next downbeat | additive, ~4 s |
+| `actor_became_alerted` | `severity == MAJOR AND cause != SCRIPTED` (else no-op) | sting plays on next downbeat | additive, ~4 s |
 | `document_opened` | — | `DOCUMENT_OVERLAY` | 0.5 s linear |
 | `document_closed` | — | restore prior state | 0.5 s linear |
 | `mission_completed` | — | `MISSION_COMPLETE` | instant cut + sting |
-| `respawn_triggered` | — | `*_calm` for current section | 0.5 s linear |
+| `respawn_triggered` | — | cut to silence for ~200 ms, then `*_calm` for current section | **2.0 s ease-in from silence** (matches `section_entered` — 2026-04-21 revision: short linear fade read as cinema hard-cut and violated Pillar 3's theatre-not-punishment. 2.0 s from silence reads as scene reset, not game-punishes-you). Also clears the dominant-guard dict — see §Concurrency Policies. |
 | `dialogue_line_started` | — | VO duck (not a state change — see Rule 7) | 0.3 s |
 | `dialogue_line_finished` | — | VO duck restore | 0.5 s |
 
-**Dominant-guard rule:** `alert_state_changed` carries `actor: Node`. `AudioManager` maintains a `Dictionary[Node, StealthAI.AlertState]`. Music state is driven by the **highest** alert level across all tracked actors. If any actor is `StealthAI.AlertState.COMBAT`, state is `*_combat`; if none are COMBAT but any are SEARCHING, state is `*_searching`; else the highest of the remaining; else `calm`. Actors are removed from the dictionary on `actor_lost_target` or `enemy_killed`. **Respawn reset (2026-04-20 re-review, R7)**: on `respawn_triggered`, the dominant-guard dict is cleared — respawn re-enters a calm section and prior combat state does not bleed into the replay.
+**Dominant-guard rule:** `alert_state_changed` carries `actor: Node`. `AudioManager` maintains a `Dictionary[Node, StealthAI.AlertState]`. Music state is driven by the **highest** alert level across all tracked actors. If any actor is `StealthAI.AlertState.COMBAT`, state is `*_combat`; if none are COMBAT but any are SEARCHING, state is `*_searching`; else the highest of the remaining; else `calm`. Actors are removed from the dictionary on `actor_lost_target` or `enemy_killed`. See §Concurrency Policies for dict-clearing semantics on respawn and section transitions.
 
-**Alert sting quantization:** the `MusicSting` brass stab on `actor_became_alerted` is quantized to the next 120 BPM downbeat (0.5 s resolution). Rationale: the sting must feel musically integrated, not arbitrary. A timer on the `MusicNonDiegetic` player tracks beat position; the sting schedules itself on the next beat.
+**Alert sting quantization:** the `MusicSting` brass stab on `actor_became_alerted` is quantized to the next 120 BPM downbeat (0.5 s resolution). Rationale: the sting must feel musically integrated, not arbitrary. A timer on the `MusicNonDiegetic` player tracks beat position; the sting schedules itself on the next beat. **Implementation note**: the quantization math is extracted into a pure helper `get_next_beat_offset_s(current_playback_pos_s: float, bpm: float) -> float` so it can be unit-tested deterministically against fixed inputs (AC-7) without requiring a real-time scene-tree timebase.
+
+### Concurrency Policies
+
+Signals arrive in bursts. An open-plan area can send 3+ `actor_became_alerted(MAJOR)` in a single physics frame; a propagation wave can bump 5 guards to SUSPICIOUS in one tick; a section transition can briefly retain stale Node refs in the dominant-guard dict. These rules fence the concurrency surface so handler bursts produce clean mixes, not level-hunting artifacts or crashes.
+
+1. **Stinger per-beat-window debounce.** At most **one** `MusicSting` brass stab may be scheduled per 120 BPM downbeat window (0.5 s). When `actor_became_alerted(_, cause, _, MAJOR)` with `cause != SCRIPTED` fires and a stinger is already queued for the upcoming downbeat, the second and subsequent arrivals within that window are silently discarded (no new schedule). The queued stinger plays on schedule; fresh stingers queue only after the current one completes or the next beat window opens. **Rationale**: three simultaneous MAJOR detections collapsing onto the same brass stab produce clip-level transient stacking and a mix disaster. Audio-director burst-contract per Stealth AI GDD pre-impl gate #2(d).
+
+2. **Same-state idempotence on `alert_state_changed`.** When propagation bumps N guards to SUSPICIOUS in one frame, each guard fires its own `alert_state_changed(_, _, SUSPICIOUS, MINOR)`. The dominant-guard dict updates N times, but the dominant state returns the same value (`SUSPICIOUS`) on every computation. `AudioManager`'s handler computes the new dominant state AFTER updating the dict and **early-returns** if the computed dominant state equals the currently-playing music state. Result: one `*_suspicious` tween is launched per transition, never N concurrent tweens competing on the same `volume_db` target. Stealth AI GDD pre-impl gate #2(e).
+
+3. **SCRIPTED-cause stinger suppression.** Stealth AI's `force_alert_state(new_state, StealthAI.AlertCause.SCRIPTED)` (used by cutscene directors) fires `actor_became_alerted(_, SCRIPTED, _, MAJOR)`. `AudioManager` recognizes `cause == SCRIPTED` and does NOT schedule a stinger — cutscenes own their composed audio, and a brass punch over scripted narrative music is an authoring collision. The `alert_state_changed` handler still fires normally (music-state transitions during cutscenes are expected); only the stinger is suppressed. Stealth AI GDD pre-impl gate #2(f).
+
+4. **Dominant-guard dict clear on section transitions.** On `section_exited`, `AudioManager` clears the entire dominant-guard dict. Rationale: guards from the exited section are about to be freed (or are already freed by Stealth AI's lifecycle); retaining their Node keys produces stale references that crash on the next iteration ("Invalid get index on base Null instance"). `section_entered` then arrives with an empty dict and resolves to `*_calm` for the new section — matching the intended behavior. This also naturally handles the `respawn_triggered` case (section re-entry): the dict is cleared via the paired `section_exited`/`section_entered` that Failure & Respawn owns on sectional respawn, or via the explicit clear documented in the respawn trigger table row.
+
+5. **Bedlam tween mid-decrement policy.** Civilian de-panic (civilian transitions from panic back to calm) decrements `panic_count`; any in-progress bedlam tween on either music layer is cancelled and a new tween from the current `volume_db` to the freshly computed target starts immediately. No chained tweens in opposite directions; no audible "pump."
 
 ### Interactions with Other Systems
 
 #### AI / Stealth domain
 
+Signatures below reflect the post-ADR-0002-amendment 4-param / 4-param / 2-param / 3-param forms mandated by Stealth AI GDD (approved 2026-04-21). ADR-0002 amendment is a pre-implementation prerequisite — see §Detailed Rules Rule 3.
+
 | Signal | Audio behavior | Condition |
 |---|---|---|
-| `alert_state_changed(actor, old, new)` | Update dominant-guard dict → drive music state machine | Always |
-| `actor_became_alerted(actor, cause, pos)` | Quantize `MusicSting` to next 120 BPM downbeat | Always |
-| `actor_lost_target(actor)` | Remove actor from dict; recalc dominant | Always |
-| `takedown_performed(actor, target)` | Play takedown impact SFX at target position (pooled 3D) | Always |
+| `alert_state_changed(actor, old, new, severity)` | Update dominant-guard dict → drive music state machine. See §Concurrency Policies (same-state idempotence). | Always |
+| `actor_became_alerted(actor, cause, pos, severity)` | Quantize `MusicSting` brass stab to next 120 BPM downbeat | **ONLY when `severity == StealthAI.Severity.MAJOR` AND `cause != StealthAI.AlertCause.SCRIPTED`** — MINOR propagation bumps and casual SUSPICIOUS investigations produce NO stinger (Pillar 1: comedy-without-punchlines requires the score to stay deadpan under MINOR escalations); SCRIPTED cutscene escalations produce NO stinger (cutscenes own their composed audio — see §Concurrency Policies). Also subject to per-beat-window debounce (§Concurrency Policies). |
+| `actor_lost_target(actor, severity)` | Remove actor from dict; recalc dominant | Always |
+| `takedown_performed(actor, attacker, takedown_type)` | Play takedown SFX at actor position (pooled 3D). **SFX variant is routed by `takedown_type`**: `MELEE_NONLETHAL` → chloroform-style soft whoosh + cloth-drape + body-slump (~300 ms, 80–200 Hz muffled); `STEALTH_BLADE` → brief blade stroke + muffled body-drop (~250 ms, 60–150 Hz; no metal-ring — stealth weapon). See §SFX event catalog. | Always |
 
 #### Combat domain
 
@@ -164,17 +185,26 @@ Music state is `[location]_[alert_level]`. Location ∈ `{plaza, scaffolds, rest
 
 | Signal | Audio behavior | Condition |
 |---|---|---|
-| `section_entered(section_id)` | Swap music layer assets (preloaded); swap reverb bus preset; transition to `[section]_calm` | Always |
+| `section_entered(section_id)` | Swap music layer assets (preloaded); swap reverb bus preset (in-place property mutation on the live `AudioEffectReverb` instance, NOT remove/re-add — prevents click during active crossfade); transition to `[section]_calm` | Always |
+| `section_exited(section_id)` | Clear the dominant-guard dict; cancel any in-flight alert-state tween on `MusicDiegetic`/`MusicNonDiegetic` | Always — §Concurrency Policies Rule 4 |
 | `objective_started` | Brief ascending chime (non-spatial, UI bus) | Always |
 | `objective_completed` | Brass fanfare stinger (non-spatial, Music bus) | Fires once per objective |
 | `mission_started(mission_id)` | Period radio static + 3-blink morse BQA signature | Always |
 | `mission_completed(mission_id)` | Instant music cut → `MusicSting` victory sting → ambient return | Always |
 
+#### Failure/Respawn domain
+
+Moved from Mission domain 2026-04-21 re-review — ADR-0002:183 places `respawn_triggered` in its own Failure/Respawn domain per the system-ownership rule (Failure & Respawn is system 14 and is the publisher).
+
+| Signal | Audio behavior | Condition |
+|---|---|---|
+| `respawn_triggered(section_id)` | Cut all music to silence for ~200 ms; clear dominant-guard dict (redundant with paired `section_exited` but safe); ease-in to `[section_id]_calm` over 2.0 s | Always |
+
 #### Civilian domain
 
 | Signal | Audio behavior | Condition |
 |---|---|---|
-| `civilian_panicked(civilian, pos)` | Period-appropriate French vocal gasp ("Mon Dieu!") at civilian pos (pooled 3D, Voice bus). Add +2 dB to `MusicNonDiegetic` bedlam-layer (max stack 3) | Always |
+| `civilian_panicked(civilian, pos)` | Period-appropriate French vocal gasp ("Mon Dieu!") at civilian pos (pooled 3D, Voice bus). Increment `panic_count` → recompute Formula 2 (diegetic recedes up to −3 dB, non-diegetic rises up to +2 dB, both capped; see §Formulas Formula 2) | Always |
 | `civilian_witnessed_event` | Crowd murmur uptick on Ambient bus (non-spatial layer intensification) | Always |
 
 #### Dialogue domain
@@ -210,40 +240,77 @@ When player health drops below 25%, a **looping clock-tick bed** plays at 80–1
 
 Audio has a small number of quantitative rules. All dB values are Godot's `volume_db` convention: `0.0` = unity; negative values = attenuation; `-80.0` = effectively silent.
 
-### Formula 1 — VO ducking target
+### Formula 1 — VO ducking target (state-keyed, per-layer)
 
-`music_ducked_db = setting_music_volume_db - 8.0`
-`ambient_ducked_db = setting_ambient_volume_db - 6.0`
+Revised 2026-04-21 re-review (audio-director + game-designer merged fix): a flat −8 dB duck is too shallow when the diegetic quartet is at 0 dB (broadcast norm for dialog masking is −18 to −24 dB; vibraphone + upright-bass sit in VO intelligibility range), and a flat duck over-suppresses the non-diegetic score during combat when that score IS the alert signal (Pillar 3). The revised formula is **state-keyed and per-layer**: `MusicDiegetic` ducks deeper during calm states (comedy priority), `MusicNonDiegetic` ducks lighter during combat states (signal preservation).
+
+#### Duck-depth table
+
+| Alert state | `MusicDiegetic` duck | `MusicNonDiegetic` duck | Ambient duck |
+|---|---|---|---|
+| `*_calm` | **−14 dB** | −6 dB | −6 dB |
+| `*_suspicious` | −10 dB | −6 dB | −6 dB |
+| `*_searching` | −8 dB | −5 dB | −6 dB |
+| `*_combat` | −6 dB (mostly silent already) | **−4 dB** (signal preservation) | −6 dB |
+| `DOCUMENT_OVERLAY` | −8 dB additional | −8 dB additional | −6 dB |
+
+#### Formula
+
+```
+music_diegetic_ducked_db   = max(setting_music_volume_db   + diegetic_duck_db[state],   -80.0)
+music_nondiegetic_ducked_db = max(setting_music_volume_db   + nondiegetic_duck_db[state], -80.0)
+ambient_ducked_db          = max(setting_ambient_volume_db + ambient_duck_db,            -80.0)
+```
+
+The `max(..., -80.0)` clamp is load-bearing: the Music bus safe range is −80 to 0 dB (Tuning Knobs), so at slider=−80 dB plus any non-zero duck offset, the unclamped computation goes below −80 dB. Godot accepts writes below −80 dB but clips the true output at that floor; writing the literal floor value is the hygienic path.
 
 **Variables:**
 
 | Variable | Symbol | Type | Range | Description |
 |---|---|---|---|---|
-| `setting_music_volume_db` | M | float | −40.0 to 0.0 | Music bus volume as set by Settings |
-| `setting_ambient_volume_db` | A | float | −40.0 to 0.0 | Ambient bus volume as set by Settings |
-| `music_ducked_db` | — | float | −48.0 to −8.0 | Music bus volume during VO playback |
-| `ambient_ducked_db` | — | float | −46.0 to −6.0 | Ambient bus volume during VO playback |
+| `setting_music_volume_db` | M | float | −80.0 to 0.0 | Music bus volume as set by Settings |
+| `setting_ambient_volume_db` | A | float | −80.0 to 0.0 | Ambient bus volume as set by Settings |
+| `diegetic_duck_db[state]` | — | float | −14.0 to −6.0 | Per-state diegetic duck (see table) |
+| `nondiegetic_duck_db[state]` | — | float | −6.0 to −4.0 | Per-state non-diegetic duck (see table) |
+| `ambient_duck_db` | — | float | −6.0 default, safe −2.0 to −12.0 | Ambient duck (flat across states) |
+| `music_diegetic_ducked_db` | — | float | −80.0 to −6.0 | MusicDiegetic player `volume_db` during VO |
+| `music_nondiegetic_ducked_db` | — | float | −80.0 to −4.0 | MusicNonDiegetic player `volume_db` during VO |
+| `ambient_ducked_db` | — | float | −80.0 to −2.0 | Ambient bus volume during VO playback |
 
-**Output range:** Under normal settings (music at 0 dB, ambient at 0 dB), duck targets are −8 dB and −6 dB respectively. Under Music muted (−40 dB), duck target is −48 dB (already inaudible — duck is a no-op). Ducks never push the bus below −80 dB.
+**Output range:** Under normal settings (music at 0 dB, ambient at 0 dB), a `*_calm` VO produces `MusicDiegetic` at −14 dB, `MusicNonDiegetic` at −6 dB, Ambient at −6 dB. A `*_combat` VO produces `MusicDiegetic` at −6 dB (already near-silent at base −80 dB), `MusicNonDiegetic` at −4 dB (barely ducked — the signal is preserved), Ambient at −6 dB. Clamp prevents any computed target from going below −80 dB.
 
-**Example:** Player has Music slider at −6 dB (comfortable) and Ambient at 0 dB. VO starts. Music ducks to `-6 + (-8) = -14 dB`; Ambient ducks to `0 + (-6) = -6 dB`. On VO end, both restore to the stored setting values (−6 and 0).
+**Example:** Player has Music slider at −6 dB (comfortable) and Ambient at 0 dB. VO starts during `*_suspicious`. `MusicDiegetic` ducks to `max(-6 + -10, -80) = -16 dB`; `MusicNonDiegetic` ducks to `max(-6 + -6, -80) = -12 dB`; Ambient ducks to `max(0 + -6, -80) = -6 dB`. On VO end, all restore to stored setting values (−6 and 0).
 
-### Formula 2 — Civilian bedlam-layer stacking
+**Short-VO tween interrupt edge case:** if `dialogue_line_finished` fires while the attack tween is still in progress (e.g., a 150 ms VO clip with 0.3 s attack), the release tween must start from the **current partially-ducked volume**, not from the duck target. Implementation: each attack tween stores its `Tween` handle; the finished handler kills the attack tween (if active) and spawns a release tween from the live `volume_db` value.
 
-`bedlam_boost_db = min(panic_count * 2.0, 6.0)`
-`music_non_diegetic_effective_db = base_state_db + bedlam_boost_db`
+### Formula 2 — Civilian bedlam response (diegetic recedes, non-diegetic holds)
+
+Revised 2026-04-21 re-review (game-designer + creative-director direction): the prior formula boosted `MusicNonDiegetic` by up to +6 dB on panicked civilians, which is a Pillar 1 violation — the score loudly commenting on the chaos reads as Hollywood cartoon punchline, the opposite of "comedy without punchlines." It also produced a +1 dB computed target above unity (clipping risk). The revised formula inverts the response: **the diegetic layer recedes (the quartet recoils from the crowd), the non-diegetic score barely rises (stealth cool stays unfazed).**
+
+#### Formula
+
+```
+diegetic_duck_bedlam_db    = -min(panic_count * 1.0, 3.0)          # negative — attenuation
+nondiegetic_boost_bedlam_db = min(panic_count * 0.5, 2.0)          # positive — gentle boost
+music_diegetic_effective_db    = max(base_diegetic_state_db    + diegetic_duck_bedlam_db,    -80.0)
+music_nondiegetic_effective_db = min(base_nondiegetic_state_db + nondiegetic_boost_bedlam_db,  0.0)
+```
+
+The `min(..., 0.0)` clamp on the non-diegetic layer prevents any computed target from exceeding unity — no clipping risk regardless of base state or tuning knob values.
 
 **Variables:**
 
 | Variable | Symbol | Type | Range | Description |
 |---|---|---|---|---|
 | `panic_count` | p | int | 0 to many | Number of civilians currently in panic state |
-| `bedlam_boost_db` | — | float | 0.0 to 6.0 | Additive boost to MusicNonDiegetic volume |
-| `base_state_db` | — | float | −18.0 to 0.0 | Current MusicNonDiegetic level from the state machine |
+| `diegetic_duck_bedlam_db` | — | float | −3.0 to 0.0 | Attenuation applied to `MusicDiegetic` volume (negative = quieter) |
+| `nondiegetic_boost_bedlam_db` | — | float | 0.0 to +2.0 | Additive boost applied to `MusicNonDiegetic` volume (positive = louder) |
+| `base_diegetic_state_db` | — | float | −80.0 to 0.0 | Current `MusicDiegetic` level from state machine (see §States table) |
+| `base_nondiegetic_state_db` | — | float | −18.0 to 0.0 | Current `MusicNonDiegetic` level from state machine |
 
-**Output range:** 0 panicked civilians = +0 dB boost; 1 civilian = +2 dB; 2 civilians = +4 dB; 3+ civilians = +6 dB (hard cap, prevents mix overload). Civilians returning to calm state decrement `panic_count`.
+**Output range:** 0 panicked civilians → no effect. 1 civilian → diegetic −1 dB, non-diegetic +0.5 dB. 2 civilians → diegetic −2 dB, non-diegetic +1 dB. 3+ civilians → diegetic −3 dB (hard cap), non-diegetic +2 dB (hard cap). Civilians returning to calm state decrement `panic_count`; an in-progress bedlam tween is cancelled and re-targeted per §Concurrency Policies Rule 5.
 
-**Example:** In the Restaurant during `*_suspicious` state (MusicNonDiegetic at −3 dB base), 2 civilians panic. Music boosts to `-3 + 4 = +1 dB` (above unity, but within bus headroom). Transition duration: 0.5 s ease-in.
+**Example:** In the Restaurant during `*_suspicious` state (MusicDiegetic at −6 dB base, MusicNonDiegetic at −3 dB base), 2 civilians panic. `MusicDiegetic` attenuates to `max(-6 + -2, -80) = -8 dB` (the quartet recoils); `MusicNonDiegetic` rises to `min(-3 + 1, 0) = -2 dB` (stealth cool barely inflects). Transition duration: 0.5 s ease-in. Pillar 1 preserved: the world falls apart while Eve's underscoring holds steady.
 
 ### Formula 3 — 3D spatial attenuation (engine-provided)
 
@@ -259,11 +326,16 @@ Audio has a small number of quantitative rules. All dB values are Godot's `volum
 
 ### Formula 4 — Clock-tick start/stop trigger (critical health)
 
-**Settled 2026-04-20 re-review, B6**: tempo is **fixed at 90 bpm** — the prior tempo-scaling proposal has been removed. The Open Question is closed in favor of simplicity (no per-frame tempo tracking, no PC-GDD coupling on `current_health`).
+**Settled 2026-04-20 re-review**: tempo is **fixed at 90 bpm** — the prior tempo-scaling proposal has been removed. The Open Question is closed in favor of simplicity (no per-frame tempo tracking, no PC-GDD coupling on `current_health`).
+
+Signal signature per ADR-0002:151 is `player_health_changed(current: float, max_health: float)` — both are floats at the signal boundary even if the underlying PC state is int.
 
 ```
 # Start condition — triggered on receipt of player_health_changed(current, max_health):
-health_pct = float(current) / float(max_health)  # PC stores health as int; cast to float for the percent
+if max_health <= 0.0:
+    return  # config-error guard — prevents divide-by-zero crash
+
+health_pct = current / max_health
 if health_pct < clock_tick_threshold_pct / 100.0 and not tick_playing and tick_last_stopped_age_s >= clock_tick_debounce_s:
     start_clock_tick_loop(clock_tick_bpm)  # fixed 90 bpm from Tuning Knobs
 
@@ -273,17 +345,20 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
     tick_last_stopped_age_s = 0.0  # reset debounce timer
 ```
 
+`tick_last_stopped_age_s` is initialized to `INF` at `AudioManager._ready()` — ensures the first threshold-crossing of the game is not blocked by a cold debounce.
+
 **Variables:**
 
 | Variable | Symbol | Type | Range | Description |
 |---|---|---|---|---|
-| `current` | — | int | 0 to max_health | Eve's current health (PC GDD enforces int) |
-| `max_health` | — | int | 100 (default), safe 50–200 | Eve's maximum health |
+| `current` | — | float | 0.0 to max_health | Eve's current health from `player_health_changed` signal payload |
+| `max_health` | — | float | 100.0 (default), safe 50.0–200.0 | Eve's maximum health from signal payload; values ≤ 0.0 trigger early return |
 | `health_pct` | — | float | 0.0 to 1.0 | Computed ratio |
 | `clock_tick_threshold_pct` | — | int | 25 (default), safe 10–40 | % below which loop triggers |
 | `clock_tick_debounce_s` | — | float | 1.0 default | Minimum off-time before restart |
+| `tick_last_stopped_age_s` | — | float | init `INF`; else 0.0 at stop; frame-advanced | Debounce timer accumulator |
 
-**Output**: the loop starts once when `health_pct` drops below the threshold (and debounce permits) and stops once when it rises back above. Tempo is fixed at 90 bpm from the `clock_tick_bpm` Tuning Knob; loop is pre-authored at that tempo.
+**Output**: the loop starts once when `health_pct` drops below the threshold (and debounce permits) and stops once when it rises back above. Tempo is fixed at 90 bpm from the `clock_tick_bpm` Tuning Knob; loop is pre-authored at that tempo. `max_health <= 0.0` is a guarded no-op (config-error safety).
 
 **Rationale for fixed tempo**: health-scaled tempo would couple Audio to the PC GDD's `health: int` field at per-frame read rates, add floating-point tempo tracking, and demand a variable-tempo audio asset. Fixed 90 bpm delivers the same "critical health = urgency" signal at a fraction of the implementation cost. Playtest may revisit in Tier 0.
 
@@ -308,7 +383,7 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
 
 | System | Nature |
 |---|---|
-| **Signal Bus** (system 1) | Audio subscribes to **27 events across 8 domains + Settings** (revised 2026-04-20 re-review — added Player domain 2 signals, Persistence domain 3 signals, `player_health_changed`, `document_collected`). Hard dependency — no Audio without the bus. |
+| **Signal Bus** (system 1) | Audio subscribes to **30 events across 9 gameplay domains + Settings** (revised 2026-04-21 re-review — added `section_exited`, separated Failure/Respawn from Mission, updated AI/Stealth to post-ADR-0002-amendment 4-param/3-param signatures). Hard dependency — no Audio without the bus. ADR-0002 amendment for the AI/Stealth severity parameter is a pre-implementation prerequisite. |
 | Godot 4.6 `AudioServer` + `AudioStreamPlayer`/`AudioStreamPlayer3D` | Engine dependency. Stable since 4.0. |
 | ADR-0002 (Signal Bus + Event Taxonomy) | Contract defining the events Audio consumes and the subscriber lifecycle pattern. |
 
@@ -346,17 +421,28 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
 | `music_crossfade_default_s` | 2.0 | 0.5 to 5.0 | Non-alert transitions (section enter, doc overlay restore) |
 | `alert_unaware_to_suspicious_s` | 1.5 | 0.5 to 3.0 | Slower = more grace period for player to hear shift |
 | `alert_suspicious_to_searching_s` | 0.8 | 0.2 to 2.0 | Faster = more urgent feel |
-| `alert_to_combat_s` | 0.3 | 0.1 to 1.0 | Effectively a cut; should feel abrupt |
+| `alert_to_combat_s` | 0.3 | 0.1 to 1.0 | Effectively a cut; scene-opens feel (theatre), NOT a punishment signal — see §Player Fantasy Combat transition position statement |
 | `alert_deescalate_s` | 3.0 | 1.5 to 6.0 | Slow relief; stealth exhale |
+| `respawn_fade_in_s` | 2.0 | 1.0 to 3.0 | Ease-in from silence to `*_calm` after respawn. 2.0 s reads as scene reset (Pillar 3 theatre). Lower values drift toward cinema hard-cut feel — violates Pillar 3. |
+| `respawn_silence_s` | 0.2 | 0.0 to 0.5 | Silence gap between `respawn_triggered` and the start of the fade-in. Gives the "house lights up between scenes" beat. |
 | `vo_duck_attack_s` | 0.3 | 0.1 to 0.8 | Time to reach ducked volume |
 | `vo_duck_release_s` | 0.5 | 0.2 to 1.5 | Time to restore after VO end |
 
-### Duck amounts
+### Duck amounts (state-keyed per-layer — Formula 1)
+
+Revised 2026-04-21 — flat `music_duck_db` replaced by state-keyed per-layer duck. See Formula 1 duck-depth table for the authoritative values; knobs below are the underlying configurable constants.
 
 | Parameter | Default | Safe Range | Notes |
 |---|---|---|---|
-| `music_duck_db` | −8.0 | −3.0 to −15.0 | Higher magnitude = music more suppressed during VO |
-| `ambient_duck_db` | −6.0 | −2.0 to −12.0 | Ambient duck is gentler than music duck |
+| `diegetic_duck_calm_db` | −14.0 | −10.0 to −18.0 | `MusicDiegetic` duck during `*_calm` (deep — comedy priority, quartet is loud) |
+| `diegetic_duck_suspicious_db` | −10.0 | −6.0 to −14.0 | `MusicDiegetic` duck during `*_suspicious` |
+| `diegetic_duck_searching_db` | −8.0 | −5.0 to −12.0 | `MusicDiegetic` duck during `*_searching` |
+| `diegetic_duck_combat_db` | −6.0 | −3.0 to −10.0 | `MusicDiegetic` duck during `*_combat` (layer already silent at −80 dB base) |
+| `nondiegetic_duck_calm_db` | −6.0 | −4.0 to −10.0 | `MusicNonDiegetic` duck during `*_calm` (layer is already at −12 dB bed) |
+| `nondiegetic_duck_suspicious_db` | −6.0 | −4.0 to −10.0 | `MusicNonDiegetic` duck during `*_suspicious` |
+| `nondiegetic_duck_searching_db` | −5.0 | −3.0 to −8.0 | `MusicNonDiegetic` duck during `*_searching` |
+| `nondiegetic_duck_combat_db` | −4.0 | −2.0 to −6.0 | `MusicNonDiegetic` duck during `*_combat` (lightest — score IS the alert signal) |
+| `ambient_duck_db` | −6.0 | −2.0 to −12.0 | Ambient duck (flat across states) |
 | `document_overlay_music_db` | −10.0 | −5.0 to −15.0 | Music level during document reading |
 | `document_overlay_ambient_db` | −20.0 | −10.0 to −30.0 | Ambient level during document reading (more suppressed — the world recedes) |
 
@@ -370,12 +456,16 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
 | `plaza_radio_max_distance_m` | 40.0 | 30.0 to 60.0 | **Exception** — wider range for guard-post radio chatter |
 | `plaza_radio_unit_size_m` | 6.0 | 4.0 to 10.0 | Matches the "bed with direction" hybrid decision |
 
-### Civilian bedlam
+### Civilian bedlam (revised Formula 2 — diegetic recedes, non-diegetic holds)
+
+Revised 2026-04-21 — prior +2 dB/civ non-diegetic boost with +6 dB cap was a Pillar 1 violation (score loudly commenting on chaos = Hollywood cartoon). New direction: the quartet recoils from the crowd, the stealth cool barely inflects.
 
 | Parameter | Default | Safe Range | Notes |
 |---|---|---|---|
-| `bedlam_boost_per_civilian_db` | +2.0 | +1.0 to +4.0 | Music non-diegetic boost per panicked civilian |
-| `bedlam_boost_max_db` | +6.0 | +3.0 to +10.0 | Hard cap |
+| `bedlam_diegetic_attenuation_per_civilian_db` | −1.0 | −0.5 to −2.0 | `MusicDiegetic` attenuation per panicked civilian (negative = quieter — Pillar 1: quartet recoils) |
+| `bedlam_diegetic_attenuation_max_db` | −3.0 | −1.5 to −6.0 | Diegetic attenuation hard cap (floor on the attenuation — reaches at 3 civilians by default) |
+| `bedlam_nondiegetic_boost_per_civilian_db` | +0.5 | +0.0 to +1.0 | `MusicNonDiegetic` boost per panicked civilian (gentle; preserves stealth-cool feel) |
+| `bedlam_nondiegetic_boost_max_db` | +2.0 | +0.5 to +3.0 | Non-diegetic boost hard cap. The `min(base + boost, 0.0)` ceiling in Formula 2 further constrains the effective volume — no clip risk at any boost value. |
 
 ### Critical health clock-tick
 
@@ -404,7 +494,8 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
 |---|---|---|---|---|
 | `actor_became_alerted` | Guard alert stinger — brass punch (Goldsmith-style 2-note accent, trumpet + French horn, ~500 ms) | 3D @ source | SFX | 4 |
 | `actor_lost_target` | Soft woodwind decay (clarinet tail, dry, ~800 ms) | 3D @ source | SFX | 3 |
-| `takedown_performed` | Muffled thud + fabric rustle (silenced cloth-bag impact, ~200 ms, 60–150 Hz) | 3D @ target | SFX | 2 |
+| `takedown_performed` (MELEE_NONLETHAL) | Chloroform-style soft whoosh + cloth-drape + body-slump impact (~300 ms, 80–200 Hz muffled; distinct from blade — reads as non-lethal knockout) | 3D @ target | SFX | 2 |
+| `takedown_performed` (STEALTH_BLADE) | Brief blade stroke (short leather-sheath draw + quiet stroke, no metal-ring — stealth weapon) + muffled body-drop (~250 ms, 60–150 Hz) | 3D @ target | SFX | 2 |
 | `weapon_fired` (silenced pistol) | **Period-accurate** ~110 dB suppressed pop + mechanical ratchet tick | 3D @ muzzle | SFX | 6 |
 | `weapon_fired` (dart gun) | Compressed air puff + dart whistle (~400 ms) | 3D @ muzzle | SFX | 6 |
 | `weapon_fired` (optional rifle) | Louder single-shot report + bolt action | 3D @ muzzle | SFX | 6 |
@@ -499,7 +590,7 @@ PC GDD and FC GDD cite this section as the canonical owner of the surface→SFX 
 
 | This Document References | Target | Specific Element | Nature |
 |---|---|---|---|
-| Signal Bus subscriptions | `design/gdd/signal-bus.md` + `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` | 27 signals across 8 event domains (AI/Stealth, Combat, Player, Mission, Civilian, Dialogue, Documents, Persistence) + Settings | Data dependency (Audio subscribes) |
+| Signal Bus subscriptions | `design/gdd/signal-bus.md` + `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` | 30 signals across 9 gameplay event domains (AI/Stealth, Combat, Player, Mission, Failure/Respawn, Civilian, Dialogue, Documents, Persistence) + Settings | Data dependency (Audio subscribes) — post-ADR-0002-amendment signatures |
 | Subscriber lifecycle | `design/gdd/signal-bus.md` Rule 4 + ADR-0002 Implementation Guideline 3 | `_ready()` connect / `_exit_tree()` disconnect pattern with `is_connected` guard | Rule dependency |
 | Alert state rule (music signals state, not visuals) | `feedback_visual_state_signaling` memory + `design/gdd/game-concept.md` Visual Identity Anchor | Alert state changes via music/audio, NOT lighting or color shifts | Rule dependency |
 | Audio mood per location | `design/art/art-bible.md` Section 2 | Mood targets per Plaza/Scaffolds/Restaurant/Upper Structure/Bomb Chamber | Data dependency (Audio sections realize the mood targets) |
@@ -510,66 +601,93 @@ PC GDD and FC GDD cite this section as the canonical owner of the surface→SFX 
 
 ## Acceptance Criteria
 
+Each AC is tagged with a story type ([Logic], [Integration], [Visual/Feel], [Code-Review]) and cites its test-evidence file path. Clean-renumbered 1–40 in the 2026-04-21 re-review.
+
 ### Bus + subscriber infrastructure
 
-1. **GIVEN** the project is launched, **WHEN** the `AudioServer` bus list is inspected, **THEN** five buses exist: `Music`, `SFX`, `Ambient`, `Voice`, `UI`. Each has its own effects chain (reverb on SFX is section-swappable).
-2. **GIVEN** `AudioManager.gd`, **WHEN** `_ready()` completes, **THEN** it has connected to all 27 signals from ADR-0002 listed in Section C.1 Rule 3 (8 domains + Settings). **AND** on `_exit_tree()`, it disconnects every connection with `is_connected` guards.
-3. **GIVEN** any project source file, **WHEN** grepped for `AudioStreamPlayer.new()` or `AudioStreamPlayer3D.new()` calls in `_process` or `_physics_process` or runtime non-startup code, **THEN** zero matches (pooling rule).
-4. **GIVEN** any `AudioStreamPlayer` or `AudioStreamPlayer3D` in the scene tree, **WHEN** its `bus` property is inspected, **THEN** it is one of the five named buses — never `Master`.
+1. **[Logic]** **GIVEN** the project is launched, **WHEN** the `AudioServer` bus list is inspected, **THEN** five buses exist: `Music`, `SFX`, `Ambient`, `Voice`, `UI`. Each has its own effects chain. Evidence: `tests/unit/audio/audio_bus_structure_test.gd`.
+2. **[Logic]** **GIVEN** `AudioManager.gd`, **WHEN** `_ready()` completes, **THEN** it has connected to all 30 signals from ADR-0002 listed in Section C.1 Rule 3 (9 gameplay domains + Settings). **AND** on `_exit_tree()`, it disconnects every connection with `is_connected` guards. **⚠️ Gated on ADR-0002 amendment**: the AI/Stealth signals in this count use the post-amendment 4-param / 3-param signatures; test is `skip("blocked on ADR-0002 amendment")` until the amendment lands. Evidence: `tests/unit/audio/audio_subscription_count_test.gd`.
+3. **[Code-Review]** **GIVEN** any project source file, **WHEN** grepped for `AudioStreamPlayer.new()` or `AudioStreamPlayer3D.new()` calls in `_process` or `_physics_process` or runtime non-startup code, **THEN** zero matches (pooling rule). Grep pattern: `(AudioStreamPlayer|AudioStreamPlayer3D)\.new\(\).*_process`. Evidence: `tests/ci/audio_pooling_lint.gd`.
+4. **[Code-Review]** **GIVEN** any `AudioStreamPlayer` or `AudioStreamPlayer3D` in the scene tree, **WHEN** its `bus` property is inspected, **THEN** it is one of the five named buses — never `Master`. Evidence: `tests/unit/audio/audio_no_master_bus_test.gd` (scene-tree scan at test startup).
 
 ### Music layer behavior
 
-5. **GIVEN** the game is in `plaza_calm` state (MusicDiegetic 0 dB, MusicNonDiegetic −12 dB), **WHEN** a guard transitions UNAWARE → SUSPICIOUS, **THEN** over 1.5 s linear, MusicDiegetic drops to −6 dB and MusicNonDiegetic rises to −3 dB.
-6. **GIVEN** the game is in `*_combat` state, **WHEN** the last combat-tier actor leaves combat (via `enemy_killed` or `actor_lost_target`), **THEN** over 3.0 s ease-in-out, music transitions back to `*_calm`.
-7. **GIVEN** `actor_became_alerted` fires, **WHEN** the next 120 BPM downbeat arrives (within 0.5 s), **THEN** `MusicSting` plays the brass stab SFX additively over the evolving music layer.
-8. **GIVEN** `section_entered(NEW_SECTION)` fires, **WHEN** Audio responds, **THEN** it swaps the music layer assets to the new section's preloaded streams AND swaps the `AudioEffectReverb` preset on the SFX bus.
+5. **[Logic]** **GIVEN** the game is in `plaza_calm` state (MusicDiegetic 0 dB, MusicNonDiegetic −12 dB), **WHEN** a guard transitions UNAWARE → SUSPICIOUS (via `alert_state_changed(_, UNAWARE, SUSPICIOUS, MINOR)`), **THEN** over 1.5 s linear, MusicDiegetic drops to −6 dB and MusicNonDiegetic rises to −3 dB. Evidence: `tests/unit/audio/audio_calm_to_suspicious_test.gd`.
+6. **[Logic]** **GIVEN** the game is in `*_combat` state, **WHEN** the last combat-tier actor leaves combat (via `enemy_killed` or `actor_lost_target`), **THEN** over 3.0 s ease-in-out, music transitions back to `*_calm`. Evidence: `tests/unit/audio/audio_combat_to_calm_test.gd`.
+7. **[Logic]** **GIVEN** `actor_became_alerted(_, SAW_PLAYER, pos, MAJOR)` fires, **WHEN** the pure helper `get_next_beat_offset_s(current_playback_pos, 120.0)` is computed, **THEN** the returned offset is the time until the next 120 BPM downbeat (0.0 ≤ offset < 0.5 s). Parametrized over 6 inputs: `(0.0) → 0.0`, `(0.1) → 0.4`, `(0.24) → 0.26`, `(0.5) → 0.0`, `(0.3) → 0.2`, `(0.499) → 0.001`. Helper is a pure function — unit-tested deterministically against fixed inputs without requiring a real-time scene-tree timebase. Evidence: `tests/unit/audio/audio_beat_quantization_test.gd`.
+8. **[Integration]** **GIVEN** `section_entered(NEW_SECTION)` fires, **WHEN** Audio responds, **THEN** it swaps the music layer assets to the new section's preloaded streams AND mutates the existing `AudioEffectReverb` instance on the SFX bus (in-place property update, not remove/re-add — asserted by capturing the effect node reference before/after and verifying identity). Evidence: `tests/integration/audio/audio_section_swap_test.gd`.
 
-### VO ducking
+### Severity filter + concurrency policies (new 2026-04-21)
 
-9. **GIVEN** music is playing at Music bus 0 dB, **WHEN** `dialogue_line_started` fires, **THEN** over 0.3 s, Music bus volume drops to −8 dB. **AND** on `dialogue_line_finished`, Music bus restores to 0 dB over 0.5 s.
-10. **GIVEN** VO is playing, **WHEN** the Voice bus volume is queried, **THEN** it is unducked (same as Settings configured value).
+9. **[Logic]** **GIVEN** `actor_became_alerted(_, SAW_PLAYER, pos, MINOR)` fires, **WHEN** Audio handles it, **THEN** no `MusicSting` schedule occurs — no stinger plays now, no stinger plays on the next beat. Severity-filter gate: only MAJOR stingers are scheduled. Evidence: `tests/unit/audio/audio_stinger_severity_filter_test.gd`.
+10. **[Logic]** **GIVEN** `actor_became_alerted(_, SCRIPTED, pos, MAJOR)` fires (cutscene force-alert), **WHEN** Audio handles it, **THEN** no `MusicSting` schedule occurs. SCRIPTED-cause suppression (§Concurrency Policies Rule 3). Evidence: `tests/unit/audio/audio_stinger_scripted_suppression_test.gd`.
+11. **[Logic]** **GIVEN** 3 guards fire `actor_became_alerted(_, SAW_PLAYER, pos, MAJOR)` in the same physics frame, **WHEN** Audio handles them, **THEN** exactly 1 `MusicSting` is scheduled on the upcoming downbeat. Subsequent MAJOR arrivals within the same 0.5 s window are silently discarded (§Concurrency Policies Rule 1). Evidence: `tests/unit/audio/audio_stinger_debounce_test.gd`.
+12. **[Logic]** **GIVEN** music state is already `*_suspicious` and 5 guards fire `alert_state_changed(_, UNAWARE, SUSPICIOUS, MINOR)` in one frame, **WHEN** Audio handles them, **THEN** zero new tweens are created on `MusicDiegetic`/`MusicNonDiegetic` — same-state idempotence early-returns after dict update (§Concurrency Policies Rule 2). Asserted via Tween spy: tween-creation count == 0. Evidence: `tests/unit/audio/audio_same_state_idempotence_test.gd`.
+13. **[Logic]** **GIVEN** a dominant-guard dict populated with 4 active guards, **WHEN** `section_exited(&"plaza")` fires, **THEN** the dict has 0 entries AND any in-flight alert-state tween on `MusicDiegetic`/`MusicNonDiegetic` is killed (Tween.is_valid() == false). Evidence: `tests/unit/audio/audio_section_exit_cleanup_test.gd`.
+
+### VO ducking (state-keyed per-layer, Formula 1)
+
+14. **[Logic]** **GIVEN** music state is `plaza_calm` (MusicDiegetic 0 dB, MusicNonDiegetic −12 dB), **WHEN** `dialogue_line_started` fires, **THEN** over 0.3 s: MusicDiegetic ducks to −14 dB (deep — calm-state comedy priority), MusicNonDiegetic ducks to −18 dB (already quiet bed, further suppressed by Formula 1's calm-state −6 dB duck), Ambient ducks to −6 dB. Evidence: `tests/unit/audio/audio_vo_duck_calm_test.gd`.
+15. **[Logic]** **GIVEN** music state is `plaza_combat` (MusicDiegetic −80 dB, MusicNonDiegetic 0 dB), **WHEN** `dialogue_line_started` fires, **THEN** over 0.3 s: MusicNonDiegetic ducks to −4 dB only (signal preservation — the score IS the combat alert cue), MusicDiegetic is already near-silent, Ambient ducks to −6 dB. Evidence: `tests/unit/audio/audio_vo_duck_combat_test.gd`.
+16. **[Logic]** **GIVEN** Music setting slider at −80 dB, **WHEN** `dialogue_line_started` fires in any alert state, **THEN** the computed duck target is clamped to −80 dB (not −94 or −86 — Formula 1 `max(..., -80.0)` clamp). Evidence: `tests/unit/audio/audio_vo_duck_clamp_test.gd`.
+17. **[Logic]** **GIVEN** a 150 ms VO clip with 0.3 s attack + 0.5 s release, **WHEN** `dialogue_line_finished` fires while the attack tween is still in progress, **THEN** the attack tween is killed AND the release tween starts from the live (partial) `volume_db` value, not from the duck target. Asserted via tween spy: release tween's source value equals the live volume at the kill point. Evidence: `tests/unit/audio/audio_vo_short_line_tween_interrupt_test.gd`.
+18. **[Logic]** **GIVEN** VO is playing, **WHEN** the Voice bus volume is queried, **THEN** it is unducked (same as Settings configured value). Evidence: same file as AC-14.
 
 ### Spatial SFX
 
-11. **GIVEN** 17 simultaneous `weapon_fired` events in the same frame, **WHEN** Audio handles them, **THEN** 16 play via the pool and the 17th steals the oldest non-Voice-non-UI slot. No error; no dropped SFX (the new request always plays).
-12. **GIVEN** `weapon_fired(silenced_pistol, pos, dir)` at 20 m from the listener, **WHEN** the SFX plays, **THEN** its volume is attenuated per `AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE` with `unit_size=10.0` — verifiable by measuring output dB vs source dB.
-13. **GIVEN** the player is standing in Plaza, **WHEN** they walk 40 m away from the guard post, **THEN** the guard radio chatter is at or below the `max_distance` cutoff (effectively inaudible). At 10 m away: clearly audible. At 20 m: attenuated but audible. (Direction-inferring requirement.)
+19. **[Logic]** **GIVEN** 17 simultaneous `weapon_fired` events in the same frame, **WHEN** Audio handles them, **THEN** `AudioManager.get_active_voices()` returns 16 non-idle slots AND `AudioManager.get_last_stolen_slot_id()` returns the slot index that was previously occupied the longest among non-Voice-non-UI voices. No error; no dropped SFX. Inspector API (`get_active_voices`, `get_last_stolen_slot_id`) is part of AudioManager's public interface. Evidence: `tests/unit/audio/audio_pool_steal_oldest_test.gd`.
+20. **[Logic]** **GIVEN** `weapon_fired(silenced_pistol, pos, dir)` is assigned to a pooled `AudioStreamPlayer3D`, **WHEN** the player's properties are inspected, **THEN** `attenuation_model == AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE` AND `unit_size == 10.0` AND `max_distance == 50.0`. White-box property assertion — Godot headless does not expose per-emitter output-dB measurement; this AC validates the configured attenuation contract. Evidence: `tests/unit/audio/audio_attenuation_config_test.gd`.
+21. **[Logic]** **GIVEN** the Plaza guard-post radio `AudioStreamPlayer3D`, **WHEN** its properties are inspected, **THEN** `max_distance == 40.0` AND `unit_size == 6.0` (exception values per Formula 3). AND per Godot's `ATTENUATION_INVERSE_DISTANCE` model, computed gain at 40 m == 0 (silence cutoff); computed gain at 10 m ≈ 0.6× reference (−4.4 dB); computed gain at 20 m ≈ 0.3× reference (−10.5 dB). Assertions are against the analytical model (pure-function gain computation given `unit_size`, `max_distance`, `r`), not runtime output dB. Evidence: `tests/unit/audio/audio_plaza_radio_attenuation_test.gd`.
 
 ### Settings integration
 
-14. **GIVEN** the player moves the Music volume slider to −20 dB, **WHEN** Settings emits `setting_changed("audio", "music_volume", -20.0)`, **THEN** `AudioServer.get_bus_volume_db(Music)` returns −20.0.
-15. **GIVEN** the game starts after a previous session where the player muted the Voice bus, **WHEN** `AudioManager._ready()` runs, **THEN** it reads `user://settings.cfg` and applies the stored volume to the Voice bus.
-16. **GIVEN** the clock-tick accessibility toggle is OFF, **WHEN** player health drops below 25%, **THEN** no clock-tick loop plays.
+22. **[Logic]** **GIVEN** the player moves the Music volume slider to −20 dB, **WHEN** Settings emits `setting_changed("audio", "music_volume", -20.0)`, **THEN** `AudioServer.get_bus_volume_db(Music)` returns −20.0. Evidence: `tests/unit/audio/audio_settings_volume_passthrough_test.gd`.
+23. **[Integration]** **GIVEN** the game starts after a previous session where the player muted the Voice bus, **WHEN** `AudioManager._ready()` runs, **THEN** it reads `user://settings.cfg` and applies the stored volume to the Voice bus. Evidence: `tests/integration/audio/audio_settings_restore_on_startup_test.gd`.
+24. **[Logic]** **GIVEN** the clock-tick accessibility toggle is OFF, **WHEN** player health drops below 25%, **THEN** no clock-tick loop plays. Evidence: `tests/unit/audio/audio_clock_tick_accessibility_toggle_test.gd`.
+
+### Clock-tick + health (Formula 4)
+
+25. **[Logic]** **GIVEN** `player_health_changed(24.0, 100.0)` fires (crosses threshold downward), **WHEN** `clock_tick_enabled == true` AND `tick_last_stopped_age_s >= clock_tick_debounce_s`, **THEN** the clock-tick loop starts at 90 bpm on the `UI` bus. Evidence: `tests/unit/audio/audio_clock_tick_threshold_test.gd`.
+26. **[Logic]** **GIVEN** player health oscillates across 25% within 500 ms, **WHEN** the clock-tick debounce evaluates, **THEN** the loop does not restart within 1.0 s of stopping. Evidence: `tests/unit/audio/audio_clock_tick_debounce_test.gd`.
+27. **[Logic]** **GIVEN** `player_health_changed(50.0, 0.0)` fires (config-error max_health=0), **WHEN** Formula 4 evaluates, **THEN** the handler early-returns via the `max_health <= 0.0` guard — no error is raised and the clock-tick loop does not start. Evidence: `tests/unit/audio/audio_clock_tick_max_health_zero_guard_test.gd`.
+28. **[Logic]** **GIVEN** the clock-tick loop is active AND `player_died(cause)` fires, **WHEN** Audio handles `player_died`, **THEN** the clock-tick loop stops immediately (no release tween) and the mission-failure sting plays unobstructed. Evidence: `tests/unit/audio/audio_clock_tick_stops_on_death_test.gd`.
 
 ### Edge case behavior
 
-17. **GIVEN** `player_damaged(4.0, source, false)` fires (chip damage below threshold), **WHEN** Audio handles it, **THEN** no hit SFX plays. **GIVEN** `player_damaged(10.0, source, false)`, **THEN** the hit SFX plays.
-18. **GIVEN** player health oscillates across 25% within 500 ms, **WHEN** the clock-tick debounce evaluates, **THEN** the loop does not restart within 1.0 s of stopping.
-19. **GIVEN** 3 civilians panic simultaneously, **WHEN** bedlam-boost is calculated, **THEN** `MusicNonDiegetic` is boosted by +6 dB (capped, not +6 dB × 3).
-20. **GIVEN** a `DOCUMENT_OVERLAY` state is entered during `*_combat`, **WHEN** `document_opened` fires, **THEN** music ducks to overlay levels (−10 dB / −20 dB). On `document_closed`, music returns to `*_combat` levels (if combat is still active).
+29. **[Logic]** **GIVEN** `player_damaged(4.0, source, false)` fires (chip damage below threshold), **WHEN** Audio handles it, **THEN** no hit SFX plays. **GIVEN** `player_damaged(10.0, source, false)`, **THEN** the hit SFX plays. Evidence: `tests/unit/audio/audio_chip_damage_threshold_test.gd`.
+30. **[Logic]** **GIVEN** 3 civilians panic simultaneously, **WHEN** Formula 2 evaluates, **THEN** `MusicDiegetic` attenuates by −3 dB (capped — quartet recoils) AND `MusicNonDiegetic` rises by +2 dB (capped — stealth cool barely inflects). Neither boost exceeds the caps `diegetic_duck_bedlam_db >= -3.0` and `nondiegetic_boost_bedlam_db <= +2.0`. Evidence: `tests/unit/audio/audio_bedlam_diegetic_recedes_test.gd`.
+31. **[Logic]** **GIVEN** `MusicNonDiegetic` base state is 0 dB (`*_combat`) AND 3 civilians panic, **WHEN** Formula 2's `min(..., 0.0)` ceiling evaluates, **THEN** the computed effective_db == 0.0 dB (not +2 dB). No clipping risk. Evidence: `tests/unit/audio/audio_bedlam_nondiegetic_ceiling_test.gd`.
+32. **[Logic]** **GIVEN** a `DOCUMENT_OVERLAY` state is entered during `*_combat`, **WHEN** `document_opened` fires, **THEN** music ducks to overlay levels (−10 dB / −20 dB additional). On `document_closed`, music returns to `*_combat` levels (if combat is still active). Evidence: `tests/unit/audio/audio_document_overlay_during_combat_test.gd`.
+33. **[Logic]** **GIVEN** the dominant-guard dict is populated, **WHEN** `respawn_triggered(&"plaza")` fires, **THEN** the dict is cleared AND music cuts to silence for ~200 ms then eases in to `plaza_calm` over 2.0 s. Evidence: `tests/unit/audio/audio_respawn_2s_ease_in_test.gd`.
 
-### Player domain + Persistence (added 2026-04-20 re-review)
+### Player domain + Persistence
 
-23. **GIVEN** `player_footstep(&"marble", 5.0)` fires, **WHEN** Audio handles it, **THEN** it selects the `normal` variant (3.5 < 5.0 ≤ 6.5 per `§Footstep Surface Map`) and plays `sfx_footstep_marble_normal_*` via a pooled `AudioStreamPlayer3D` at the player's position on the `SFX` bus.
-24. **GIVEN** `player_footstep(&"metal_grate", 9.0)` fires, **WHEN** Audio handles it, **THEN** it selects the `loud` variant (6.5 < 9.0 ≤ 10 per 4-bucket scheme) and plays `sfx_footstep_grate_loud_*`.
-24a. **GIVEN** `player_footstep(&"marble", 12.0)` fires (Sprint on marble), **WHEN** Audio handles it, **THEN** it selects the `extreme` variant (12.0 > 10) and plays `sfx_footstep_marble_extreme_*` — the canonical `extreme` bucket reference.
-25. **GIVEN** `player_health_changed(24.0, 100.0)` fires (crosses threshold downward), **WHEN** `clock_tick_enabled == true` AND debounce permits, **THEN** the clock-tick loop starts at 90 bpm on the `UI` bus.
-26. **GIVEN** `game_saved(1, &"plaza")` fires, **WHEN** Audio handles it, **THEN** the save-confirm chime plays on the `SFX` bus (non-spatial, ~200 ms).
-27. **GIVEN** `player_footstep` fires, **WHEN** inspected at code-review, **THEN** Stealth AI is NOT a subscriber (enforce via `forbidden_pattern` stealth_ai_subscribes_to_player_footstep).
+34. **[Logic]** **GIVEN** `player_footstep(&"marble", 5.0)` fires, **WHEN** Audio handles it, **THEN** it selects the `normal` variant (3.5 < 5.0 ≤ 6.5 per §Footstep Surface Map) and plays `sfx_footstep_marble_normal_*` via a pooled `AudioStreamPlayer3D` at the player's position on the `SFX` bus. Evidence: `tests/unit/audio/audio_footstep_variant_selection_test.gd`.
+35. **[Logic]** **GIVEN** `player_footstep(&"metal_grate", 9.0)` fires, **WHEN** Audio handles it, **THEN** it selects the `loud` variant (6.5 < 9.0 ≤ 10) and plays `sfx_footstep_grate_loud_*`. Evidence: same file as AC-34 (parametrized).
+36. **[Logic]** **GIVEN** `player_footstep(&"marble", 12.0)` fires (Sprint), **WHEN** Audio handles it, **THEN** it selects the `extreme` variant (12.0 > 10) and plays `sfx_footstep_marble_extreme_*` — canonical `extreme` bucket reference. Evidence: same file as AC-34 (parametrized).
+37. **[Logic]** **GIVEN** `game_saved(1, &"plaza")` fires, **WHEN** Audio handles it, **THEN** the save-confirm chime plays on the `SFX` bus (non-spatial, ~200 ms). Evidence: `tests/unit/audio/audio_save_chime_test.gd`.
+38. **[Logic]** **GIVEN** `takedown_performed(guard_node, eve_node, StealthAI.TakedownType.MELEE_NONLETHAL)` fires, **WHEN** Audio handles it, **THEN** `sfx_takedown_melee_nonlethal_*` plays (pooled 3D @ guard position, SFX bus). **GIVEN** `takedown_performed(guard_node, eve_node, StealthAI.TakedownType.STEALTH_BLADE)` fires, **THEN** `sfx_takedown_stealth_blade_*` plays. Parametrized. Evidence: `tests/unit/audio/audio_takedown_type_branching_test.gd`.
 
 ### Anti-pattern enforcement
 
-21. **GIVEN** any system source file, **WHEN** code-reviewed, **THEN** no system calls `AudioManager.play_music()` or similar method on Audio's autoload/node directly — all Audio behavior is triggered via `Events` signals. *Classification: code-review checkpoint.*
-22. **GIVEN** `Events.gd`, **WHEN** the signal taxonomy is inspected, **THEN** `AudioManager` does NOT re-emit any built-in Godot signals through `Events` (per ADR-0002 forbidden_pattern `reemit_engine_signals_through_bus`).
-28. **GIVEN** Audio's complete subscription list, **WHEN** compared to publishers' signal lists, **THEN** Audio does NOT subscribe to any signal it also publishes (enforce subscriber-only architectural rule — Audio publishes zero cross-system signals). Specifically Audio does NOT fire `dialogue_line_finished` despite playing the VO — that signal is emitted by Dialogue & Subtitles using VO-metadata duration fields.
+39. **[Code-Review]** **GIVEN** any system source file, **WHEN** grepped for direct method calls on AudioManager (`AudioManager\.(play_music|play_sfx|set_music_state)`), **THEN** zero matches — all Audio behavior is triggered via `Events` signals. Evidence: `tests/ci/audio_no_direct_api_lint.gd`.
+40. **[Code-Review]** **GIVEN** Audio source files, **WHEN** grepped for `(Events\.player_footstep\.connect|Events\.player_footstep\.emit|dialogue_line_finished\.emit|dialogue_line_started\.emit)` within `src/audio/`, **THEN** zero matches — Stealth AI may not subscribe to `player_footstep` via Audio (ownership enforcement), and Audio may not publish any Dialogue signal (subscriber-only invariant). Evidence: `tests/ci/audio_subscriber_only_lint.gd`.
 
 ## Open Questions
 
 | Question | Owner | Deadline | Resolution |
 |---|---|---|---|
-| ~~Clock-tick tempo: fixed or health-scaled?~~ | — | — | **Resolved 2026-04-20 re-review B6** — fixed 90 bpm. Formula 4 rewritten; tempo-scaling branch removed. |
-| ~~Should `AudioManager` be a singleton/autoload or a scene-tree Node?~~ | — | — | **Resolved 2026-04-20 re-review R1** — scene-tree Node. Settled in Detailed Design Rule 3. |
-| Should dialogue reading during active combat be possible? (Design tension flagged in Edge Cases) | Game designer + Mission & Level Scripting GDD author | During Document Overlay UI GDD authoring | Audio handles whatever rule is decided; this is a Mission/Document design question, not Audio's. |
-| Should pooled `AudioStreamPlayer3D` slot-steal apply a 50 ms fade-out ramp to prevent hard cuts? | Gameplay-programmer | Vertical Slice polish phase | MVP uses hard cut. Add fade-out if playtest reveals audible clicks. |
-| Reverb preset tuning: specific reverb parameters per section (room size, damping, wet-level) | Audio-director | Before music recording begins | Defer to audio-director's reverb-authoring pass; document final presets in `/asset-spec system:audio` output. |
-| Music streaming vs preload at scale: is 8–12 MB per section preload sustainable if Tier 2 (Rome/Vatican) adds more sections? | Audio-director + performance-analyst | Before Tier 2 development begins | Revisit when Tier 2 is scoped. MVP is comfortable within PC memory; later scaling may force stream-on-demand. |
+| ~~Clock-tick tempo: fixed or health-scaled?~~ | — | — | **Resolved 2026-04-20** — fixed 90 bpm. Formula 4 rewritten; tempo-scaling branch removed. |
+| ~~Should `AudioManager` be a singleton/autoload or a scene-tree Node?~~ | — | — | **Resolved 2026-04-20** — scene-tree Node, persistent root scene. Rule 3. |
+| ~~Bedlam response direction — score swells with panic, or diegetic recedes?~~ | — | — | **Resolved 2026-04-21 (this review)** — diegetic recedes, non-diegetic holds. Formula 2 rewritten. Pillar 1 fix. |
+| ~~SCRIPTED-cause stinger — suppress or fire?~~ | — | — | **Resolved 2026-04-21 (this review)** — suppress. Cutscene composers own their audio. §Concurrency Policies Rule 3. |
+| ~~Respawn crossfade duration — 0.5 s or longer?~~ | — | — | **Resolved 2026-04-21 (this review)** — 200 ms silence then 2.0 s ease-in. Pillar 3 theatre, not cinema hard-cut. |
+| ~~VO duck depth — flat or state-varying?~~ | — | — | **Resolved 2026-04-21 (this review)** — state-keyed per-layer table. Formula 1 rewritten. |
+| **Pre-implementation gate: ADR-0002 amendment** (AI/Stealth severity parameter + takedown_type parameter) | `technical-director` | Before first Audio or Stealth AI story is played | Owned by Stealth AI pre-impl gate #1. ADR-0002's `Events.gd` code block must carry the post-amendment 4-param / 3-param signatures matching this GDD's §Interactions tables. Runs in a separate session (`/architecture-decision adr-0002-amendment`). |
+| Stairs surface (`stairs_metal` / `stairs_stone`) — add to Footstep Surface Map at MVP or defer? | Audio-director + level-designer | Before Observation Deck or Restaurant level authoring | FootstepComponent OQ-FC-5 flagged this. Per sound-designer 2026-04-21: defer to content-production scoping pass; meanwhile stairs inherit their primary surface material (marble-plaza stairs → marble stems; restaurant stone stairs → tile stems). Revisit if playtest surfaces an auditory legibility gap. |
+| 50 Hz European grid for Paris sodium-lamp buzz (currently asset spec says ~60 Hz) | Sound-designer | Before ambient asset production begins | Period-authenticity pillar hit. Retune Plaza ambient buzz stem to 50 Hz fundamental + 100 Hz harmonic at asset-production time. No GDD-level design change; asset spec correction. |
+| Civilian vocal gasp VO ownership (casting + localization) | Audio-director + narrative-director | Before civilian AI enters content production | Crowd panic gasps ("Mon Dieu!", "Quoi?!") are neither dialogue lines nor SFX cleanly. Likely routed through Dialogue & Subtitles GDD's VO pipeline when that GDD lands. |
+| Should dialogue reading during active combat be possible? | Game designer + Mission & Level Scripting GDD author | During Document Overlay UI GDD authoring | Audio handles whatever rule is decided. |
+| Should pooled `AudioStreamPlayer3D` slot-steal apply a 50 ms fade-out ramp? | Gameplay-programmer | Vertical Slice polish phase | MVP uses hard cut. Add fade-out if playtest reveals audible clicks. |
+| Reverb preset tuning (room size, damping, wet-level per section) | Audio-director | Before music recording begins | Defer to audio-director's reverb-authoring pass; final presets documented in `/asset-spec system:audio` output. |
+| Music streaming vs preload at scale (Tier 2 Rome/Vatican) | Audio-director + performance-analyst | Before Tier 2 development begins | Revisit when Tier 2 is scoped. MVP comfortable within PC memory. |

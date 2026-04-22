@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: 2026-04-21
+last_updated: 2026-04-21   # Consistency resolution pass (2026-04-21): C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total (value 8→16, now TOTAL mag+reserve); C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total (value 4→8, now TOTAL).
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -54,6 +54,7 @@ entities:
     source: design/gdd/stealth-ai.md
     referenced_by:
       - design/gdd/stealth-ai.md
+      - design/gdd/combat-damage.md
     role: npc_antagonist
     faction: PHANTOM
     affiliation: PHANTOM_criminal_syndicate
@@ -61,16 +62,16 @@ entities:
     outline_tier: MEDIUM  # ADR-0001
     body_height_standing_m: 1.8  # taller than Eve (1.7) for visual contrast
     eye_height_m: 1.7
-    health_hp: 100  # MVP stub; Combat & Damage GDD will finalise
+    health_hp: 100  # Finalised by Combat & Damage GDD 2026-04-21 — confirmed 100 HP
     perception_channels: [sight, sound]
-    alert_states: [UNAWARE, SUSPICIOUS, SEARCHING, COMBAT, DEAD]
+    alert_states: [UNAWARE, SUSPICIOUS, SEARCHING, COMBAT, DEAD]  # PENDING: +UNCONSCIOUS (6th state) — blocked on OQ-CD-1 SAI amendment bundle (Combat & Damage GDD CR-16)
     takedowns_valid_in: [UNAWARE, SUSPICIOUS]
     patrol_speed_m_per_s: 1.2
     investigate_speed_m_per_s: 1.6
     combat_sprint_speed_m_per_s: 3.0
-    notes: "Generic antagonist archetype. Per-variant uniforms (caterer, custodian) and voice pools owned by Mission Scripting + Dialogue & Subtitles GDDs."
+    notes: "Generic antagonist archetype. Per-variant uniforms (caterer, custodian) and voice pools owned by Mission Scripting + Dialogue & Subtitles GDDs. Combat & Damage GDD (2026-04-21) confirms health_hp=100 and introduces UNCONSCIOUS alert state for dart KO (pending SAI amendment OQ-CD-1)."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-21
 
   - name: eve_sterling
     status: active
@@ -82,6 +83,7 @@ entities:
       - design/gdd/save-load.md
       - design/gdd/outline-pipeline.md
       - design/gdd/stealth-ai.md
+      - design/gdd/combat-damage.md
     role: player_character
     era: 1965
     affiliation: BQA_field_agent
@@ -153,7 +155,24 @@ items: []
 #   output_range[min, max], added
 # Optional: expression (the actual formula), notes
 
-formulas: []
+formulas:
+  - name: damage_formula
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/player-character.md    # PC F.6 consumes via apply_damage(amount, source, damage_type)
+      - design/gdd/stealth-ai.md          # SAI guards consume via receive_damage
+    variables:
+      - base_damage
+      - is_headshot
+      - target_is_guard
+      - H
+    expression: "final_damage = base_damage × H  where H = 2.0 iff (is_headshot == true AND target_is_guard == true), else H = 1.0"
+    output_range: [13, 240]   # was: [16, 240] before 2026-04-21 — corrected per combat-damage.md §F.1 self-annotation (fist_base_damage safe floor is 13, not 16).
+    notes: "Combat & Damage F.1 master damage formula. Eve's apply_damage intake and guard's receive_damage intake both consume final_damage. Headshot multiplier is computed internally in Combat BEFORE emission — enemy_damaged.amount is post-multiplier. Target_is_guard gate prevents headshot multiplier on Eve (guards always fire body-only). Min 13 = fist_base_damage safe floor; max 240 = rifle headshot (120×2)."
+    added: 2026-04-21
+    revised: 2026-04-21
 
 # Example:
 #
@@ -232,20 +251,22 @@ constants:
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 100
     unit: hp
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21   # combat-damage.md added to referenced_by (computes Eve's TTK at this baseline)
   - name: player_critical_health_threshold
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 25
     unit: hp
-    notes: "Below this, HUD shifts numeric readout to Alarm Orange (Art Bible §4.4)."
+    notes: "Below this, HUD shifts numeric readout to Alarm Orange (Art Bible §4.4). Combat & Damage GDD references this as the threshold below which Audio's clock-tick loop begins (player_health_changed subscriber)."
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21
 
   # ── Noise radii (read by Stealth AI for AI perception — CRITICAL cross-system contract) ──
   - name: player_noise_walk
@@ -381,46 +402,53 @@ constants:
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 1
     unit: layer_index
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21
   - name: collision_layer_player
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 2
     unit: layer_index
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21
   - name: collision_layer_ai
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 3
     unit: layer_index
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21
   - name: collision_layer_interactables
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 4
     unit: layer_index
+    notes: "Combat & Damage GDD: guard ammo drops spawn on this layer for pickup via PC's player_interacted raycast."
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21
   - name: collision_layer_projectiles
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/combat-damage.md
     value: 5
     unit: layer_index
+    notes: "Combat & Damage GDD: dart gun projectile RigidBody3D uses this layer."
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-21
 
   # ── Silhouette height (read by Stealth AI for line-of-sight tests) ──
   - name: player_silhouette_height_standing
@@ -522,10 +550,382 @@ constants:
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/level-streaming.md   # LS CR-11: section_bounds validation
     value: -50.0
     unit: m
     notes: "World Y below which player_died fires. Bug-recovery safety net, not gameplay."
     added: 2026-04-19
+    revised: 2026-04-21   # level-streaming.md added to referenced_by
+
+  # ── Level Streaming (fade timing, transition budget, authoring validation) ──
+  - name: fade_out_duration
+    status: active
+    source: design/gdd/level-streaming.md
+    referenced_by:
+      - design/gdd/level-streaming.md
+      - design/gdd/save-load.md   # Save/Load §Visual/Audio cites the same value
+    value: 0.3
+    unit: s
+    notes: "Fade-out tween duration on section transition. Save/Load §Visual/Audio and LS §Tuning Knobs agree. Tier 1 playtest may justify cubic ease-in; linear at MVP."
+    added: 2026-04-21
+    revised: ""
+  - name: fade_in_duration
+    status: active
+    source: design/gdd/level-streaming.md
+    referenced_by:
+      - design/gdd/level-streaming.md
+      - design/gdd/save-load.md
+    value: 0.5
+    unit: s
+    notes: "Fade-in tween duration on section transition. Asymmetric with fade_out_duration by design (slower arrival reads as confident cut)."
+    added: 2026-04-21
+    revised: ""
+  - name: load_hold_budget_ms
+    status: active
+    source: design/gdd/level-streaming.md
+    referenced_by:
+      - design/gdd/level-streaming.md
+    value: 500
+    unit: ms
+    notes: "Soft budget for the SWAPPING state (steps 5–8). If exceeded on min-spec hardware, triggers async ResourceLoader migration per OQ-LS-1."
+    added: 2026-04-21
+    revised: ""
+  - name: total_transition_budget_s
+    status: active
+    source: design/gdd/level-streaming.md
+    referenced_by:
+      - design/gdd/level-streaming.md
+    value: 1.3
+    unit: s
+    notes: "Derived: fade_out_duration + load_hold_budget_ms/1000 + fade_in_duration. Ceiling for 'transition_to_section call to player control' per AC-LS-6.1."
+    added: 2026-04-21
+    revised: ""
+  - name: fade_canvas_layer
+    status: active
+    source: design/gdd/level-streaming.md
+    referenced_by:
+      - design/gdd/level-streaming.md
+    value: 128
+    unit: layer_index
+    notes: "CanvasLayer.layer value for the fade overlay. Must be above every in-scene CanvasLayer (HUD, Document Overlay, Menu). Locked."
+    added: 2026-04-21
+    revised: ""
+  - name: kill_plane_tolerance_m
+    status: active
+    source: design/gdd/level-streaming.md
+    referenced_by:
+      - design/gdd/level-streaming.md
+    value: 5.0
+    unit: m
+    notes: "Tolerance in CR-11 assertion (section_bounds.position.y >= kill_plane_y - 5.0). Debug-build only."
+    added: 2026-04-21
+    revised: ""
+  - name: surface_meta_key
+    status: active
+    source: design/gdd/footstep-component.md   # FC introduced the key; LS consumes it
+    referenced_by:
+      - design/gdd/footstep-component.md
+      - design/gdd/level-streaming.md   # LS CR-10 authoring workflow uses set_meta(surface_meta_key, tag)
+      - design/gdd/stealth-ai.md         # SAI F.2a surface_factor reads the same meta
+    value: "surface_tag"
+    unit: string
+    notes: "Metadata key used by set_meta() on StaticBody3D at authoring time (LS CR-10) and read by FootstepComponent's raycast + Stealth AI's F.2a surface_factor. Resolves FC OQ-FC-1 via LS CR-10 authoring workflow."
+    added: 2026-04-21
+    revised: 2026-04-21   # source reassigned level-streaming → footstep-component after /consistency-check found FC owns the vocabulary
+  - name: surface_tag_default
+    status: active
+    source: design/gdd/footstep-component.md   # FC §Surface Tag Set lists &"default" as the authoritative fallback
+    referenced_by:
+      - design/gdd/footstep-component.md
+      - design/gdd/level-streaming.md
+    value: "default"
+    unit: StringName
+    notes: "Fallback surface_tag when a body has no meta. FC maps to its default audio bucket. FC GDD §Surface Tag Set is authoritative."
+    added: 2026-04-21
+    revised: 2026-04-21   # source reassigned level-streaming → footstep-component
+  - name: surface_tag_valid_set
+    status: active
+    source: design/gdd/footstep-component.md   # FC §Surface Tag Set is the authoritative 8-tag vocabulary
+    referenced_by:
+      - design/gdd/footstep-component.md
+      - design/gdd/level-streaming.md   # LS CR-10 tool plugin presets + AC-LS-4.3 validate against this set
+      - design/gdd/audio.md              # Audio §Footstep Surface Map rows correspond 1:1 with these tags
+      - design/gdd/stealth-ai.md         # Stealth AI F.2a surface_factor table keys on these same tag names
+    value: ["marble", "tile", "wood_stage", "carpet", "metal_grate", "gravel", "water_puddle", "default"]
+    unit: StringName_set
+    notes: "Authoritative 8-tag vocabulary owned by FootstepComponent §Surface Tag Set. Additive only — renaming requires coordinated FC + Audio + Stealth AI + LS update. Audio's 4-bucket loudness scheme (soft/normal/loud/extreme) is applied PER TAG, not as a replacement vocabulary. water_puddle is a special-case one-shot (no 4-bucket variants). OQ-FC-5 pending stairs tag is a future addition. CORRECTED 2026-04-21 via /consistency-check — original LS GDD draft had a 6-tag set with wrong names (stone/wood instead of marble/wood_stage; missing tile and water_puddle)."
+    added: 2026-04-21
+    revised: 2026-04-21   # value corrected + source reassigned
+
+  # ── Combat & Damage (weapon damage, head-zone detection, ammo economy, respawn floor) ──
+  # Added 2026-04-21 by combat-damage.md Phase 5b. See §D Formulas for full derivation + tuning ranges.
+  - name: silenced_pistol_base_damage
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md   # Weapon Resource schema reads from this
+    value: 34
+    unit: hp_damage
+    notes: "F.1 weapon base damage. Body TTK on 100 HP guard: 3 shots. Headshot TTK: 2 shots (68 dmg each). Safe range [28, 45]."
+    added: 2026-04-21
+    revised: ""
+  - name: silenced_pistol_takedown_damage
+    status: deprecated
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md
+    value: 100
+    unit: hp_damage
+    notes: "DEPRECATED 2026-04-21 (same day as added) per CR-3 blade-split revision — takedowns no longer route through the silenced pistol. Replaced by `blade_takedown_damage` (new stealth blade weapon) and `DamageType.MELEE_BLADE`. SAI `TakedownType.SILENCED_PISTOL` enum value also removed, replaced by `TakedownType.STEALTH_BLADE`. Entry retained for audit trail only; do NOT reference in new GDDs."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: blade_takedown_damage
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md          # SAI CR-15 delegation passes this amount via apply_damage_to_actor; TakedownType.STEALTH_BLADE routes here
+      - design/gdd/inventory-gadgets.md   # Blade weapon Resource schema (OQ-CD-11) — base_damage = 100, damage_type = DamageType.MELEE_BLADE, no magazine / no reserve
+    value: 100
+    unit: hp_damage
+    notes: "Stealth blade 1-shot-lethal takedown damage. SEPARATE from silenced_pistol_base_damage (34). Used ONLY by SAI's STEALTH_BLADE takedown path: receive_takedown(STEALTH_BLADE, attacker) → apply_damage_to_actor(guard, 100, eve, DamageType.MELEE_BLADE). Preserves 1-shot-lethal takedown contract regardless of gunfight TTK tuning. Safe range [100, 150]. Replaces silenced_pistol_takedown_damage per CR-3 revision 2026-04-21."
+    added: 2026-04-21
+    revised: ""
+  - name: dart_damage
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+    value: 150
+    unit: hp_damage
+    notes: "F.1 dart base damage. Overkill on 100 HP guard (150 > 100) ensures 1-shot KO with tuning headroom. Routes via DamageType.DART_TRANQUILISER → SAI.AlertState.UNCONSCIOUS. Safe range [100, 200]."
+    added: 2026-04-21
+    revised: ""
+  - name: rifle_base_damage
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+    value: 120
+    unit: hp_damage
+    notes: "F.1 rifle base damage. 1-shot body kill on 100 HP guard (120 > 100). Headshot = 240 (overkill). Safe range [100, 150]."
+    added: 2026-04-21
+    revised: ""
+  - name: guard_pistol_damage_vs_eve
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md          # SAI's forward-stub of guard return-fire damage
+    value: 18
+    unit: hp_damage
+    notes: "F.1 guard pistol damage applied to Eve. 5.5-hit kill at 100 HP baseline. Above PC interact_damage_cancel_threshold (10). **Tier 1 playtest-gated per OQ-CD-6** — safe range [14, 20]. Tightened from [14, 25] on 2026-04-21 to honor AC-CD-14.1 (`ceil(100/20) = 5` min hits to kill — Pillar 3 survivability invariant)."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: dart_speed_m_s
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md   # Dart Resource sets initial linear_velocity
+    value: 20.0
+    unit: m/s
+    notes: "F.4 dart projectile muzzle speed. Zero gravity, 4.0 s lifetime → 80 m max range. **Tier 1 playtest-gated per OQ-CD-8** — safe range [15, 30]."
+    added: 2026-04-21
+    revised: ""
+  - name: head_zone_radius_m
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md          # Guard scene authors Area3D on head BoneAttachment3D
+    value: 0.15
+    unit: m
+    notes: "F.5 headshot detection SphereShape3D radius on Area3D child of BoneAttachment3D(bone: head). ~17% of guard 1.8 m standing height. **Tier 1 playtest-gated per OQ-CD-10** — safe range [0.10, 0.20]."
+    added: 2026-04-21
+    revised: ""
+  - name: head_zone_y_offset_m
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md
+    value: 1.65
+    unit: m
+    notes: "F.5 Area3D center Y offset relative to guard root origin. Bone-attached via BoneAttachment3D; value preserves compatibility with phantom_guard.eye_height_m (1.7 − 0.05 = crown-of-head). Safe range [1.55, 1.75]."
+    added: 2026-04-21
+    revised: ""
+  - name: pistol_magazine_size
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/hud-core.md            # HUD ammo counter reads this
+    value: 8
+    unit: rounds
+    notes: "F.6 pistol magazine capacity. Paired with ~2.5 shots/s fire rate → 3.2 s to empty. Safe range [6, 12]."
+    added: 2026-04-21
+    revised: ""
+  - name: pistol_starting_reserve
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+    value: 32   # was: 16 before 2026-04-21 — revised per combat-damage.md §F.7 to cover Aggressive-player depletion through Section 4–5 without forcing cache reliance.
+    unit: rounds
+    notes: "F.6 pistol starting reserve. 4× magazine ratio. Aggressive playthrough goes dry by Section 4–5 (was Section 3 at value=16). Safe range [16, 48]."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: dart_magazine_size
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+    value: 4
+    unit: darts
+    notes: "F.6 dart gun magazine capacity. Deliberately small — each trigger pull is a considered choice. Safe range [3, 6]."
+    added: 2026-04-21
+    revised: ""
+  - name: dart_starting_reserve
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+    value: 16   # was: 8 before 2026-04-21 — revised per combat-damage.md §F.7 to absorb ~20% dart-pickup miss rate and keep Ghost path viable without fist-KO reliance.
+    unit: darts
+    notes: "F.6 dart gun starting reserve. 4× magazine ratio. Pillar 2 premium still paid (dart economy remains break-even per guard_drop_dart_on_dart_ko=1, guard_drop_dart_on_fist_ko=0). Safe range [8, 24]."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: rifle_magazine_size
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+    value: 3
+    unit: rounds
+    notes: "F.6 rifle magazine capacity. Pickup-only weapon; not in starting inventory. Safe range [2, 5]."
+    added: 2026-04-21
+    revised: ""
+  - name: rifle_pickup_reserve
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/level-streaming.md      # Section 3 + 5 placed rifle pickups
+      - design/gdd/mission-level-scripting.md   # Pickup placement authoring
+    value: 6
+    unit: rounds
+    notes: "F.6 rifle pickup standard reserve (per placed pickup). 2× magazine ratio. Safe range [3, 9]."
+    added: 2026-04-21
+    revised: ""
+  - name: guard_drop_pistol_rounds
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md          # Guards spawn drops on death
+    value: 8
+    unit: rounds
+    notes: "F.6 guard drop amount when killed lethally while carrying silenced pistol. Safe range [4, 12]."
+    added: 2026-04-21
+    revised: ""
+  - name: guard_drop_rifle_rounds
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md
+    value: 3
+    unit: rounds
+    notes: "F.6 guard drop amount when killed lethally while carrying rifle. Intentionally partial (< magazine) to keep rifle scarce. Safe range [1, 5]."
+    added: 2026-04-21
+    revised: ""
+  - name: guard_drop_dart_ko_rounds
+    status: deprecated
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md
+    value: 1
+    unit: darts
+    notes: "DEPRECATED 2026-04-21 (same day as added) — the original single-knob version treated dart-KO and fist-KO identically (both dropped 1 dart), leaving a fist-farm loop open (fists cost 0, drop 1 = net +1 per KO). Split into two knobs per combat-damage.md §F.1 anti-farm invariant: guard_drop_dart_on_dart_ko = 1 (break-even) and guard_drop_dart_on_fist_ko = 0 (no farm). Entry retained for audit trail only."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: guard_drop_dart_on_dart_ko
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md          # Guards spawn drops on non-lethal KO
+    value: 1
+    unit: darts
+    notes: "**ANTI-FARM INVARIANT: MUST == 1 exactly** (locked range {1}). F.6 dart drop when guard is KO'd via dart. Break-even: KO'ing a guard via dart costs 1 dart and yields 1 dart → net 0. Growing dart reserves requires placed caches (Pillar 2 enforcement). Values > 1 open the dart-farm exploit."
+    added: 2026-04-21
+    revised: ""
+  - name: guard_drop_dart_on_fist_ko
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/stealth-ai.md
+    value: 0
+    unit: darts
+    notes: "**ANTI-FARM INVARIANT: MUST == 0 exactly** (locked range {0}). F.6 dart drop when guard is KO'd via fists. Closes the fist-farm loop: fists cost 0 ammo, so any dart drop from fist-KO would be net-positive dart gain. Fixed at 0 per Pillar 2 ammo scarcity (economy-designer + systems-designer finding)."
+    added: 2026-04-21
+    revised: ""
+  - name: respawn_ammo_floor_pistol
+    status: deprecated
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/failure-respawn.md
+    value: 8
+    unit: rounds
+    notes: "DEPRECATED 2026-04-21 (same day as added) — magazine-vs-total-reserve ambiguity caused confusion in §D.1 vs §F.7. RENAMED to respawn_floor_pistol_total with TOTAL (magazine + reserve) semantics (value 8 → 16). Entry retained for audit trail only."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: respawn_ammo_floor_dart
+    status: deprecated
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/failure-respawn.md
+    value: 4
+    unit: darts
+    notes: "DEPRECATED 2026-04-21 — RENAMED to respawn_floor_dart_total with TOTAL (magazine + reserve) semantics (value 4 → 8). Entry retained for audit trail only."
+    added: 2026-04-21
+    revised: 2026-04-21
+  - name: respawn_floor_pistol_total
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/failure-respawn.md      # Failure & Respawn applies the floor at restore
+    value: 16
+    unit: rounds
+    notes: "F.6 minimum pistol TOTAL ammo (magazine + reserve) on respawn: `restored = max(snapshot_total, floor)` then clamped to [0, pistol_max_reserve]. 1 full magazine (8) + 1 reserve refill (8) = 16 total. Applied ONLY on first death per checkpoint (floor_applied_this_checkpoint flag prevents spend-and-die farm). Prevents softlock without enabling farm. Safe range [8, 32]. Replaces respawn_ammo_floor_pistol (magazine-only ambiguity resolved)."
+    added: 2026-04-21
+    revised: ""
+  - name: respawn_floor_dart_total
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md
+      - design/gdd/failure-respawn.md
+    value: 8
+    unit: darts
+    notes: "F.6 minimum dart TOTAL ammo (magazine + reserve) on respawn. 1 full magazine (4) + 1 reserve refill (4) = 8 total. Same anti-farm per-checkpoint gating as pistol floor. Safe range [4, 16]. Replaces respawn_ammo_floor_dart."
+    added: 2026-04-21
     revised: ""
 
 # Example:

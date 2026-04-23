@@ -30,7 +30,7 @@
 #   Superseded entries:     Grep pattern="status: superseded"
 
 version: 1
-last_updated: "2026-04-19"
+last_updated: "2026-04-22"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -121,10 +121,31 @@ interfaces:
       - save-load-system
       - settings-and-accessibility-system
     adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
-    signal_signature: "32 typed signals declared on Events.gd autoload (subject_verb_past naming, qualified enum types). See ADR-0002 Key Interfaces for the full taxonomy."
+    signal_signature: "36 typed signals declared on Events.gd autoload (subject_verb_past naming, qualified enum types). 2026-04-22 OQ-CD-1 SAI amendment revised 5 signatures: 3 perception signals (alert_state_changed, actor_became_alerted, actor_lost_target) grew a StealthAI.Severity param; takedown_performed grew from (actor, target) to (actor, attacker, StealthAI.TakedownType); player_died payload type renamed CombatSystem.DeathCause → CombatSystemNode.DeathCause. 2026-04-22 4th-pass LS + SAI amendment added 2 new AI/Stealth signals (guard_incapacitated(guard: Node) fires on UNCONSCIOUS or DEAD entry for cross-guard body-tracking-set unregistration; guard_woke_up(guard: Node) fires once when WAKE_UP_SEC timer expires on an UNCONSCIOUS guard — both one-shot per guard per session) AND grew section_entered + section_exited with a LevelStreamingService.TransitionReason 2nd param (FORWARD / RESPAWN / NEW_GAME / LOAD_FROM_SAVE; LevelStreamingService is the sole emitter). Enum-ownership list gained LevelStreamingService.TransitionReason (class_name LevelStreamingService, autoload load-order 4). See ADR-0002 Key Interfaces for the full taxonomy."
     referenced_by:
       - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
     added: 2026-04-19
+    revised: 2026-04-22  # OQ-CD-1 SAI amendment bundle (5 signature revisions); 4th-pass LS + SAI amendment bundle (2 new AI/Stealth signals guard_incapacitated + guard_woke_up; LevelStreamingService.TransitionReason 2nd param on section_entered/exited; 34 → 36 signals total)
+
+  - contract: sai_public_accessors
+    status: active
+    pattern: direct_call
+    producer: stealth-ai-system
+    consumers:
+      - combat-and-damage-system
+    adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    signal_signature: |
+      # Methods on class StealthAI extends Node — called on specific guard instances.
+      # Declared under ADR-0002's `Accessor Conventions (SAI → Combat)` subsection (2026-04-22).
+      # Principled exemption from autoload_singleton_coupling: per-instance, read-only,
+      # owner-published, stale-safe. NOT invoked via autoload shortcut.
+      StealthAI.has_los_to_player() -> bool             # F.1 cache-hit path; 10 Hz stale-safe; no raycast
+      StealthAI.takedown_prompt_active(attacker: Node) -> bool  # state ∈ {UNAWARE, SUSPICIOUS} AND rear 180° half-cone AND ≤ 1.5 m AND no LOS; read-only
+      # Fence: no new accessors under this convention without an ADR-0002 amendment
+      # documenting owner, consumer(s), staleness window, and read-only justification.
+    referenced_by:
+      - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+    added: 2026-04-22
     revised: ""
 
   - contract: save_load_service_api

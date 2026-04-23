@@ -143,3 +143,117 @@ User elected "Accept revisions and mark Approved — skip re-review" at the post
 - `design/gdd/stealth-ai.md` (this GDD — 21 blockers + 15+ advisories resolved)
 - `design/gdd/systems-index.md` (System 10 row → Approved 2026-04-21; header status line updated)
 - `design/gdd/reviews/stealth-ai-review-log.md` (this log — 2nd-pass entry)
+
+---
+
+## Review — 2026-04-22 (3rd pass, OQ-CD-1 amendment bundle + 4th-pass revision) — Verdict: MAJOR REVISION NEEDED → revised inline → user accepted without re-review
+
+Scope signal: L
+Specialists: ai-programmer, systems-designer, qa-lead, game-designer, godot-specialist, performance-analyst, audio-director, creative-director (senior synthesis)
+Blocking items: 23 | Recommended: 22+ | Nice-to-have: several
+Prior verdict resolved: Yes — 2nd-pass 21 blockers confirmed resolved. BUT the 3rd-pass OQ-CD-1 amendment bundle (UNCONSCIOUS state + receive_damage return contract + TakedownType enum + public accessors + synchronicity + approach-vector capture) introduced 23 NEW blockers (revision-introduces-regressions antipattern explicitly flagged by creative-director for the 2nd time).
+
+### Summary of key findings (creative-director REJECT synthesis)
+
+> **REJECT.** The 3rd pass was correctly scoped to OQ-CD-1 closure, but 23 blockers — including falsifiable math errors (F.1 max 5.4 vs 6.0, F.2b single-spike arithmetic), a tonally-incoherent player choice (UNCONSCIOUS false-choice + Transitional execution edge), a specialist contradiction (godot-specialist vs ai-programmer on `monitoring = false` behavior), and audio-gate scope gaps — does not meet the bar for any re-review. **The revision-introduces-regressions antipattern is continuing** with reduced blast radius but unchanged ratio per amendment. Two blockers (UNCONSCIOUS false-choice + Transitional edge) are pillar-level violations — no textual cleanup fixes a feature that lies to the player about its own tone. Procedural fix required: Pass 4 must add a mandatory "touch-map" step (trace every amendment through all 8 sections) and a formula re-verification checklist (inline worked boundary tables).
+
+### Convergent blockers (cited by ≥2 specialists)
+
+1. **`monitoring = false` factual claim** (godot-specialist B-1 vs ai-programmer B-1) — DIRECT SPECIALIST DISAGREEMENT. CD adjudication: godot-specialist correct (body_exited does NOT fire on toggle per Godot 4.x). Underlying ai-programmer concern resolved via new `guard_incapacitated(guard)` unregistration protocol.
+2. **AC-SAI-4.4 + AC-SAI-3.9 unimplementable ACs** (godot-specialist B-2, qa-lead B-3 + B-5) — `PhysicsDirectSpaceState3D.intersect_ray` cannot be monkey-patched; GUT cannot isolate per-subsystem frame time. Resolved via RaycastProvider DI interface + custom profiling harness.
+3. **UNCONSCIOUS false-choice** (game-designer B-1) — functionally identical to DEAD ship state. User-approved resolution: add wake-up clock mechanism (WAKE_UP_SEC = 45 s).
+
+### Blockers (all resolved inline in this 4th-pass revision)
+
+**Pillar-level (2):**
+- B1 UNCONSCIOUS false-choice [game-designer] → wake-up mechanism added (user-approved option B).
+- B2 Transitional UNCONSCIOUS → DEAD tonal incoherence [game-designer] → PRESERVED per user override ("Change so people can die. It's OK, it's just a game") — user accepted tonal cost; now load-bearing counterplay against wake-up.
+
+**Factual / arithmetic (3):**
+- B3 F.1 max 5.4 vs 6.0 [systems-designer] → corrected; worked math inlined; timing 0.37 s → 0.33 s.
+- B4 F.2b single-spike impossibility claim [systems-designer] → scoped to "with zero prior sight" + combined-score edge case documented.
+- B5 AC-SAI-1.3 edge count 18 vs 17 [ai-programmer R-3] → corrected to 19 with wake-up edge.
+
+**Godot API / implementability (4):**
+- B6 `monitoring = false` rationale wrong [godot-specialist] → corrected; new `guard_incapacitated` unregistration protocol.
+- B7 `_perception_cache` undeclared [ai-programmer] → struct spec inline in F.1.
+- B8 `takedown_prompt_active` boundary ambiguity [ai-programmer] → `dot ≤ 0 = rear` inclusive + zero-distance guard.
+- B9 F.4 UNCONSCIOUS/DEAD as propagation source [ai-programmer] → formal invariant + debug assert.
+
+**Spec gaps (2):**
+- B10 Save-format split-brain [ai-programmer] → §Interactions row reconciled with §Death-and-save-state (+wake-up fields).
+- B11 E.16 signal interleaving unspecified [ai-programmer] → explicit 9-step ordering + subscriber state-visibility guarantee.
+
+**QA / testability (5):**
+- B12 AC-SAI-1.7 missing FALL_OUT_OF_BOUNDS [qa-lead] → rows 5 → 7 (adds BULLET/MELEE_BLADE/FALL_OUT_OF_BOUNDS lethal + DART/FIST non-lethal).
+- B13 AC-SAI-1.3 SCRIPTED-path coverage [qa-lead] → force_alert_state forbidden edges parametrized.
+- B14 AC-SAI-1.11 spy-proxy implementability [qa-lead] → pre-connect-lambda pattern replaces spy-proxy.
+- B15 AC-SAI-3.3 skip() no gate [qa-lead] → producer-tracked named sprint item "SAI-ADR-0002-Amendment" + `pending()` marker + merge gate.
+- B16 AC-SAI-4.4 GUT cannot isolate sub-budgets [qa-lead] → custom profiling harness spec + 4 test env pins (Jolt physics backend, Plaza NavMesh baseline, 3 dead guards spawned, min-spec CPU).
+
+**Raycast DI (1):**
+- B17 AC-SAI-3.9 raycast monkey-patch [godot-specialist] → `IRaycastProvider` DI interface declared in F.1 + `CountingRaycastProvider` test double; AC rewritten.
+
+**Performance budget (2):**
+- B18 Dead-body raycasts unbudgeted [performance-analyst] → budget re-derived; worst case 4 raycasts/guard (Eve + 3 corpses) = 48 raycasts/frame documented.
+- B19 Geometry complexity assumption [performance-analyst] → Plaza NavMesh pinned as perf baseline; test env pin in AC-SAI-4.4.
+
+**Audio integration (4):**
+- B20 UNCONSCIOUS music state routing [audio-director] → Audio gate item (g) added.
+- B21 UNCONSCIOUS → DEAD transitional music + SFX conditional [audio-director] → Audio gate item (h) + prone-variant `enemy_killed` SFX.
+- B22 Damage-path UNCONSCIOUS chloroform SFX suppression [audio-director] → Audio gate item (i).
+- B23 Audio gate scope incomplete [audio-director] → expanded 6 → 10 items; new `guard_woke_up` signal + wake music cue + ambient breathing item (j).
+
+### Recommended items resolved (selected — 15+ of 22)
+
+- body_factor for UNCONSCIOUS vs DEAD [ai-programmer R-1] → body_factor decay 2.0→1.0 across wake window differentiates.
+- E.20 approach_vector visual artifact [ai-programmer R-2] → flagged as known MVP compromise; upgrade deferred to VS.
+- receive_damage on DEAD no-HP-mutation [ai-programmer R-4] → AC-SAI-1.7(e) asserts explicitly.
+- `TAKEDOWN_RANGE_M` to Tuning Knobs [ai-programmer R-5] → added (+`WAKE_UP_SEC`, `CORPSE_MOVEMENT_FACTOR`).
+- has_los_to_player cold-start 1-frame latency [ai-programmer R-6] → documented as accepted behaviour.
+- movement_factor for dead guard target [systems-designer R-1] → `CORPSE_MOVEMENT_FACTOR = 0.3` declared.
+- F.4 `PROPAGATION_BUMP` safe-range gap [systems-designer R-2] → narrowed to [0.41, 0.6] to enforce invariant.
+- receive_damage negative/overkill contract [systems-designer R-3] — partially addressed in Combat dep row (amount type + routing is type-based).
+- AC-SAI-3.9 mid-destruction case [qa-lead R-1] → scenario (e) added.
+- AC-SAI-3.10 all-negative multi-dim [qa-lead R-2] → scenario (g) added.
+- AC-SAI-5.3(c) takedown_type + terminal_cause schema distinctness [qa-lead R-3] → explicit assertion + load-bearing note.
+- AC-SAI-4.3 Item 3 subjective measurement [qa-lead R-4] → objective video-capture + automated animation-player assertion.
+- AC-SAI-4.3 Item 8 self-report hedge [qa-lead R-5] → 3-tier verdict with audit trail.
+- Missing AC terminal_cause enum [qa-lead R-6] → AC-SAI-1.13 NEW.
+- Missing AC approach_vector E.23 [qa-lead R-7] → AC-SAI-1.14 NEW.
+- CURIOSITY_BAIT visual timing [game-designer R-1] → OQ-SAI-10 added.
+- Takedown UX diegetic cue ownership [game-designer R-2] → Combat GDD forward-dep strengthened as gate item (4).
+- 24 s COMBAT recovery foreclosed timer-shorten [game-designer R-3] → restored as secondary fix in `SEARCH_TIMEOUT_SEC` knob note.
+- One-hop propagation 3+-guard rooms [game-designer R-4] → OQ-SAI-9 added.
+- Jolt pinning in perf test [godot-specialist R-1] → test env pin in AC-SAI-4.4.
+- NavigationServer3D async unspecified [performance-analyst R-1] → async asserted + forbidden-pattern grep in AC-SAI-3.12.
+- Max-spike vsync-drop [performance-analyst R-2] → documented as accepted in AC-4.4.a.
+- Signal dispatch boundary [performance-analyst R-3] → subscriber handler cost excluded from SAI sub-budget.
+
+### Nice-to-have landed
+
+- `dead_guard` group unification test — AC-SAI-3.11 NEW.
+- Forbidden-pattern grep (`player_footstep`, `NavigationServer3D.map_get_path`, `call_deferred`) — AC-SAI-3.12 NEW.
+
+### Resolution approach — user accepted without re-review (3rd consecutive acceptance-without-re-review)
+
+User elected "Accept revisions and mark Approved — skip re-review" at the post-revision closing widget. CD had recommended fresh-session `/design-review` pass given the 3rd pass produced 23 fresh blockers and this is the 3rd consecutive GDD acceptance without a fresh re-review (pattern flagged at each prior pass). Risk acknowledged: if this 4th-pass revision itself introduced regressions (pattern repeats), they will be caught during implementation or at `/story-readiness` gates rather than at design-review time. Mitigation: the 5 pre-implementation gates above act as a secondary correctness check before any story exercises stealth-AI code.
+
+### Key design decisions (user-approved)
+
+1. **UNCONSCIOUS + wake-up clock** (not remove-chloroform) — keeps non-lethal gameplay option; adds mechanical consequence. `WAKE_UP_SEC = 45 s` safe range 30-60.
+2. **Transitional UNCONSCIOUS → DEAD preserved** — user override on CD tonal concern; player-choice that "some people die" accepted as project tone.
+3. **RaycastProvider DI interface** — coding-standards-compliant DI over singletons.
+4. **Combat owns Takedown UX cue** — forward-dep strengthened; Combat GDD spec authoritative.
+
+### File size
+
+- Before 4th revision: 786 lines
+- After 4th revision: 924 lines (+138, +17%)
+
+### Artifacts touched
+
+- `design/gdd/stealth-ai.md` (this GDD — 23 blockers + 15+ recommended resolved, 5 new ACs, 2 new OQs, wake-up mechanism added, RaycastProvider DI declared, signal catalog expanded by 2)
+- `design/gdd/systems-index.md` (Row 10 rewritten → Approved 2026-04-22 4th pass; header status line updated with running changelog entry; orphaned 10-OLD row cleaned up)
+- `design/gdd/reviews/stealth-ai-review-log.md` (this log — 4th-pass entry)
+- `production/session-state/active.md` (to be updated on session close)

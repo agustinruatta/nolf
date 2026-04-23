@@ -14,7 +14,7 @@ Signal Bus is the project's typed event hub — a single autoload (`Events.gd`) 
 
 ## Overview
 
-The Signal Bus is a Foundation-layer infrastructure system. Players never engage with it directly — they engage with its consequences: alert-state music transitions that fire reliably when guards spot Eve, HUD values that update the moment Eve takes damage, document-pickup notifications that appear without delay or duplication. Without a Signal Bus, every system that needs to react to another system's events would either hold direct references to those systems (tight coupling that breaks reorganization), reach into autoload singletons by name to call methods (the autoload-singleton-coupling anti-pattern), or wire signals at scene level (fragile against scene structure changes). Signal Bus replaces all three failure modes with one rule: cross-system events go through `Events.gd`, declared once, consumed by anyone. The full event taxonomy (**34 typed signals across 9 gameplay domains — AI/Stealth, Combat, Player, Inventory, Documents, Mission, Failure & Respawn, Civilian, Dialogue — plus 2 infrastructure domains, Persistence and Settings**; revised 2026-04-20 after ADR-0002 Player-domain amendment of 2026-04-19), the autoload registration order, the subscriber lifecycle pattern, the enum ownership rule, and the 5 forbidden patterns that fence Signal Bus against drift are all specified in ADR-0002. This GDD describes the design-level *why* and the acceptance criteria; ADR-0002 is the implementation contract.
+The Signal Bus is a Foundation-layer infrastructure system. Players never engage with it directly — they engage with its consequences: alert-state music transitions that fire reliably when guards spot Eve, HUD values that update the moment Eve takes damage, document-pickup notifications that appear without delay or duplication. Without a Signal Bus, every system that needs to react to another system's events would either hold direct references to those systems (tight coupling that breaks reorganization), reach into autoload singletons by name to call methods (the autoload-singleton-coupling anti-pattern), or wire signals at scene level (fragile against scene structure changes). Signal Bus replaces all three failure modes with one rule: cross-system events go through `Events.gd`, declared once, consumed by anyone. The full event taxonomy (**36 typed signals across 9 gameplay domains — AI/Stealth, Combat, Player, Inventory, Documents, Mission, Failure & Respawn, Civilian, Dialogue — plus 2 infrastructure domains, Persistence and Settings**; revised 2026-04-20 after ADR-0002 Player-domain amendment of 2026-04-19; further revised 2026-04-22 after the 4th-pass LS + SAI ADR-0002 amendment added `guard_incapacitated` + `guard_woke_up` to AI/Stealth and grew `section_entered` / `section_exited` with a `reason: LevelStreamingService.TransitionReason` 2nd param), the autoload registration order, the subscriber lifecycle pattern, the enum ownership rule, and the 5 forbidden patterns that fence Signal Bus against drift are all specified in ADR-0002. This GDD describes the design-level *why* and the acceptance criteria; ADR-0002 is the implementation contract.
 
 ## Player Fantasy
 
@@ -51,12 +51,12 @@ The full 34-signal taxonomy is documented in **ADR-0002 Key Interfaces**. The GD
 
 | Domain | Canonical signals | Primary publisher | Has Node payloads? |
 |---|---|---|---|
-| **AI / Stealth** | `alert_state_changed`, `actor_became_alerted`, `actor_lost_target`, `takedown_performed` | Stealth AI | **Yes** |
+| **AI / Stealth** | `alert_state_changed`, `actor_became_alerted`, `actor_lost_target`, `takedown_performed`, `guard_incapacitated` *(added 4th-pass 2026-04-22)*, `guard_woke_up` *(added 4th-pass 2026-04-22)* | Stealth AI | **Yes** |
 | **Combat** | `player_damaged`, `player_health_changed`, `enemy_damaged`, `enemy_killed`, `weapon_fired`, `player_died` | Combat & Damage (player_*) / Stealth AI (enemy_*) / Inventory (weapon_fired) | **Yes** |
 | **Player** *(added 2026-04-19)* | `player_interacted`, `player_footstep` | Player Character | `player_interacted` has Node3D payload; `player_footstep` = StringName + float (no Node) |
 | **Inventory** | `gadget_equipped`, `gadget_used`, `weapon_switched`, `ammo_changed` | Inventory & Gadgets | No (StringName + ints + Vector3) |
 | **Documents** | `document_collected`, `document_opened`, `document_closed` | Document Collection | No (StringName) |
-| **Mission** | `objective_started`/`completed`, `section_entered`/`exited`, `mission_started`/`completed` | Mission & Level Scripting | No (StringName) |
+| **Mission** | `objective_started`/`completed`, `section_entered`/`exited` (both gained a `reason: LevelStreamingService.TransitionReason` 2nd param 4th-pass 2026-04-22; `LevelStreamingService` is the sole emitter per level-streaming.md CR-2), `mission_started`/`completed` | Mission & Level Scripting (objective_* + mission_*); LevelStreamingService (section_entered/exited) | No (StringName + enum on section signals) |
 | **Failure & Respawn** | `respawn_triggered` | Failure & Respawn | No (StringName) |
 | **Civilian** | `civilian_panicked`, `civilian_witnessed_event` | Civilian AI | **Yes** |
 | **Dialogue** | `dialogue_line_started`, `dialogue_line_finished` | Dialogue & Subtitles | No (StringName) |
@@ -114,8 +114,8 @@ Signal Bus has **no upstream dependencies** — it is a Foundation-layer system 
 | System | Direction | Nature of Dependency |
 |---|---|---|
 | Audio (system 3) | Audio → Signal Bus | Subscribes to AI/Stealth + Combat + Mission + Civilian + Dialogue domains. Carries the alert-state-via-music rule. |
-| Stealth AI (system 10) | Stealth AI → Signal Bus | **Publishes** AI/Stealth domain (`alert_state_changed`, `actor_became_alerted`, `takedown_performed`). Subscribes to Combat + Mission. **Owns** `StealthAI.AlertState` and `StealthAI.AlertCause` enums. |
-| Combat & Damage (system 11) | Combat → Signal Bus | **Publishes** Combat domain. Subscribes to AI + Mission. **Owns** `CombatSystem.DeathCause` enum. |
+| Stealth AI (system 10) | Stealth AI → Signal Bus | **Publishes** AI/Stealth domain (`alert_state_changed`, `actor_became_alerted`, `actor_lost_target`, `takedown_performed`; plus `guard_incapacitated(guard: Node)` and `guard_woke_up(guard: Node)` added 4th-pass 2026-04-22 via ADR-0002 amendment). Subscribes to Combat + Mission. **Owns** `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, and `StealthAI.TakedownType` enums (last two added 2026-04-22 via ADR-0002 amendment for OQ-CD-1 SAI bundle). Also publishes two SAI-owned read accessors per ADR-0002 `Accessor Conventions (SAI → Combat)`: `has_los_to_player() -> bool` and `takedown_prompt_active(attacker: Node) -> bool`. `guard_incapacitated` fires on UNCONSCIOUS or DEAD entry (cross-guard dead-body tracked-bodies-set unregistration); `guard_woke_up` fires once when `WAKE_UP_SEC` timer expires on an UNCONSCIOUS guard (SUSPICIOUS transition). |
+| Combat & Damage (system 11) | Combat → Signal Bus | **Publishes** Combat domain. Subscribes to AI + Mission. **Owns** `CombatSystemNode.DamageType` and `CombatSystemNode.DeathCause` enums (class_name `CombatSystemNode`, autoload key `Combat` — intentional split per combat-damage.md §350, mirroring `SignalBusEvents` / `Events`). |
 | Inventory & Gadgets (system 12) | Inventory → Signal Bus | **Publishes** Inventory domain. |
 | Document Collection (system 17) | Documents → Signal Bus | **Publishes** Documents domain. Subscribes to Mission. |
 | Mission & Level Scripting (system 13) | Mission → Signal Bus | **Publishes** Mission domain. Subscribes to AI + Combat + Documents + Failure. The orchestrator. |
@@ -176,7 +176,7 @@ Future signals added to the bus may introduce tuning knobs in their owning syste
 
 1. **GIVEN** the project is launched, **WHEN** the autoload list is inspected via `get_tree().root.get_children()`, **THEN** `Events` (load order 1) is present, and `EventLogger` (load order 2) is present in debug builds and absent in release builds.
 2. **GIVEN** `Events.gd` source file, **WHEN** linted/grepped for `func `, `var `, or `const ` declarations (excluding the `class_name` and `extends` header), **THEN** zero matches (per ADR-0002 forbidden_pattern `events_with_state_or_methods`).
-3. **GIVEN** the 34 signals defined in ADR-0002, **WHEN** `Events.gd` is parsed, **THEN** every signal in ADR-0002's Key Interfaces is declared with the exact signature (name, parameter types, parameter order). The Player domain (`player_interacted`, `player_footstep`) is included in this count per the 2026-04-19 ADR-0002 amendment.
+3. **GIVEN** the 36 signals defined in ADR-0002, **WHEN** `Events.gd` is parsed, **THEN** every signal in ADR-0002's Key Interfaces is declared with the exact signature (name, parameter types, parameter order). The Player domain (`player_interacted`, `player_footstep`) is included in this count per the 2026-04-19 ADR-0002 amendment; the 2 AI/Stealth additions (`guard_incapacitated`, `guard_woke_up`) are included per the 2026-04-22 4th-pass amendment; `section_entered` / `section_exited` signatures MUST include the `reason: LevelStreamingService.TransitionReason` 2nd param.
 
 ### Dispatch behavior
 
@@ -204,7 +204,7 @@ Future signals added to the bus may introduce tuning knobs in their owning syste
 
 ### Schema integrity (Rule 5 + taxonomy fence)
 
-13. **GIVEN** `Events.gd` source file, **WHEN** grepped for `enum `, **THEN** zero matches (enums are owned by the system that owns the concept — `StealthAI.AlertState`, `CombatSystem.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason` — not by the bus).
+13. **GIVEN** `Events.gd` source file, **WHEN** grepped for `enum `, **THEN** zero matches (enums are owned by the system that owns the concept — `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason` — not by the bus).
 14. **GIVEN** all signal declarations in `Events.gd`, **WHEN** grepped for `: Variant`, **THEN** exactly one match exists (`setting_changed` value parameter — the sole intentional Variant exception per ADR-0002).
 
 ### Edge case behavior

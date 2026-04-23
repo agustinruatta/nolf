@@ -19,17 +19,1164 @@
 #             /story-readiness (validate TR-ID exists and is active)
 #
 # ID FORMAT: TR-[system-slug]-[NNN]
-#   system-slug = short slug matching the GDD system name
+#   system-slug: short slug matching the GDD system name
+#     SB  = Signal Bus           INP = Input              AUD = Audio
+#     OUT = Outline Pipeline     PP  = Post-Process       SAV = Save/Load
+#     LOC = Localization         PC  = Player Character   FC  = FootstepComponent
+#     LS  = Level Streaming      SAI = Stealth AI         CD  = Combat & Damage
 #   NNN = three-digit zero-padded sequence per system, starting at 001
 #
 # STATUS VALUES: active | deprecated | superseded-by: TR-[system]-NNN
 
-version: 1
-last_updated: ""
+version: 2
+last_updated: "2026-04-22"
 
-requirements: []
+requirements:
+  # ─── Signal Bus (SB) ──────────────────────────────────────────────────────
+  - id: TR-SB-001
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Signal Bus is the single cross-system event dispatch point; all gameplay events go through Events.gd autoload."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-002
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "34 typed signals across 9 gameplay domains + Persistence + Settings (taxonomy locked in ADR-0002; grows to 36 per pending SAI 4th-pass + LS amendment)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-003
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Autoload order: Events=1, EventLogger=2 (project.godot [autoload] line order is authoritative per specialist §1)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-004
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Events.gd contains ONLY signal declarations — no func/var/const/enum bodies (forbidden pattern)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-005
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Subscribers connect in _ready() and disconnect with is_connected guard in _exit_tree() (lifecycle rule)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-006
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Subscribers MUST call is_instance_valid(node) on Node-typed payloads before dereference."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-007
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Enum types used in signal payloads are defined on the owning system class (StealthAI.AlertState, CombatSystemNode.DamageType, etc.) — never on Events.gd."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-008
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "Forbidden patterns enforced: autoload_singleton_coupling, wrapper_emit_methods, synchronous_request_response_through_bus, events_with_state_or_methods, engine_signal_reemission."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-009
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "EventLogger debug autoload self-removes in non-debug builds via OS.is_debug_build()."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SB-010
+    system: signal-bus
+    gdd: design/gdd/signal-bus.md
+    requirement: "SAI→Combat read accessors (has_los_to_player, takedown_prompt_active) are the sole sanctioned carve-out from autoload_singleton_coupling (Accessor Conventions subsection)."
+    created: 2026-04-22
+    revised: ""
+    status: active
 
-# --- EXAMPLE ENTRIES (remove when first real entries are added) ---
+  # ─── Input (INP) ──────────────────────────────────────────────────────────
+  - id: TR-INP-001
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "All cross-system input reads go through named actions in InputMap; raw KEY_* constants forbidden (except in debug gated by OS.is_debug_build())."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-002
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "29 InputMap actions (26 gameplay/UI + 3 debug) declared via InputActions static class as `const NAME := &\"name\"` StringName constants."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-003
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "Movement actions polled via Input.get_vector() axis-based in _physics_process; Combat/Gadget actions via press/hold in _unhandled_input."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-004
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "Context gating mandatory: every gameplay _unhandled_input checks InputContext.is_active(GAMEPLAY) before consuming."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-005
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "Three mandatory ADR-0004-locked actions: ui_cancel (Esc + B/Circle), interact (E + A/Cross), pause (Esc + START)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-006
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "Runtime rebinding via InputMap.action_erase_events + action_add_event; persists to user://settings.cfg per ADR-0003."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-007
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "Modal dismiss via _unhandled_input + ui_cancel action, never via focused Button widget (Godot 4.6 dual-focus sidestep per ADR-0004)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-008
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "get_viewport().set_input_as_handled() MUST be called after handler consumes event."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-009
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "Gamepad partial at MVP (menu navigation complete); full rebinding parity post-MVP per technical-preferences.md."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-INP-010
+    system: input
+    gdd: design/gdd/input.md
+    requirement: "InputContext.LOADING context exists and is pushed/popped by LevelStreamingService during transitions (LS-Gate-2)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Audio (AUD) ──────────────────────────────────────────────────────────
+  - id: TR-AUD-001
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "AudioManager is subscriber-only across 30 signals (9 gameplay domains + Settings); publishes nothing."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-002
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Five named AudioServer buses: Music, SFX, Ambient, Voice, UI; no player routes to Master directly."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-003
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "AudioManager lives as Node in persistent root scene (not autoload); connects all subscriptions in _ready, disconnects in _exit_tree on game quit."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-004
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Music architecture: MusicDiegetic + MusicNonDiegetic + MusicSting (two layers + one-shot), all on Music bus; Formula 1 state-keyed per-layer ducking."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-005
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Music state grid: [location]_[alert_level] (5 locations × 4 alert states) + special states DOCUMENT_OVERLAY, CUTSCENE, MAIN_MENU, MISSION_COMPLETE."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-006
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Music crossfade only (Tween on volume_db, never stop-and-start); state-keyed transition table (2.0 s default, 1.5 s SUSPICIOUS, 0.8 s SEARCHING, 0.3 s COMBAT, 3.0 s de-escalate)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-007
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Spatial SFX pool: 16 pre-allocated AudioStreamPlayer3D nodes, oldest-non-critical steal on overflow; no runtime allocation."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-008
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Music preload at section_entered (8-12 MB/section, two stereo OGGs); not streamed — tight crossfades are Pillar 3 load-bearing."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-009
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Per-section AudioEffectReverb swapped on section_entered (Plaza/Scaffolds/Restaurant/Upper/Bomb presets)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-010
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Dominant-guard Dictionary[Node, AlertState]; music state driven by HIGHEST alert level; cleared on section_exited and respawn_triggered."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-011
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Stinger debounce: max one MusicSting brass stab per 120 BPM downbeat window (0.5 s); quantized to next beat; SCRIPTED-cause suppresses."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-AUD-012
+    system: audio
+    gdd: design/gdd/audio.md
+    requirement: "Takedown SFX routes by takedown_type: MELEE_NONLETHAL → chloroform whoosh; STEALTH_BLADE → blade stroke (post-ADR-0002 amendment signature)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Outline Pipeline (OUT) ───────────────────────────────────────────────
+  - id: TR-OUT-001
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Every visible MeshInstance3D writes a stencil tier 0-3 at spawn time via ADR-0001 OutlineTier.set_tier (hands exempt per ADR-0005)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-002
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Stencil values map to outline weights: 0=none, 1=4 px, 2=2.5 px, 3=1.5 px at 1080p."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-003
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Outline color uniform across tiers: #1A1A1A near-black."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-004
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Kernel scales with resolution: kernel_actual = kernel_px × resolution_scale × (current_height / 1080.0)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-005
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Outline pass runs as single Godot 4.6 CompositorEffect after opaque geometry, before sepia-dim and transparent layers."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-006
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Performance budget: ≤2.0 ms at 1080p (target 0.8-1.5 ms on RTX 2060); fits within 75% scale on Iris Xe."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-007
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Resolution scale default 0.75 on Iris Xe, 1.0 on desktop GPU; detection in Settings & Accessibility."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-008
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Outline detection via Sobel or Laplacian edge-detect kernel on depth buffer with configurable edge_threshold (shader-algorithm detail deferred to future ADR)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-009
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Lighting MUST NOT weaken outlines: outline pass operates on color buffer after diegetic lighting."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-OUT-010
+    system: outline-pipeline
+    gdd: design/gdd/outline-pipeline.md
+    requirement: "Runtime tier reassignment supported via OutlineTier.set_tier(mesh, new_tier) for scripted focal moments."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Post-Process Stack (PP) ──────────────────────────────────────────────
+  - id: TR-PP-001
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Post-process chain order locked: Outline → Sepia Dim → Resolution Scale Composition."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-002
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Sepia Dim off by default; activated via enable_sepia_dim() API (Document Overlay lifecycle per ADR-0004)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-003
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Sepia Dim parameters: 30% luminance, 25% saturation, warm amber tint (1.10, 1.00, 0.75); 0.5 s ease-in/out tween."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-004
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Glow disabled project-wide in WorldEnvironment (Art Bible 8J enforcement)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-005
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Forbidden post-process effects: bloom, chromatic aberration, SSR, motion blur, DoF, vignette, film grain, color-grading LUTs."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-006
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Tonemapping = engine default (neutral linear) on all WorldEnvironment nodes."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-007
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "PostProcessStack autoload owns sepia dim state and exposes enable_sepia_dim()/disable_sepia_dim() public API."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-008
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Resolution scale applied via Viewport.scaling_3d_scale; persisted in user://settings.cfg per ADR-0003; runtime apply via setting_changed signal."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-009
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Performance budget: sepia pass ≤0.5 ms at 1080p RTX 2060; full chain ≤2.5 ms on Iris Xe at 0.75 scale."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PP-010
+    system: post-process-stack
+    gdd: design/gdd/post-process-stack.md
+    requirement: "Only Settings & Accessibility writes resolution_scale; PostProcessStack reads via setting_changed signal (anti-pattern enforced)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Save / Load (SAV) ────────────────────────────────────────────────────
+  - id: TR-SAV-001
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Save format: binary .res with ResourceSaver.FLAG_COMPRESS per ADR-0003; sectional scope (NOLF1-style)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-002
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "SaveGame extends Resource holds typed per-system state Resources (player, inventory, stealth_ai, civilian_ai, documents, mission)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-003
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "SaveLoadService autoload writes/reads only; does NOT query game systems to assemble SaveGame (caller-assembly pattern, forbidden pattern: save_service_assembles_state)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-004
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Eight save slots: slot 0 = autosave (overwritten on manual save + section entry), slots 1-7 = player-controlled manual."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-005
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Atomic write: tmp file → DirAccess.rename() → metadata sidecar → optional screenshot; previous good save never destroyed on failure."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-006
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Resource.duplicate_deep() (Godot 4.5+) MANDATORY on load before handing state to live systems (forbidden pattern: forgotten_duplicate_deep_on_load)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-007
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Per-actor identity uses stable actor_id: StringName (NOT NodePath); survives scene reloads; unguarded default state on missing key."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-008
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Versioning: refuse-load-on-mismatch (save_format_version compare against FORMAT_VERSION const); no migration path at MVP."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-009
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Metadata sidecar slot_N_meta.cfg (ConfigFile) read-only by Menu (avoids full .res load); fields: section_id, saved_at_iso8601, elapsed_time, screenshot_path, save_format_version."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-010
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Settings persisted in separate user://settings.cfg ConfigFile, NEVER in SaveGame; prevents settings loss on new-game."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-011
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Three Persistence signals: game_saved(slot, section_id), game_loaded(slot), save_failed(reason: SaveLoad.FailureReason)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-012
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Type-guard after every load: `if loaded == null or not (loaded is SaveGame): emit save_failed(CORRUPT_FILE)` — binary .res returns null silently on class mismatch."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-013
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Performance budget: ≤10 ms save latency, ≤2 ms I/O load (hidden in Level Streaming cost); <100 KB per SaveGame post-duplicate_deep."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-014
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Quicksave F5 writes slot 0 non-blocking; Quickload F9 reads slot 0 or shows 'No quicksave available' toast."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAV-015
+    system: save-load
+    gdd: design/gdd/save-load.md
+    requirement: "Saves blocked during InputContext.CUTSCENE; permitted during active combat (guard state at save time is what loads)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Localization Scaffold (LOC) ──────────────────────────────────────────
+  - id: TR-LOC-001
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Every user-visible string wrapped in tr(key) from Day 1 (forbidden pattern: hardcoded_visible_string)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-002
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Translation keys use three-segment minimum: domain.context.identifier."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-003
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "One CSV per domain at res://translations/[domain].csv; columns: keys, en, # context."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-004
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Dynamic strings use named placeholders ({count}) via String.format() on tr() result; positional %s forbidden."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-005
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Plural forms via Godot 4.6 CSV plural columns (en_0, en_1, etc.) with # plural_rule annotation."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-006
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Control.auto_translate_mode = AUTO_TRANSLATE_MODE_ALWAYS (Godot 4.5+) for automatic UI re-render on locale change."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-007
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "NOTIFICATION_TRANSLATION_CHANGED re-resolves strings; no caching at _ready (forbidden pattern: cached_translation_at_ready)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-008
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "LTR-only at MVP; no hardcoded LTR assumptions (Control.layout_direction for future RTL)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-009
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Locale preference persisted in user://settings.cfg [localization] locale field, NOT in SaveGame (ADR-0003)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LOC-010
+    system: localization-scaffold
+    gdd: design/gdd/localization-scaffold.md
+    requirement: "Pseudolocalization CSV res://translations/_dev_pseudo.csv; ~140% length, bracket-wrapped, all-caps; excluded from exports."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Player Character (PC) ────────────────────────────────────────────────
+  - id: TR-PC-001
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Eve is a Godot 4.6 CharacterBody3D with CapsuleShape3D collider (1.7 m standing, 1.1 m crouched)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-002
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Physics at 60 Hz via _physics_process; movement via velocity + move_and_slide(); Jolt physics engine."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-003
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Movement states: IDLE, WALK (3.5 m/s, 5 m noise), SPRINT (5.5 m/s, 12 m noise), CROUCH (1.8 m/s, 3 m noise), JUMP, FALL, DEAD."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-004
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Gravity 12.0 m/s²; jump_velocity 3.8 m/s; apex ~0.60 m; airtime ~0.63 s; coyote-time 3 frames (~50 ms)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-005
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "No stamina, no air control, no fall damage at MVP, no double-jump (Pillar 5)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-006
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Camera: first-person only, FOV 75°, pitch clamp ±85°, yaw unconstrained, roll always 0; no walk head-bob, no sprint FOV punch, no damage vignette."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-007
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Collision per ADR-0006: Eve on LAYER_PLAYER, collides with LAYER_WORLD | LAYER_AI; interact raycast scans LAYER_INTERACTABLES."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-008
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Context-sensitive interact raycast from camera forward 2.0 m; priority: Document(0) < Terminal(1) < Pickup(2) < Door(3); 4-iteration exclusion list for stacks."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-009
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Interact timing: 150 ms pre-reach pause + 200-250 ms reach animation; Sprint disabled during window."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-010
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Health: 0-100 integer, no regeneration (OQ-1 closed — diegetic medkits only); apply_damage is the ONLY mutator."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-011
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Damage rounding: round-half-away-from-zero (0.49→0, 0.5→1); sub-0.5 amounts guarded out."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-012
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Noise interface: two pull methods get_noise_level() → float, get_noise_event() → NoiseEvent (NOT signals per ADR-0002)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-013
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "NoiseEvent is a reused class_name RefCounted instance with in-place field mutation (zero-allocation at 80 Hz aggregate polling)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-014
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Spike-latch: highest-radius-wins collision; auto-expiry at 0.15 s (9 frames @ 60 Hz); sole clear mechanism."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-015
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "Player signals via Events autoload: player_damaged, player_died, player_health_changed, player_interacted per ADR-0002."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-016
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "FPS Hands mesh: single skinned ~5k-tri mesh in SubViewport FOV 55° with inverted-hull outline per ADR-0005 (HandsOutlineMaterial via material_overlay, NOT OutlineTier.set_tier)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-017
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "HandsOutlineMaterial.resolution_scale uniform wired to Settings.get_resolution_scale() (forward dependency)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-018
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "get_silhouette_height() returns standing 1.7 m, crouched 1.1 m, dead 0.4 m; interpolated during 120 ms crouch transition."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-019
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "PlayerState serializes position, rotation, health(int), current_state(int enum) per ADR-0003; NO stamina field."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-PC-020
+    system: player-character
+    gdd: design/gdd/player-character.md
+    requirement: "reset_for_respawn(checkpoint) clears _latched_event → IDLE → clears _is_hand_busy BEFORE Tween.kill() → health = max_health → teleport → emits player_health_changed once."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── FootstepComponent (FC) ───────────────────────────────────────────────
+  - id: TR-FC-001
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "Component emits Events.player_footstep(surface: StringName, noise_radius_m: float) per step."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-002
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "State-keyed step cadence: Walk 2.2 Hz, Sprint 3.0 Hz, Crouch 1.6 Hz; Idle/Jump/Fall/Dead silent."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-003
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "Surface detection via downward PhysicsRayQueryParameters3D on MASK_FOOTSTEP_SURFACE (ADR-0006) from 0.05 m below capsule center to 2.0 m depth; one cast per step, not per frame."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-004
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "Surface tag vocabulary: marble, tile, wood_stage, carpet, metal_grate, gravel, water_puddle, default (StringName interned)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-005
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "noise_radius_m in signal = player.get_noise_level() at emission time; mirrors AI perception but is NOT an AI channel (forbidden pattern: SAI subscribing to player_footstep)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-006
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "Accumulator pattern preserves cadence phase across state transitions (_step_accumulator -= interval, not zero)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-007
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "4-bucket loudness scheme for Audio SFX variant selection: soft (≤3.5 m), normal (3.5-6.5 m), loud (6.5-10 m), extreme (>10 m)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-FC-008
+    system: footstep-component
+    gdd: design/gdd/footstep-component.md
+    requirement: "Surface metadata via set_meta('surface_tag', StringName) on collision bodies; level-designer tool plugin (surface_tagger) provides mass-assign + headless validator (resolves OQ-FC-1 via LS CR-10)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Level Streaming (LS) ─────────────────────────────────────────────────
+  - id: TR-LS-001
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "LevelStreamingService is a Godot 4.6 autoload; autoload registration order is determined by project.godot line sequence per specialist §1 (current intent: Events→EventLogger→SaveLoad→InputContext→LevelStreamingService)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-002
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Fade overlay: CanvasLayer layer=127 (signed 8-bit; 128 overflows) with full-screen ColorRect; ErrorFallback at layer=126."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-003
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Public API: transition_to_section, reload_current_section, register_restore_callback, _simulate_registry_failure (test), evict_section_from_cache (MVP no-op)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-004
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "SectionRegistry Resource maps section_id: StringName → PackedScene path + display_name_loc_key."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-005
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "13-step fixed-sequence swap contract (no change_scene_to_packed); includes InputContext.LOADING push/pop, snap-out (2 frames), queue_free, load, instantiate, add_child, process_frame await, SYNCHRONOUS callbacks, section_entered, snap-in (2 frames), pop context, process pending respawn queue."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-006
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Queued-respawn during in-flight transition: FORWARD transitions dropped if in-flight; reload_current_section calls QUEUED and fired at step 13 from IDLE (CD-adjudicated)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-007
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "TransitionReason enum: FORWARD | RESPAWN | NEW_GAME | LOAD_FROM_SAVE; passed as 2nd param on section_entered/section_exited signals (PENDING ADR-0002 amendment — LS-Gate-1)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-008
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Section scenes conform to CR-9 authoring contract: Node3D root, group 'section_root', @export section_id/player_entry_point/player_respawn_point (Marker3D)/section_bounds/environment (nullable)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-009
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "InputContext.LOADING pushed at step 1, popped at step 12 (blocks Save/Load input during transition; LS-Gate-2 defines context)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-010
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Cache mode CACHE_MODE_REUSE default; no eviction policy at MVP; first-visited section cached for session."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-011
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Performance budget: ≤0.57 s total p90 on Iris Xe (33 ms snap-out + ≤500 ms SWAPPING + 33 ms snap-in)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-012
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Persistent fade overlay parented to autoload (never section scene) — survives all transitions and cutscene scene pushes."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-013
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Step 9 registered-callback pattern: callers register ONE callback at autoload boot; step 9 invokes synchronously in registration order; no-await contract enforced by debug pre/post timestamp assertion."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-014
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Same-section no-op guard in shipping (CR-14); application focus-loss handling (CR-15) requires project.godot pause_on_focus_lost=true."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-LS-015
+    system: level-streaming
+    gdd: design/gdd/level-streaming.md
+    requirement: "Surface metadata contract (CR-10): resolves FootstepComponent OQ-FC-1 via tool plugin that mass-assigns set_meta('surface_tag', ...) + headless validator."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Stealth AI (SAI) ─────────────────────────────────────────────────────
+  - id: TR-SAI-001
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Guards use Node3D + CharacterBody3D + NavigationAgent3D + Stealth AI perception/state component hierarchy."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-002
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Alert state machine (6 states): UNAWARE → SUSPICIOUS → SEARCHING → COMBAT; terminal: UNCONSCIOUS (non-lethal KO, wake-up clock), DEAD (lethal)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-003
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Six SAI signals: alert_state_changed(actor, old, new, severity), actor_became_alerted(actor, cause, pos, severity), actor_lost_target(actor, severity), takedown_performed(actor, attacker, takedown_type), guard_incapacitated(guard), guard_woke_up(guard) — last 2 PENDING ADR-0002 amendment."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-004
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "StealthAI.Severity enum: MAJOR | MINOR (controls Audio stinger emission — Pillar 1 comedy preservation)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-005
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "StealthAI.AlertCause enum: SAW_PLAYER | SAW_BODY | HEARD | ALERTED_BY_OTHER | SCRIPTED; SAW_BODY 2× sight_fill multiplier; SCRIPTED suppresses Audio stinger."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-006
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "StealthAI.TakedownType enum: MELEE_NONLETHAL (dart/fist KO) | STEALTH_BLADE (lethal blade) — routes Audio SFX variants + SAI state consequences."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-007
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "F.1 Sight fill: 0-6.0/sec (max 6.0 post-4th-pass correction); LOS raycast cache + frame-invalidation; range linear falloff to 18 m; state_multiplier UNAWARE=1.0, SUSPICIOUS=1.5, SEARCHING=1.5, COMBAT=2.0; body_factor 1.0 alive / 2.0 dead."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-008
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "F.2 Sound fill: polled 10 Hz (6-frame interval); reads PC.get_noise_level() + occlusion raycast + elevation_factor (0 if floor_delta != 0)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-009
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "F.3 Accumulator state-keyed per-state decay; both channels must drop below T_DECAY_UNAWARE (0.1) for SUSPICIOUS → UNAWARE."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-010
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "F.4 Alert propagation: ALERT_PROPAGATION_RADIUS_M=25 m, PROPAGATION_BUMP=0.4 (safe range [0.41, 0.6]); propagated bumps emit alert_state_changed but NOT actor_became_alerted (no stinger)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-011
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "F.5 State-transition thresholds: T_SUSPICIOUS=0.3, T_SEARCHING=0.6, T_COMBAT=0.95; accumulators clamp [0, 1]."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-012
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Public accessor has_los_to_player() -> bool: cache-hit path, 10 Hz stale-safe, ≤1-frame lag; cold-start safe (false until F.1 ticks)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-013
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Public accessor takedown_prompt_active(attacker: Node) -> bool: true iff attacker eligible (UNAWARE/SUSPICIOUS + rear half-cone dot≤0 + ≤1.5 m + no LOS + valid instance)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-014
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "receive_damage(amount, source, damage_type) -> bool is_dead: synchronous mutation of _health + current_alert_state BEFORE return (no call_deferred); routes via Combat.is_lethal_damage_type()."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-015
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Wake-up clock: WAKE_UP_SEC=45 s; UNCONSCIOUS → SUSPICIOUS at captured _wake_known_player_position with SAW_PLAYER cause; emits guard_woke_up."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-016
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "RaycastProvider DI interface: IRaycastProvider + RealRaycastProvider + CountingRaycastProvider test double (for AC-SAI-3.9 raycast budget tests)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-017
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "_perception_cache struct: {initialized, frame_stamp, los_to_player, los_to_player_position, los_to_dead_bodies{}, last_sight_stimulus_cause, last_sight_position}; updated once per physics frame by F.1."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-SAI-018
+    system: stealth-ai
+    gdd: design/gdd/stealth-ai.md
+    requirement: "Performance budget: 6 ms mean per 12 guards (perception 3 + nav 2 + signals 1); dead-body raycasts budgeted 4 targets/guard worst case; Plaza NavMesh pinned as geometry baseline."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Combat & Damage (CD) ─────────────────────────────────────────────────
+  - id: TR-CD-001
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Damage routing hub: Combat.apply_damage_to_actor(actor, amount, source, damage_type) duck-types receiver; routes to PC.apply_damage() or guard.receive_damage()."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-002
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Signal emit-site ownership: after receive_damage returns, Combat emits enemy_damaged → then enemy_killed iff is_dead (deterministic order)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-003
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "CombatSystemNode.DamageType enum: BULLET, DART_TRANQUILISER, MELEE_FIST, MELEE_BLADE, FALL_OUT_OF_BOUNDS, TEST."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-004
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "CombatSystemNode.DeathCause enum: SHOT, TRANQUILISED, MELEE, ENVIRONMENTAL, UNKNOWN; mapped via damage_type_to_death_cause() helper."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-005
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "is_lethal_damage_type(damage_type) -> bool helper classifies lethal (BULLET / MELEE_BLADE / FALL_OUT_OF_BOUNDS) vs non-lethal (DART / MELEE_FIST)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-006
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Weapon roster: Takedown blade (stealth 1-shot, dedicated Takedown input), Silenced pistol (3-shot body TTK), Dart gun (non-lethal 1-shot KO), Rifle (1-shot body, rare pickup), Fists (3-swing 2.1 s KO)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-007
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Dedicated Takedown input (kbd F / gamepad Y) — distinct from Fire; only live when SAI takedown_prompt_active; Fire never triggers takedown (eliminates modal ambiguity)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-008
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Hitscan: PhysicsRayQueryParameters3D with collide_with_areas=true (for head Area3D) + exclude=_collect_self_rids(shooter) covering all owned CollisionObject3D RIDs."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-009
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Dart projectile: RigidBody3D on LAYER_PROJECTILES, CCD enabled, 20 m/s, _has_impacted guard, body_entered + area_entered handlers, wall-spawn occlusion pre-check."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-010
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Melee fists: ShapeCast3D sphere radius 0.35 m swept 0.7 m forward (Godot 4.6 has no ConeShape3D); 1 hit per swing; 0.7 s cycle (0.3 windup + 0.4 recovery)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-011
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Crosshair: dot 0.19% viewport height (3-12 px clamped); tri-band halo (Parchment outer + Ink Black inner) for contrast against ANY background; accessibility toggleable via Settings."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-012
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Rifle-only ADS: Aim input → FOV 85°→55° tween 200 ms ease-out; muzzle sway −50%; accuracy halved; cancels on reload/switch/damage ≥10 HP."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-013
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Fire/Takedown input gating: Fire blocked during reload/switch/fist-swing/hand-busy/InputContext != GAMEPLAY; Takedown gated separately on takedown_prompt_active."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-014
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "NOLF1 ammo economy: guard lethal drops 3 pistol rounds (net-negative), 1 dart (break-even), 0 on fist-KO (no-farm); starting pistol 32, dart 16; respawn floor {pistol 16, dart 8} once per checkpoint; caps {pistol 48, dart 24}."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-015
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Guard return-fire cadence: GuardFireController state machine {IDLE, DRAW, LOS, SUPPRESSION, CAPPED}; first-shot 0.65 s delay; LOS 1.4 s/shot; SUPPRESSION 2.8 s/shot capped 3 max; transitions via SAI.has_los_to_player()."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-016
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Projectile/fire-controller cleanup on respawn: self-subscribe to Events.respawn_triggered in _ready(); darts queue_free, GuardFireController IDLE + timer stop."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-017
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Return-fire timer handshake: guard subscribes to player_damaged; synchronous stop+restart _combat_lost_target_timer if source==self AND state==COMBAT (prevents cross-signal hazards)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-018
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Takedown blade delegation: SAI.receive_takedown(STEALTH_BLADE, eve) → Combat.apply_damage_to_actor(self, blade_takedown_damage=100, eve, MELEE_BLADE) → lethal path → enemy_killed."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-019
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "UNCONSCIOUS Transitional model: DART/FIST → UNCONSCIOUS (no enemy_killed); further lethal on UNCONSCIOUS → DEAD + enemy_killed; further non-lethal on UNCONSCIOUS = no-op."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-020
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "F.1 Per-Weapon Damage: base_damage × H where H=2.0 iff headshot && target_is_guard; output range default [34, 240], safe ceiling [34, 300]."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-021
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "F.5 Headshot Hit-Zone: Area3D on BoneAttachment3D at bone 'head' (exact lowercase match); radius 0.15 m default; Y-offset 1.65 m; Jolt intersect_ray with collide_with_areas=true dependency flagged (OQ-CD-2)."
+    created: 2026-04-22
+    revised: ""
+    status: active
+  - id: TR-CD-022
+    system: combat-damage
+    gdd: design/gdd/combat-damage.md
+    requirement: "Autoload convention: class_name=CombatSystemNode, autoload key=Combat (intentional split mirroring SignalBusEvents/Events); enum paths use class_name, method calls use autoload key."
+    created: 2026-04-22
+    revised: ""
+    status: active
+
+# --- EXAMPLE ENTRIES (legacy — retain for documentation value) ---
 #
 # - id: TR-combat-001
 #   system: combat
@@ -38,19 +1185,3 @@ requirements: []
 #   created: 2026-03-10
 #   revised: ""
 #   status: active
-#
-# - id: TR-combat-002
-#   system: combat
-#   gdd: design/gdd/combat-system.md
-#   requirement: "Combo window timing is 0.4 seconds between hits"
-#   created: 2026-03-10
-#   revised: "2026-04-01"
-#   status: active
-#
-# - id: TR-combat-003
-#   system: combat
-#   gdd: design/gdd/combat-system.md
-#   requirement: "Old damage formula using raw stats"
-#   created: 2026-03-10
-#   revised: ""
-#   status: superseded-by: TR-combat-001

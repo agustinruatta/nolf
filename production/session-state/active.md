@@ -1,99 +1,91 @@
 # Session State
 
-**Last updated:** 2026-04-21 (Combat & Damage GDD authoring COMPLETE + /consistency-check resolution pass complete — 8 conflicts resolved via CR-3 blade split adoption + §F.7-authoritative propagation. Pending /design-review in fresh session.)
+**Last updated:** 2026-04-22 (ADR-0002 **4th-pass LS + SAI amendment bundle** COMPLETE — section_entered/exited grew TransitionReason 2nd param; NEW signals guard_incapacitated + guard_woke_up added; signal count 34→36; enum-ownership grew by LevelStreamingService.TransitionReason; new atomicity Risks row per godot-specialist. /architecture-review Coverage Gap 1 + Conflicts 2+3 resolved; SAI pre-impl gate #1(c,d) + LS-Gate-1 closed.)
+
+## Current task (2026-04-22 — ADR-0002 4th-pass LS + SAI amendment session)
+
+✅ **ADR-0002 4th-pass amendment COMPLETE.** Bundles: (a) `section_entered(section_id: StringName, reason: LevelStreamingService.TransitionReason)` 2nd param added; (b) `section_exited` same; (c) NEW `signal guard_incapacitated(guard: Node)` AI/Stealth domain; (d) NEW `signal guard_woke_up(guard: Node)` AI/Stealth domain; (e) signal count 34 → 36; (f) enum-ownership list grows by `LevelStreamingService.TransitionReason { FORWARD, RESPAWN, NEW_GAME, LOAD_FROM_SAVE }`; (g) new Risks row: atomic-commit required (GDScript parse failure on project load if Events.gd references qualified enum before owning script declares it).
+
+**Files modified this session:**
+- `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` — 11 edit sites. Last Verified parenthetical; Summary count 34→36 + 4th-pass phrase; NEW Revision History entry (2026-04-22 4th-pass bundle) covering all 4 signal changes + cadence guarantees + atomic-commit Risks + downstream scope flags; Decision intro count + enum list grows; AI/Stealth domain block gains guard_incapacitated + guard_woke_up declarations with comment headers documenting one-shot-per-guard cadence; Mission domain section_entered/exited grow `reason: LevelStreamingService.TransitionReason` 2nd param with branching-subscribers comment; IG2 enum-ownership list inserts `LevelStreamingService.TransitionReason` (class_name + autoload-order-4 annotation); Risks table new row for atomic-commit hazard (godot-specialist wording "GDScript parse failure on project load" — not "autoload chain"; LOW×HIGH + single-PR mitigation + optional CI grep); Migration Plan step 2 stub-enum list grows; Validation Criteria item 2 count 34→36 + item 3 stub-class list grows; Related section gains level-streaming.md entry + stealth-ai.md entry expanded with 4th-pass signal references.
+- `design/gdd/signal-bus.md` — 6 edit sites. §17 Overview count 34→36 + 4th-pass note; §54 AI/Stealth canonical signals list gains guard_incapacitated + guard_woke_up (with dated annotations); §59 Mission domain row notes TransitionReason + LS co-emitter; §117 Stealth AI dep row expanded (publishes guard_incapacitated + guard_woke_up in addition to existing 4 signals); AC-3 count 34→36 with new-signals + section-signal-2-param clauses; AC-13 enum list gains `LevelStreamingService.TransitionReason`.
+- `docs/registry/architecture.yaml` — `gameplay_event_dispatch` signal_signature refreshed inline (36 signals, 4th-pass additions documented: guard_incapacitated + guard_woke_up semantics + section_entered/exited 2nd param + enum ownership gain). `revised: 2026-04-22` comment extended.
+
+**Engine specialist validation (Step 4.5):** godot-specialist returned **YELLOW** pre-write; 2 text corrections folded in before applying: (1) Risks-row wording changed from "autoload chain at startup" to "GDScript parse failure on project load" + removed "or vice versa" symmetry claim (only Events-references-missing-enum direction is dangerous); (2) IG5 cadence note added in Revision History for both new signals (one-shot per guard per session, trivially within budget). Post-correction verdict treated as GREEN. Additional specialist observations NOT applied this session (logged for code-review phase): (a) signal re-entry from within guard_incapacitated handlers is safe via Godot 4.x internal dispatch queuing but warrants reviewer attention when subscribers are implemented; (b) use `Node` (not subtyped) for guard payloads — already matches drafted form.
+
+**Technical Director review (Step 4.6):** SKIPPED — solo review mode per `production/review-mode.txt`.
+
+**Dependencies closed by this amendment:**
+- /architecture-review 2026-04-22 Coverage Gap 1 (ADR-0002 amendment completion) — CLOSED
+- /architecture-review Conflict 2 (ADR-0002 Key Interfaces vs. LS GDD 2-param signatures) — CLOSED
+- /architecture-review Conflict 3 (ADR-0002 missing SAI 4th-pass signals) — CLOSED
+- LS GDD LS-Gate-1 (ADR-0002 section-signal amendment) — CLOSED
+- SAI GDD pre-impl gate #1(c) + #1(d) (guard_incapacitated + guard_woke_up in ADR-0002) — CLOSED
+- Signal Bus GDD touch-up (SAI enum ownership + new-signal domain-table row per session-state item #3) — CLOSED
+
+**Downstream still open (producer-tracked; out of this amendment's scope):**
+- /architecture-review Coverage Gap 2 — Performance Budget Distribution ADR (cross-cutting 7 systems).
+- /architecture-review Coverage Gap 3 — Autoload registration contract (InputContext + LevelStreamingService load-order-4 collision — editorial hazard per Specialist §1).
+- /architecture-review Conflict 1 — same autoload collision. Resolves via either a dedicated autoload-registry ADR or surgical ADR-0004 + LS GDD amendment.
+- LS-Gate-3 — Audio GDD §Mission-domain handler table (currently 1-param at lines 188–189) must grow `reason: TransitionReason` + branching table per LS GDD CR-8. Audio-owned edit.
+- Producer-tracked `CombatSystem.DeathCause` → `CombatSystemNode.DeathCause` rename in `design/gdd/player-character.md` lines 200, 457, 591 (carried from prior OQ-CD-1 pass).
+- All 6 ADRs still `Proposed` — verification gates outstanding across the chain (16 gates tracked in architecture-review-2026-04-22.md).
+
+**Next action** (user runs in a FRESH session, not here): either (a) `/architecture-review` to verify that Coverage Gap 1 + Conflicts 2+3 are closed by this amendment and surface any remaining gaps; (b) `/architecture-decision autoload-load-order-registry` or surgical ADR-0004 + LS GDD amendment for Coverage Gap 3; (c) `/architecture-decision performance-budget-distribution` for Coverage Gap 2.
+
+---
+
+## Prior task (2026-04-22 — ADR-0002 OQ-CD-1 amendment session)
+
+✅ **ADR-0002 amendment COMPLETE.** Bundles: (a) 3 perception signals grow `severity: StealthAI.Severity`; (b) `takedown_performed` → 3-param form with `attacker` + `takedown_type: StealthAI.TakedownType`; (c) `player_died` payload rename `CombatSystem.DeathCause` → `CombatSystemNode.DeathCause`; (d) NEW `Accessor Conventions (SAI → Combat)` subsection declaring `has_los_to_player()` + `takedown_prompt_active(attacker)` as principled `direct_call` carve-out with 4 exemption criteria + no-new-accessors fence; (e) enum-ownership list grows by 2 owners + CombatSystemNode rename propagated; (f) Risks table row added for specialist MINOR note (inner-enum editor reimport).
+
+**Files modified this session:**
+- `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` — 9 edit sites; 361 → 430 lines. Summary + Revision History + Decision intro + 4 signal declarations in Key Interfaces + NEW Accessor Conventions subsection + Implementation Guideline 2 enum-list + Risks (2 new rows) + Migration Plan step 2 + Validation Criteria (2 updated items) + Related section expanded (4 new GDD cross-refs) + Last Verified date bumped.
+- `docs/registry/architecture.yaml` — `gameplay_event_dispatch` signal_signature refreshed (34 signals, OQ-CD-1 signature changes documented) with `revised: 2026-04-22`; NEW `sai_public_accessors` interface contract (pattern `direct_call`, producer `stealth-ai-system`, consumer `combat-and-damage-system`); `last_updated: 2026-04-22`.
+- `design/gdd/signal-bus.md` — line 117-118 enum-ownership rows expanded (SAI gets Severity + TakedownType + 2 accessor-method declarations; Combat renamed to CombatSystemNode) + line 207 AC-13 enum-inventory list refreshed.
+
+**Engine specialist validation (Step 4.5):** godot-specialist returned **GREEN** with 1 MINOR note (captured in Risks row).
+
+**Downstream still out of scope (producer to sequence coordinated rename pass):**
+- `design/gdd/player-character.md` — lines 200, 457, 591 reference `CombatSystem.DeathCause` (frozen Approved sig; rename needed).
+- `design/gdd/audio.md` — actually AHEAD of ADR, already uses 4-param + takedown_type routing. No edit needed.
 
 ## Current task
 
-✅ `design/gdd/combat-damage.md` — **/design-system COMPLETE (2026-04-21)** + **/consistency-check conflicts resolved (2026-04-21)**. 1,179 lines; all 11 sections. Entity registry updated with 19 new constants + 1 new formula + 8 existing-entry referenced_by updates, plus 8 conflict resolutions (C1–C8).
+✅ `design/gdd/stealth-ai.md` — **/design-system OQ-CD-1 revision COMPLETE (2026-04-22)**. 3rd-pass revision applied inline; file grew from 708 → ~800 lines. All 7 OQ-CD-1 items closed (6 scope items per combat-damage.md §OQ-CD-1 + 1 bundled §V.4 body-drop approach vector). Entity registry updated with 5 new phantom_guard attributes. Pre-implementation Combat gates AC-CD-7.1, 7.3, 6.1 unblocked.
 
-**Next action** (user runs in a FRESH session, not here): `/design-review design/gdd/combat-damage.md`
+**Next action** (user runs in a FRESH session, not here): `/design-review design/gdd/stealth-ai.md` — validate the 3rd-pass revision independently.
 
-### /consistency-check resolution (2026-04-21, this session)
+### OQ-CD-1 amendment closure (2026-04-22, this session)
 
-8 conflicts detected and resolved per user-approved plan (Option A + §F.7 authoritative + single changeset):
+7 amendment items applied via `/design-system stealth-ai` revision mode:
 
-- **C1**: `damage_formula.output_range` [16, 240] → [13, 240] (fist_base_damage safe floor = 13, not 16).
-- **C2 (CR-3 blade split)**: `silenced_pistol_takedown_damage` DEPRECATED → new `blade_takedown_damage = 100`. New `DamageType.MELEE_BLADE` carries the blade weapon. New SAI `TakedownType.STEALTH_BLADE` replaces `SILENCED_PISTOL`. New weapon Resource (OQ-CD-11): blade (no ammo, base_damage = 100, gated by SAI context prompt).
-- **C3**: `guard_pistol_damage_vs_eve` safe range [14, 25] → [14, 20] to honor AC-CD-14.1 ("Eve cannot die in fewer than 5 hits").
-- **C4**: `pistol_starting_reserve` 16 → 32 (Aggressive player now dry by Section 4–5, not 3).
-- **C5**: `dart_starting_reserve` 8 → 16 (Ghost path viable at 80% pickup rate without fist-KO reliance).
-- **C6**: `guard_drop_dart_ko_rounds` DEPRECATED → split into `guard_drop_dart_on_dart_ko = 1` (break-even) + `guard_drop_dart_on_fist_ko = 0` (no farm).
-- **C7**: `respawn_ammo_floor_pistol = 8` (mag-only) DEPRECATED → `respawn_floor_pistol_total = 16` (TOTAL mag+reserve).
-- **C8**: `respawn_ammo_floor_dart = 4` DEPRECATED → `respawn_floor_dart_total = 8` (TOTAL).
+1. **AlertState.UNCONSCIOUS 6th state** — added to enum, perception-reachability note, severity rule, state diagram, transition table (split into 3 rows), per-state behaviour table, F.4 propagation filter (excludes UNCONSCIOUS like DEAD).
+2. **`receive_damage(...) -> bool is_dead` return contract** — synchronous mutation guarantee (no `call_deferred`); documented on §C.3 Combat & Damage dep row + AC-SAI-1.7 + AC-SAI-1.11.
+3. **Lethality routing via `Combat.is_lethal_damage_type()`** — lethal (BULLET / MELEE_BLADE / FALL_OUT_OF_BOUNDS) → DEAD; non-lethal (DART_TRANQUILISER / MELEE_FIST) → UNCONSCIOUS. Transitional model: UNCONSCIOUS + further lethal → DEAD; UNCONSCIOUS + further non-lethal → idempotent no-op. New edge cases E.19, E.20, E.21.
+4. **TakedownType enum** — `STEALTH_BLADE` present, `SILENCED_PISTOL` already removed (prior /consistency-check pass). Verified.
+5. **Public accessors** — `has_los_to_player() -> bool` (F.1 cache hit, 10 Hz stale-safe) + `takedown_prompt_active(attacker: Node) -> bool` (state ∈ {UNAWARE, SUSPICIOUS} + rear 180° half-cone + ≤1.5 m + no LOS). Documented on §C.3 Combat dep row + AC-SAI-3.9 + AC-SAI-3.10. `TAKEDOWN_RANGE_M = 1.5` registered on phantom_guard.
+6. **Synchronicity guarantee** — `receive_damage` mutates `current_alert_state` before return (no `call_deferred`); AC-SAI-1.11 enforces via spy-proxy test.
+7. **Body-drop approach vector** (bundled from §V.4 Combat) — captured at terminal-entry as `(attacker.origin - self.origin).with_y(0).normalized()` with degenerate-case fallback per E.23. Serialised in save format. §V animation spec updated.
 
-### Files modified in this resolution pass
+### Key design decision (user-approved, 2026-04-22)
 
-- `design/gdd/combat-damage.md` — §D.1 Summary Table (9 rows updated), §E.31, §C.3 SAI-delegation row, AC-CD-2.5, AC-CD-6.1, AC-CD-11.3, AC-CD-12.3, AC-CD-17.1, OQ-CD-6, §F.7 interaction warning. ~12 edit sites.
-- `design/gdd/stealth-ai.md` — `TakedownType` enum SILENCED_PISTOL → STEALTH_BLADE (line 151); 4 prose references updated (lines 148, 156, 237, 251, 531); Audio pre-impl gate item (c) at line 538 updated.
-- `design/gdd/audio.md` — 3 references to `SILENCED_PISTOL` takedown variant renamed to `STEALTH_BLADE` with blade-stroke SFX description (signal handler row + SFX catalog row + AC-38). SFX filename convention changed from `sfx_takedown_silenced_pistol_*` to `sfx_takedown_stealth_blade_*`.
-- `design/gdd/systems-index.md` — line 5 running changelog updated to describe blade split.
-- `design/registry/entities.yaml` — C1 formula output_range; C2 deprecate + new `blade_takedown_damage`; C3 notes; C4 value; C5 value; C6 deprecate + two new split knobs; C7+C8 deprecate + two new `_total` knobs. 9 new/updated entries; 4 deprecations.
+**MELEE_NONLETHAL (chloroform) takedown → UNCONSCIOUS** (not DEAD). Rationale: chloroform is fictionally non-lethal, symmetric with Combat CR-16's MELEE_FIST non-lethal damage routing. Splits takedown outcomes cleanly: MELEE_NONLETHAL → UNCONSCIOUS, STEALTH_BLADE → DEAD (via Combat CR-15 MELEE_BLADE lethal delegation). Previously both takedown types routed to DEAD; this created fictional inconsistency with CR-16 that the OQ-CD-1 closure resolved.
 
-### Downstream implications (forward-dep GDDs still unauthored)
+### Files modified in this session
 
-- **Inventory & Gadgets (system #12)** — OQ-CD-11 blade Resource authoring required: blade weapon (no ammo, base_damage = 100, damage_type = MELEE_BLADE, no magazine / no reserve, blade-draw input binding, context-prompt gating by SAI `receive_takedown` prompt).
-- **Failure & Respawn (system #14)** — must consume `respawn_floor_pistol_total = 16` and `respawn_floor_dart_total = 8` with TOTAL (magazine+reserve) semantics, applied via `max(snapshot_total, floor)` then clamp to `[0, per_weapon_max_reserve]`. First-death-per-checkpoint gating via `floor_applied_this_checkpoint` flag.
-- **ADR-0002 amendment (pending)** — already-tracked amendment for severity + 4-param takedown_performed now also bundles enum value rename SILENCED_PISTOL → STEALTH_BLADE.
-- **OQ-CD-1 SAI amendment bundle** — grows by one item: `TakedownType` enum rename is now in scope alongside `AlertState.UNCONSCIOUS` + `receive_damage -> bool`.
+- `design/gdd/stealth-ai.md` — Status header rewrite + Group A (§C structural + state machine + diagram + transition table + accessors + F.4 filter — 11 edit sites) + Group B (E.16 rewrite + new E.19-E.23) + Group C (AC-SAI-1.3 reversibility matrix + AC-SAI-1.4 chloroform routing + AC-SAI-3.4 6×7 severity matrix + AC-SAI-3.5 force forbid UNCONSCIOUS + AC-SAI-4.3 item 3 + 5 new ACs AC-SAI-1.7 through 1.11 + AC-SAI-3.9 + AC-SAI-3.10 + AC-SAI-5.3) + Group D (§V animation approach-vector spec + §F Combat dep row OQ-CD-1 closed). ~25 edit sites total; file grew 708 → ~800 lines.
+- `design/registry/entities.yaml` — `phantom_guard` entry expanded with 5 new attributes (alert_states list updated with UNCONSCIOUS; new takedown_types, terminal_state_routing, public_accessors, receive_damage_contract, takedown_range_m). `last_updated` metadata updated.
+- `design/gdd/systems-index.md` — running changelog updated (D.7 below).
+- `production/session-state/active.md` — this file.
 
-### Combat & Damage authoring summary
+### Pre-implementation gates still OPEN (for Combat stories)
 
-- **Specialists consulted (via Task delegation)**:
-  - Section B Player Fantasy: `creative-director` (produced 3 candidate framings — user selected Framing C "Composed Removal of an Obstacle")
-  - Section C Detailed Design: PARALLEL delegation to `game-designer` + `systems-designer` + `ai-programmer` + `art-director`
-  - Section D Formulas: PARALLEL delegation to `systems-designer` (5 formulas) + `economy-designer` (ammo economy)
-  - Section E Edge Cases: `systems-designer` comprehensive audit (40 edge cases + 4 open questions)
-  - Section H Acceptance Criteria: `qa-lead` (17 AC groups / 50+ individual criteria with test evidence paths)
+Not resolved by this session; require their own sessions:
 
-- **Key design decisions (user-approved, 2026-04-21)**:
-  - **Pillar 3 framing**: combat is fail-forward, delivered VIA Pillar 5 period-authentic restraint. "Eve does not change register. The world around her does."
-  - **Weapon roster (4 MVP)**: silenced pistol (hitscan, 34 HP body / 68 HP headshot, TTK 3 body / 2 head), dart gun (projectile, 150 HP → UNCONSCIOUS, 1-shot KO), rifle (hitscan, 120 HP, 1-shot body + ADS 1.5× zoom, pickup-only), fists (melee cone, 16 HP, 7-hit KO)
-  - **Gunfight TTK model** (option A): real TTK tension with 2× headshot rewarding aim — NOT the 1-shot precision fantasy (which would make gunfights binary)
-  - **Takedown damage SEPARATE** from gunfight base damage: `silenced_pistol_takedown_damage = 100` preserves 1-shot lethal takedowns even though gunfight pistol is 34 HP
-  - **Headshot plumbing**: internal to Combat — `enemy_damaged.amount` carries post-multiplier value (systems-designer authoritative, rejected DamageType.HEADSHOT as enum-semantic rot)
-  - **Dart KO → UNCONSCIOUS**: SAI.AlertState gains 6th state UNCONSCIOUS (NEW) — requires SAI GDD amendment (OQ-CD-1 bundle)
-  - **Crosshair**: period center dot ON BY DEFAULT, accessibility-togglable off (Settings → Accessibility → Crosshair)
-  - **Rifle ADS**: 1.5× zoom (85° → 55° FOV over 200 ms ease-out) — rifle is the ONLY ADS-eligible weapon
-  - **Friendly fire**: ON by default, per-section configurable via Mission Scripting SectionConfig
-  - **Guard return-fire**: hitscan-then-perturb (NOT roll-to-hit) — preserves environmental audio feedback (near-misses hit walls, SFX fires). Spread cone: 2°/3°/3.5°/6° base × movement + 4° cover + 0→3° linear falloff 8m→16m. Cadence: 0.65 s first-shot / 1.4 s LOS / 2.8 s suppression max 3 shots.
-  - **Guard vs Eve damage**: 18 HP per hit (5.5-hit kill) — Pillar 3 survivability. PROTOTYPE-GATED (OQ-CD-6).
-  - **Return-fire timer handshake** (CR-14): guard subscribes to Events.player_damaged; resets _combat_lost_target_timer iff source == self && state == COMBAT
-  - **Ammo economy** (Pillar 2 enforcement):
-    - Starting: pistol 8/16, dart 4/8, rifle 0 (pickup-only)
-    - Guard drops: 8 pistol / 3 rifle (partial) / 1 dart on KO (BREAK-EVEN anti-farm invariant)
-    - Placed caches: Sections 1–4 pistol+dart, Section 5 pressure (no caches)
-    - Carryover: FULL between sections (scarcity compounds)
-    - Respawn floor: pistol 8, dart 4, rifle preserved
-  - **Sampling method** (F.3): `sqrt(randf())` Gaussian-biased disk (NOT uniform flat disk — uniform produces equal miss-density at edge vs center)
-  - **Zero-gravity dart** at 20 m/s × 4.0 s lifetime = 80 m max range. Subtle 0.5 arc option prototype-gated (OQ-CD-9).
-  - **Headshot detection**: Area3D on BoneAttachment3D(bone: head) with `is_in_group("headshot_zone")`. Radius 0.15 m at Y offset 1.65 m. Jolt-validation pending (OQ-CD-2).
-
-- **Pre-implementation gates OPEN** (block Combat stories entering sprints):
-  - **OQ-CD-1 SAI amendment bundle**: (1) AlertState.UNCONSCIOUS 6th state + (2) receive_damage → bool is_dead return + (3) enemy_killed semantics on UNCONSCIOUS entry. Owner: user + technical-director via /design-system revision of SAI.
-  - **OQ-CD-2 Jolt Area3D validation**: 30-min prototype to confirm Jolt's intersect_ray includes Area3D on BoneAttachment3D children. Owner: godot-specialist via prototypes/guard-combat-prototype/.
-
-- **Forward-dep gates** (resolve when Inventory / Mission Scripting GDDs are authored):
-  - OQ-CD-3 Weapon fallthrough (auto-switch to fists when all ammo exhausted)
-  - OQ-CD-4 Fist-swing multi-target selection (nearest vs first)
-  - OQ-CD-5 Mission objective save race (checkpoint timing vs enemy_killed emit)
-
-- **Tier 1 playtest-gated** (5 values — final numbers deferred to prototype + playtest):
-  - OQ-CD-6 guard_pistol_damage_vs_eve = 18 (range [14, 25])
-  - OQ-CD-7 eve_spread_deg = 0.0 (range [0.0, 1.5] for sprint-fire tax)
-  - OQ-CD-8 dart_speed_m_s = 20.0 (range [15, 30])
-  - OQ-CD-9 dart_gravity_scale = 0.0 (or 0.5 subtle arc)
-  - OQ-CD-10 head_zone_radius_m = 0.15 (range [0.10, 0.20])
-
-- **Art Bible amendments flagged** (V.9 — not blocking Combat approval, but block /asset-spec run):
-  - §4.4: add `#FFFFFF` transient-only HUD color (1-frame hit flash)
-  - §7D: add camera-dip hit feedback (3°, 6/10 frame dip/recovery)
-  - NEW §8K VFX Asset Class — Combat Feedback (4 asset types + tier-0 vs tier-3 rule)
-  - §3.4: add silhouette-legibility clarification for fallen-guard poses
-
-- **Registry updates applied 2026-04-21**:
-  - NEW constants (19): weapon damage (5), head-zone detection (2), ammo magazine/reserve (6), guard drops (3), respawn floor (2), dart physics (1)
-  - NEW formula (1): damage_formula (F.1) — owner Combat, referenced by PC + SAI
-  - UPDATED referenced_by (8): eve_sterling, phantom_guard (+ pending AlertState.UNCONSCIOUS note), player_max_health, player_critical_health_threshold, collision_layer_world/player/ai/interactables/projectiles
+1. **ADR-0002 amendment** — signal signatures in `Events.gd` code block MUST be revised to include `severity: StealthAI.Severity` on the 3 perception signals AND `takedown_performed(actor, attacker, takedown_type)` 3-param form. **Additional scope per OQ-CD-1 item 5**: ADR-0002's accessor-convention section must declare `has_los_to_player()` and `takedown_prompt_active(attacker)` as the SAI-owned public accessors consumed by Combat. Owner: `technical-director` via `/architecture-decision adr-0002-amendment` in a separate session.
+2. **Audio GDD re-review** — Audio GDD must pass `/design-review design/gdd/audio.md` with prior gaps closed (trigger-table severity filter + 4-param handler + dual takedown SFX variants + stinger dedupe + dominant-guard idempotence + SCRIPTED-cause handling). Additional 2026-04-22 scope: new `alert_state_changed(_, prev, UNCONSCIOUS, MAJOR)` music cue routing.
+3. **Signal Bus GDD touch-up** — enum ownership list must add `StealthAI.Severity` + `StealthAI.TakedownType` + accessor-method declarations. Minor edit; can land as part of ADR-0002 amendment session.
 
 ## Status
 
@@ -102,41 +94,46 @@
 - ✅ Art bible complete (9 sections — amendments flagged by Combat GDD, not yet applied)
 - ✅ Systems index: 23 + 1 (FootstepComponent) systems
 - ✅ ADRs: 6 authored (0001–0006), all Proposed
-- ⏳ System GDDs: **10/23 authored** — 5 Approved (PC, FC, SAI, Audio, Level Streaming), 5 Designed/Revised pending review (Signal Bus, Input, Outline, Post-Process, Save/Load, Localization, Combat & Damage NEW)
+- ⏳ System GDDs: **10/23 authored** — 5 Approved (PC, FC, SAI [3rd-pass pending re-review], Audio, Level Streaming), 5 Designed/Revised pending review (Signal Bus, Input, Outline, Post-Process, Save/Load, Localization, Combat & Damage 2nd-pass)
 - ⏳ Architecture document: not started
-- 🔶 **Downstream still blocked**: Inventory & Gadgets (12), Mission & Level Scripting (13), Failure & Respawn (14), Civilian AI (15), HUD Core (16), Document Collection (17), Dialogue & Subtitles (18) — some now unblocked by Combat & Damage landing
-
-## Key files modified in this session (2026-04-21)
-
-- `design/gdd/combat-damage.md` — NEW, 1,179 lines (created this session)
-- `design/gdd/systems-index.md` — row 11 updated, Progress Tracker updated, Last Updated notes
-- `design/registry/entities.yaml` — 19 new constants + 1 new formula + 8 referenced_by updates
-- `production/session-state/active.md` — this file
+- 🔶 **Downstream still blocked**: Inventory & Gadgets (12), Mission & Level Scripting (13), Failure & Respawn (14), Civilian AI (15), HUD Core (16), Document Collection (17), Dialogue & Subtitles (18) — some now unblocked by Combat & Damage + SAI OQ-CD-1 closure
 
 ## Next steps (fresh session)
 
-1. **Primary**: `/clear` — this session is done. 1,179-line GDD + 6 specialist consultations + 20 registry entries is a lot.
-2. **In fresh session**: Run `/design-review design/gdd/combat-damage.md` to validate independently. Lean depth is probably sufficient (the authoring pass baked in a lot of specialist rigor already, including qa-lead's AC audit).
+1. **Primary**: `/clear` — this session is done. OQ-CD-1 amendment bundle closure is ~25 edit sites across §C/§D/§E/§H/§V + Status header + registry + session state + systems index.
+2. **In fresh session**: Run `/design-review design/gdd/stealth-ai.md` to validate the 3rd-pass revision independently. Lean depth probably sufficient (the amendment scope was specifically gated by OQ-CD-1 spec + user-approved Option A for chloroform routing).
 3. **Alternatives** (can happen in parallel with #2 or next):
-   - `/consistency-check` — verify Combat values don't conflict with upstream (PC, SAI, Audio) — this already passed pre-review per cross-reference checks during authoring.
-   - **`/design-system stealth-ai` REVISION** to close OQ-CD-1 (SAI amendment bundle: UNCONSCIOUS state + receive_damage → bool + enemy_killed semantics). 1-session effort. Unblocks AC-CD-7.1 and AC-CD-11.4.
-   - `/design-system inventory-gadgets` (system #12) — next MVP system. Combat & Damage defines the Weapon Resource schema it will consume.
-   - `/design-system mission-level-scripting` (system #13) — Combat's friendly-fire SectionConfig authoring concern, plus objective progression on enemy_killed.
-   - `/architecture-decision adr-0002-amendment` — the pending ADR-0002 severity+takedown_type amendment flagged by SAI + now by Combat. Bundles well with OQ-CD-1 SAI revision.
+   - `/design-review design/gdd/combat-damage.md` — Combat 2nd-pass revision still pending independent review.
+   - `/consistency-check` — verify no new cross-GDD conflicts from the SAI 3rd-pass revision (particularly: Audio GDD UNCONSCIOUS music cue reference, Save/Load guard serialization schema expansion).
+   - `/architecture-decision adr-0002-amendment` — now bundles (a) severity + 4-param takedown_performed; (b) SILENCED_PISTOL → STEALTH_BLADE enum rename; (c) NEW 2026-04-22: has_los_to_player + takedown_prompt_active accessor-convention declaration.
+   - `/design-system inventory-gadgets` (system #12) — Combat + SAI both define interfaces Inventory will consume.
    - `/gate-check pre-production` — 10/16 MVP GDDs designed; not yet ready for gate (need 16/16 + ADRs Accepted).
 
 ## Open design questions (active)
 
-Combat & Damage brings 10 new OQs (OQ-CD-1 through OQ-CD-10, documented in §Open Questions of the GDD). Plus the previously-tracked deferred items:
+SAI 3rd-pass revision introduces no new OQs beyond OQ-CD-1 closure. Combat & Damage's 10 OQs (OQ-CD-1 now CLOSED, OQ-CD-2 through OQ-CD-13 still active) remain tracked in combat-damage.md §Open Questions. Previously-tracked deferred items unchanged:
+- OQ-SAI-1 through OQ-SAI-8 (SAI GDD §Open Questions) — none affected by OQ-CD-1 closure.
 - OQ-2 Fall damage — deferred to VS
 - OQ-3 Lean system — deferred, revisit after Stealth AI + first playtest
 - OQ-4 Mirror full body mesh — deferred to VS
-- OQ-5 Surface detection method — moved to footstep-component.md (closed by CR-10 in level-streaming.md)
 - OQ-6 Eve verbalizes — deferred, narrative dep
 - OQ-FC-2 Noise level sampling timing — deferred, Audio playtest dep
 - OQ-FC-3 FC execution order vs PC state — deferred, playtest dep
 - OQ-FC-4 Non-player footstep sources — deferred, Stealth AI dep
 
-## Specialist verification artifacts (this session)
+## Session Extract — /architecture-review 2026-04-22
 
-All specialist reports delivered inline via Task tool; outputs distilled into GDD sections. Not persisted to separate files — they are authoring artifacts, not authoritative specs. The GDD itself is the authoritative spec.
+- **Verdict**: CONCERNS
+- **Requirements**: 158 total TRs — ~145 covered, ~10 partial, ~3 hard gaps (all inside pending ADR-0002 amendment scope)
+- **New TR-IDs registered**: 158 (initial registry population across 12 authored GDDs, 12 system-slug namespaces: SB/INP/AUD/OUT/PP/SAV/LOC/PC/FC/LS/SAI/CD)
+- **GDD revision flags**: player-character.md (CombatSystem→CombatSystemNode rename, 3 sites — already producer-tracked)
+- **Top ADR gaps**:
+  1. ADR-0002 amendment completion (TransitionReason on section signals + guard_incapacitated/guard_woke_up + enum-ownership list entry; atomic-commit hazard per Specialist §2)
+  2. Performance Budget Distribution ADR (SAI pre-impl gate #5; affects 7 systems)
+  3. Autoload registration contract (InputContext vs LevelStreamingService load-order-4 collision; editorial hazard per Specialist §1)
+- **Cross-ADR conflicts**: 3 🔴 (Conflict 1 autoload collision; Conflict 2 ADR-0002 section signals outdated; Conflict 3 ADR-0002 missing SAI 4th-pass signals)
+- **Engine specialist**: godot-specialist YELLOW — 7 targeted spot-checks; 4 additional Risks-row recommendations (ADR-0002 atomicity, ADR-0005 Shader Baker × material_overlay gap elevated, ADR-0006 Jolt Area3D tunneling, ADR-0004 InputContextStack/InputContext discoverability trap)
+- **All 6 ADRs still Proposed** — 16 verification gates outstanding across the chain
+- **Report**: docs/architecture/architecture-review-2026-04-22.md
+- **Traceability index**: docs/architecture/requirements-traceability.md
+- **TR registry populated**: docs/architecture/tr-registry.yaml (version 2)

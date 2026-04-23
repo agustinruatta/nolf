@@ -1,21 +1,29 @@
 # Combat & Damage
 
-> **Status**: Revised (MAJOR REVISION pass 2026-04-21 — resolving 25+ blockers from first /design-review)
-> **Author**: user + design-system skill + /design-review specialists (game-designer, systems-designer, ai-programmer, art-director, economy-designer, qa-lead, godot-specialist, ux-designer, creative-director)
-> **Last Updated**: 2026-04-21 (revision pass)
-> **Implements Pillars**: Pillar 3 — Stealth is Theatre, Not Punishment (core); Pillar 5 — Period Authenticity Over Modernization (core, with accessibility carve-out per CD ruling); Pillar 1 — Comedy Without Punchlines (support via hit vocals + weapon sound design); Pillar 2 — Discovery Rewards Patience (softened ammo scarcity — see §F.6)
-> **Consumes ADRs**: ADR-0001 (Stencil), ADR-0002 (Signal Bus), ADR-0003 (Save Format), ADR-0006 (Collision Layers)
-> **Depends on GDDs**: Player Character (✅ Approved), Stealth AI (✅ Approved), Audio (✅ Approved)
-> **Depended on by (forward)**: Inventory & Gadgets, Mission & Level Scripting, Failure & Respawn, HUD Core, Settings & Accessibility (Enhanced Hit Feedback toggle)
+> **Status**: Revised (MAJOR REVISION pass 2 — 2026-04-22 — resolving 34 blockers from second /design-review)
+> **Author**: user + design-system skill + /design-review specialists (game-designer, systems-designer, ai-programmer, economy-designer, qa-lead, godot-specialist, ux-designer, creative-director)
+> **Last Updated**: 2026-04-22 (second revision pass)
+> **Implements Pillars**: Pillar 3 — Stealth is Theatre, Not Punishment (core); Pillar 5 — Period Authenticity Over Modernization (core, with explicit boundary: governs diegetic fiction only per CD ruling — OQ-CD-13); Pillar 2 — Discovery Rewards Patience (load-bearing post-revision — restored via NOLF1-authentic drop rates, see §F.6); Pillar 1 — Comedy Without Punchlines (support via guard banter + environmental absurdity, NOT via Eve's physical actions — §V.8 Matt Helm anti-pattern primary)
+> **Consumes ADRs**: ADR-0001 (Stencil), ADR-0002 (Signal Bus — amendment pending), ADR-0003 (Save Format), ADR-0006 (Collision Layers)
+> **Depends on GDDs**: Player Character (✅ Approved — type-rename coordination pending), Stealth AI (✅ Approved — OQ-CD-1 amendment required), Audio (✅ Approved — type-rename coordination pending)
+> **Depended on by (forward)**: Inventory & Gadgets, Mission & Level Scripting, Failure & Respawn, HUD Core, Settings & Accessibility (8 contracts via OQ-CD-12), Input (new Takedown action), Dialogue & Subtitles
 
-> **Revision pass 2026-04-21 — key changes** (applied in response to /design-review MAJOR REVISION NEEDED verdict):
-> - **Weapon roster restructured**: silenced pistol is now **gunfight-only** (3-shot TTK). Stealth 1-shot lethal takedown moves to a new weapon, the **takedown blade** (silent melee, stealth-only). Resolves pistol dual-identity blocker.
-> - **Fists kept as rare edge-case fallback**; Section B explicitly carves them out as the one accepted tonal exception. Ammo generosity raised so fists are seldom needed (Pillar 2 pressure softened — see F.6).
-> - **Crosshair rationale revised**: accessibility-first (not "period-scope reticle"). Added 1 px Parchment halo ring for low-contrast legibility.
-> - **Pillar 5 boundary clarified**: Pillar 5 governs diegetic period fiction, NOT accessibility scaffolding. New `Settings → Accessibility → Enhanced Hit Feedback` opt-in toggle (forward dep).
-> - **SAI cross-domain obligations removed**: Combat now owns its own timer defensiveness (DEAD-state gate in Combat's callbacks). OQ-CD-1 trimmed to only UNCONSCIOUS state + `receive_damage -> bool` return.
-> - Godot API blockers fixed: `collide_with_areas = true` specified for hitscan queries; `section_exited(reason)` replaced with existing `respawn_triggered` signal; `class_name` collision resolved; dart wall-hit filter added.
-> - AC testability gaps addressed: time-advancement mechanism specified; trivially-passing AC rewritten; `@blocked` / `@prototype_gated` enforcement documented.
+> **Revision pass 2026-04-22 — key changes** (applied in response to second /design-review MAJOR REVISION NEEDED verdict — 6 specialist adversarial reviews + CD senior synthesis):
+> - **UNCONSCIOUS semantics resolved — Transitional model**: dart → UNCONSCIOUS, `is_dead = false`, no `enemy_killed`. Subsequent lethal damage on UNCONSCIOUS guard → DEAD + `enemy_killed`. Re-dart on UNCONSCIOUS = no-op. Resolves E.1/E.3/CR-16/AC-CD-7.1 contradictions. `DamageType` lethality classified via new `is_lethal_damage_type()` helper. `MELEE_FIST` reclassified non-lethal (routes to UNCONSCIOUS).
+> - **Blade vs pistol input — dedicated Takedown input**: new `Takedown` input action (kbd `F`, gamepad Y). Fire never triggers blade; Takedown never triggers pistol. Eliminates takedown-moment ambiguity. Input GDD forward-dep.
+> - **Fists reworked**: `fist_base_damage 16 → 40` (safe range `[34, 50]`). 3-swing KO (was 7), 2.1 s cycle (was 4.9 s). Viable deliberate silent non-lethal KO AND ammo-dry fallback. No Pillar 1 slapstick carve-out — §V.8 Matt Helm anti-pattern primary.
+> - **Design Test scope clarified**: §B table "Neither" row removed; Design Test governs diegetic fiction only; accessibility scaffolding has its own rationale (UI-1, V.6).
+> - **Economy rebalanced — NOLF1-authentic**: `guard_drop_pistol_rounds = 3` (was 8). Break-even on paper, net-negative after real-play friction. Pillar 2 depletion pressure restored. New §F.6 per-section depletion math shown explicitly.
+> - **Photosensitivity rate-gate**: new `hud_damage_flash_cooldown_ms = 333` fixed at 3 Hz WCAG ceiling. HUD Core coalesces rapid damage into single deferred flash. First-boot photosensitivity warning (OQ-CD-12 item 7).
+> - **Crosshair resolution + contrast**: dot size now `0.19% × viewport_v` (3 px min / 12 px max); halo changed to `tri_band` (Parchment outer + Ink Black inner) so contrast holds against both light and dark backgrounds. Resolves ux-designer BLOCKER-2 + BLOCKER-3.
+> - **Phantom APIs eliminated**: `ProjectileManager` removed (per-dart self-subscription to `respawn_triggered`). `guard.has_los_to_player()` + `guard.takedown_prompt_active()` public accessors declared in OQ-CD-1 SAI amendment (was phantom state-peek).
+> - **Godot API corrections**: `query.exclude` now collects ALL owned CollisionObject3D RIDs (not just body — fixes guard self-headshot via head Area3D). Dart `_on_impact` handles both `body_entered` AND `area_entered` (fixes dart graze-headshot silent failure). Pre-fire occlusion check prevents silent dart-inside-wall. ShapeCast3D cone spec corrected (no ConeShape3D in Godot 4.6 — SphereShape3D sweep). CR-14 cross-signal FIFO claim removed (synchronous in-handler reset is the mechanism).
+> - **F.1 output_range corrected**: `[34, 240]` default / `[34, 300]` safe-range ceiling.
+> - **F.3 median claim corrected**: median angular deviation for `sqrt(randf())` on 13° cone is ~9.2° (analytically), not 7.5°. AC-CD-9.2 assertion updated to `[8.5°, 9.9°]`.
+> - **Test infrastructure gate (AC-CD-19)**: `SignalRecorder.gd`, `WarningCapture.gd`, `.blocked-tests.md` manifest formally flagged as `/test-setup` sprint prerequisites.
+> - **OQ-CD-13 reclassified**: Pillar 5 Boundary Clarification doc now BLOCKING for downstream GDDs (HUD State Signaling, Document Overlay, Menu, Settings & Accessibility). Does not block Combat approval.
+> - **ADR-0002 amendment coordination**: type rename `CombatSystem → CombatSystemNode` flagged. PC-Approved + Audio-Approved GDDs reference old type name in frozen signatures; producer sequences the amendment landing with cross-GDD type-rename pass.
+> - Numerous stale-value propagation fixes (AC-CD-12.1 reserves, AC-CD-12.2 variant, AC-CD-1.5 enum list, AC-CD-2.1 parametrized list, CR-8/AC-CD-13.1 crosshair size, F.1 output_range, F.3 median, E.21/E.23 prose).
 
 ## Overview
 
@@ -35,29 +43,20 @@ This is the **Deadpan Witness framing of Player Character (Section B) continued 
 
 | Weapon | Register it serves | Composed Removal test |
 |---|---|---|
-| **Takedown blade** (stealth 1-shot) | Composed — the silent blade is the *archetype* of composed removal. One action, one obstacle removed, scene continues. | **Pass** |
+| **Takedown blade** (stealth 1-shot lethal) | Composed — the silent blade is the *archetype* of composed removal. One action, one obstacle removed, scene continues. | **Pass** |
 | **Silenced pistol** (gunfight, 3-shot TTK) | Composed — muffled pops, deliberate aim. The 3-shot TTK rewards headshot discipline (1 head + 1 body = dead) without collapsing into twitch-shooter binary. | **Pass** |
 | **Dart gun** (non-lethal projectile) | Composed — one compressed-air puff, one arc, silence. | **Pass** |
 | **Rifle** (rare pickup, 1-shot body) | Tonal exception — a deliberate chosen moment. Eve picks the rifle up in specific mission beats (§D.3, §D.5); it is the "escalation has reached the rooftop" register, not everyday combat. Scope zoom dramatizes the decision to use it. | **Pass with carve-out** (see §F.1 note) |
-| **Fists** (edge-case fallback, 7-swing KO) | **Tonal exception — accepted slapstick.** Fists exist as the rare last-resort when every other weapon is dry. The 7-swing / 4.9 s cycle IS slapstick (per Matt Helm cautionary reference in §V.8) — and that is acknowledged. The design response is to make fists *rare* via ammo generosity (§F.6), not to fix the slapstick. | **Carve-out** — see §B note below |
+| **Fists** (deliberate silent non-lethal KO, 3-swing / ~2.1 s cycle) | Composed — fists are now a viable planned tool: 2–3 decisive close-range strikes to an unaware guard. Not slapstick — paced between the blade's 1-shot and the dart gun's ranged projectile. Serves two use cases: (1) deliberate melee non-lethal KO when ranged darts are inappropriate, (2) emergency fallback when everything else is dry. §V.8 Matt Helm cautionary reference retained as the *ceiling* on fist theatrics — fists must never read as a brawl. | **Pass** |
 
-### Fists carve-out (accepted tonal exception)
-
-The /design-review pass flagged fists as a Composed Removal failure: 7 swings / 4.9 s per guard reads as Matt Helm slapstick, not Emma Peel composure. The creative-director agreed this is a structural mismatch that no tuning in the `fist_base_damage` safe range `[13, 20]` can resolve. **The design response is to accept the mismatch and mitigate its frequency rather than change the mechanic.**
-
-- Fists remain at `fist_base_damage = 16` HP / 7 swings / 4.9 s per KO (no mechanical change).
-- Ammo reserves are raised substantially (§F.6) so the expected frequency of fists-as-fallback drops from "every Section 3+" to "rare emergency." A player who plays the game normally should encounter fists as a primary solve fewer than 2–3 times across the full Tier 1 mission.
-- When fists ARE used, the resulting slapstick register is explicitly folded into Pillar 1 (Comedy Without Punchlines). An exhausted Eve reduced to punching a 120 kg henchman seven times in a row is the kind of matter-of-fact absurdity Pillar 1 is built for. The comedy lands because Eve does not change register — she punches with the same composure she would reload with.
-- Players who want to avoid fists entirely can do so via cache collection + the softened ammo economy (F.6 math: expected ammo supply is 30% above expected demand at normal-route play).
-
-**The test is not "are fists composed?" — it is "how often will a competent player need to use them?" The answer is "almost never," and the GDD's job is to make that answer true, not to redesign the weapon.**
+**Fists role (2026-04-22 revision).** Per user direction: fists serve deliberate silent non-lethal KO (close-range, when dart isn't the right tool) AND ammo-dry fallback. The prior 7-swing / 4.9 s cycle read as Matt Helm slapstick and was cut. The new 3-swing cycle (`fist_base_damage = 40`, ceil(100/40) = 3 swings × 0.7 s = 2.1 s per KO) keeps fists within Composed Removal — paced as three deliberate strikes, not a brawl. §V.8's cautionary reference still applies to *repetitive* punching (if tuning ever forced 4+ swings, the anti-pattern would re-emerge); the 2–3-swing window is the safe band.
 
 ### Pillar alignment
 
 - **Pillar 3 (Stealth is Theatre, Not Punishment)** — load-bearing. Combat is fail-forward. Getting forced into a shootout does not end the run; it *escalates the scene*. The trigger pull is the scene shifting register, not a fail state breaking in. COMBAT de-escalates back to SEARCHING, and SEARCHING back to SUSPICIOUS; nothing is permanent except a body.
 - **Pillar 5 (Period Authenticity Over Modernization)** — the *mechanism* by which Pillar 3 lands. Period-authentic restraint (no vignette, no hit markers, no damage-direction indicators, no kill cam) is what keeps combat legible as *theatre* rather than as punishment. A red damage vignette would make every hit read as "you're losing"; its absence makes every hit read as "the scene is getting louder."
-- **Pillar 1 (Comedy Without Punchlines)** — supporting. Comedy lands through guard reactions, guard banter, and the absurd tableau of 1960s spy violence in a museum gallery. Never through Eve being cool.
-- **Pillar 2 (Discovery Rewards Patience)** — supporting. The patient observer's path still beats the shootout path: ammo scarcity, the cost of alerting the next guard, and the dart gun's non-lethal premium all keep observation the *better* solution; combat remains valid-but-costlier.
+- **Pillar 1 (Comedy Without Punchlines)** — supporting. Comedy lands through guard reactions, guard banter, and the absurd tableau of 1960s spy violence in a museum gallery. **Never through Eve being cool, and never through Eve's physical actions being goofy** — §V.8's Matt Helm cautionary reference is primary: if combat reads as slapstick, it has left this pillar's register. Fists in particular stay within the pillar only while they remain 2–3 decisive strikes (see §F.1 fist tuning).
+- **Pillar 2 (Discovery Rewards Patience)** — load-bearing (restored post-2026-04-22). Guard ammo drops are **net-negative for Aggressive** (drop 3 rounds per lethal kill vs 3-shot body TTK — break-even at best, negative when including reload inefficiency), which re-establishes ammo depletion as a real Pillar 2 lever. The patient observer's path still beats the shootout path: observation discovers caches, darts keep the non-lethal premium, and combat accumulates a cost — the shootout drains reserves. NOLF1-authentic. See §F.6 economy rewrite.
 
 ### Tonal touchstones
 
@@ -78,10 +77,8 @@ The /design-review pass flagged fists as a Composed Removal failure: 7 swings / 
 | Silenced-pistol mechanical ratchet | World's (weapon has period texture) | **Keep** |
 | "LOW HEALTH" text warning | Eve's (the HUD is pleading with her) | **Cut** |
 | Guard grunt-and-crumple reaction | World's (the obstacle reacts to its removal) | **Keep** |
-| Crosshair dot (default on) | **Neither** — accessibility affordance, not part of Eve's diegesis (see §UI-1 revised rationale) | **Keep with honest framing** |
-| Enhanced Hit Feedback toggle (Settings → Accessibility) | **Opt-in only** — changes the accessibility layer, not Eve's register | **Keep (opt-in)** |
 
-This test resolves future combat-feel debates and links directly to the Forbidden Patterns section. **It is NOT applied to accessibility scaffolding** — Pillar 5 governs diegetic fiction, not player accommodation (CD ruling, 2026-04-21).
+**Scope of the Design Test** (revised 2026-04-22 per CD ruling). The Design Test governs **diegetic period fiction** — elements Eve could plausibly experience, perceive, or be portrayed by within the 1960s spy fiction the game inhabits. It does **NOT** govern accessibility scaffolding (crosshair, damage-flash duration, colorblind cues, Enhanced Hit Feedback). Those are player-accommodation affordances, decided on accessibility grounds, not diegetic grounds. Accessibility surfaces have their own rationale (see UI-1, V.6, UI-5) and are not in this test's domain. Previous "Neither" rows were a symptom of trying to force accessibility items through a diegetic test — they belong outside the test.
 
 ## Detailed Design
 
@@ -91,38 +88,60 @@ This test resolves future combat-feel debates and links directly to the Forbidde
 
 **CR-2 Signal emit-site ownership.** After `actor.receive_damage(...)` returns (with its new `-> bool is_dead` return — see OQ-CD-1), CombatSystem emits `enemy_damaged(actor, amount, source)`, then if `is_dead == true` also `enemy_killed(actor, source)` in the same call stack. Deterministic order: mutation → `enemy_damaged` → `enemy_killed`. Eve's path emits `player_damaged` → `player_health_changed` → optional `player_died` (owned by PC F.6, NOT re-emitted here).
 
-**CR-3 Weapon roster.** Revised 2026-04-21 — takedown blade split out from silenced pistol to resolve dual-identity blocker.
+**CR-3 Weapon roster.** Revised 2026-04-22 — fists reworked to 3-swing deliberate KO per user direction; blade bound to dedicated Takedown input.
 
-| Weapon | Class | Delivery | Lethal? | ADS | Context | Audio SFX |
-|---|---|---|---|---|---|---|
-| **Takedown blade** *(NEW)* | Stealth tool | Melee contact (stealth-only) | Yes (1-shot) | No | Gated by SAI contact-prompt in PATROL/NOTICED/SUSPICIOUS | Faint blade draw + muffled contact (~180 ms) |
-| Silenced pistol | Primary (gunfight) | Hitscan | Yes (3-shot body / 2-shot head) | No | Gunfights only — NOT used for takedowns | Period-accurate ~110 dB suppressed pop + mechanical ratchet |
-| Dart gun | Primary (non-lethal) | Projectile | No (KO) | No | Any state — quiet | Compressed-air puff + dart whistle (~400 ms) |
-| Rifle | Rare pickup | Hitscan | Yes (1-shot body) | **Yes (1.5× zoom)** | Chosen moments (§D.3, §D.5) — tonal exception | Louder single-shot report + bolt action |
-| Fists | Edge-case fallback | Melee cone | No (KO) | No | Last resort — ammo generosity keeps this rare | Cloth impact + knuckle thud |
+| Weapon | Class | Delivery | Lethal? | ADS | Context | Input | Audio SFX |
+|---|---|---|---|---|---|---|---|
+| **Takedown blade** | Stealth tool (lethal) | Melee contact (stealth-only) | Yes (1-shot) | No | Gated by SAI contact-prompt in PATROL/NOTICED/SUSPICIOUS | **`Takedown` input** (NEW, dedicated — NOT `Fire`) | Faint blade draw + muffled contact (~180 ms) |
+| Silenced pistol | Primary (gunfight) | Hitscan | Yes (3-shot body / 2-shot head) | No | Gunfights only — NOT used for takedowns | `Fire` (always unambiguously pistol) | Period-accurate ~110 dB suppressed pop + mechanical ratchet |
+| Dart gun | Primary (non-lethal ranged) | Projectile | No (KO) | No | Any state — quiet | `Fire` (when equipped) | Compressed-air puff + dart whistle (~400 ms) |
+| Rifle | Rare pickup | Hitscan | Yes (1-shot body) | **Yes (1.5× zoom)** | Chosen moments (§D.3, §D.5) — tonal exception | `Fire` (when equipped) | Louder single-shot report + bolt action |
+| **Fists** *(reworked 2026-04-22)* | Melee non-lethal (deliberate or fallback) | Melee cone | No (KO) | No | Two use cases: deliberate silent close-range KO; ammo-dry fallback | `Melee` (existing) | Cloth impact + knuckle thud |
 
-**Takedown blade vs silenced pistol — cleanly separated identities**:
-- **Takedown blade** is a dedicated silent stealth weapon. It fires ONLY via SAI's `receive_takedown(STEALTH_BLADE, attacker)` path, gated by context prompt (guard is unaware / not in COMBAT, player is behind or adjacent). Cannot be drawn in gunfight. 1-shot lethal. No ammo. Animation: a brief 200 ms blade draw + stroke.
-- **Silenced pistol** is a gunfight weapon only. 3-shot body TTK / 2-shot head TTK. Same weapon in the player's hand throughout gunfights — no modal surprise. The pistol cannot perform a 1-shot takedown even at point-blank range against an unaware guard; the prompt for takedown routes to the blade.
+**Dedicated Takedown input contract (NEW, 2026-04-22 per user decision)**:
+- Takedown is a distinct input action (default keyboard: `F`; default gamepad: face-button Y/△). Binding owned by Input GDD (forward-dep update required).
+- Takedown input is **only live** when SAI's context prompt is active (guard is in PATROL/NOTICED/SUSPICIOUS AND player is behind/adjacent within ~1.5 m AND guard LOS does not include player). The context prompt UI surfaces the Takedown input glyph; if the prompt is not visible, Takedown input does nothing (dry input — no audio cue, no animation).
+- `Fire` input is **never** a takedown trigger. Pressing Fire while the context prompt is live still fires the pistol (or dart, whichever is equipped). This is intentional: the two inputs are unambiguous, so the player cannot accidentally break stealth by mashing Fire.
+- The blade cannot be drawn outside the Takedown context. It is not switchable from the weapon wheel; there is no "blade-equipped" state. Takedown input routes directly to SAI's `receive_takedown(STEALTH_BLADE, eve)` → CR-15 damage delegation. Resolves the prior input-ambiguity blocker.
 
-This resolves the design-review BLOCKER that the same silenced pistol was producing 1-shot lethal AND 3-shot lethal outcomes depending on a state (takedown-vs-gunfight) that the player could not reliably perceive.
+**Weapon identity separation**:
+- **Takedown blade** — silent lethal, 1-shot, gated by Takedown input + context prompt. No ammo.
+- **Fists** — silent non-lethal, 3-swing ~2.1 s KO, Melee input, always available. Viable deliberate tool (Ghost players can fist-KO in corridors where dart isn't safe) AND ammo-dry fallback.
+- **Silenced pistol** — gunfight only, 3-shot body TTK, Fire input. No takedown behavior.
+- **Dart gun** — non-lethal ranged KO, 1-shot, Fire input.
+- **Rifle** — 1-shot body lethal, chosen-moment tonal exception.
 
-Weapon *entity* ownership (Resource, mesh, ammo UI) belongs to Inventory & Gadgets (forward dep); Combat owns fire/damage math + post-fire signal emits. **Inventory forward dep**: blade Resource schema (no ammo, `base_damage = 100`, `damage_type = DamageType.MELEE_BLADE`) + blade-draw input handler. Documented in §Dependencies → Forward dependencies.
+Weapon *entity* ownership (Resource, mesh, ammo UI) belongs to Inventory & Gadgets (forward dep); Combat owns fire/damage math + post-fire signal emits. **Inventory forward dep** (revised 2026-04-22): blade Resource schema (no ammo, `base_damage = 100`, `damage_type = DamageType.MELEE_BLADE`, `fire_rate_sec = 0.0` with inline comment "context-gated single-use per takedown prompt — no cooldown beyond animation duration"); no separate blade-draw input handler (use Takedown input directly); fists have Melee input + 0.7 s cycle cooldown already specified in CR-7.
 
 **CR-4 Flat damage model.** Each weapon has one base damage number (final values in §D). No distance falloff. No armor/resistance. **Headshots on guards** deliver 2× base damage (multiplier computed internally; `enemy_damaged.amount` is post-multiplier). **No headshot damage on Eve** — guards always hit body-only.
 
-**CR-5 Hitscan-then-perturb accuracy** (revised 2026-04-21 — `collide_with_areas = true` specified). Hitscan uses:
+**CR-5 Hitscan-then-perturb accuracy** (revised 2026-04-22 — guard self-exclusion expanded to cover all owned CollisionObject3D RIDs, not just body). Hitscan uses:
 ```gdscript
 var query := PhysicsRayQueryParameters3D.create(from, to)
 query.collide_with_areas = true       # REQUIRED — headshot Area3D detection (F.5) depends on this
 query.collide_with_bodies = true      # default, explicit for clarity
-query.exclude = [shooter.get_rid()]   # shooter excludes itself (avoids guard self-hit in friendly-fire mode)
+query.exclude = _collect_self_rids(shooter)  # body RID + head Area3D RID + any child CollisionObject3D
 query.collision_mask = _build_mask_for_shooter(shooter)
 var result := space_state.intersect_ray(query)
 ```
-Aim vector is perturbed by a random offset inside a cone whose half-angle depends on shooter state + range (formula in §D F.2). This preserves environmental audio feedback: a near-miss hits the wall and the wall-impact SFX fires. Eve-fired shots cast against `MASK_AI | MASK_WORLD`; guard-fired shots cast against `MASK_WORLD | MASK_AI | MASK_PLAYER` (AI included iff `GUARD_FRIENDLY_FIRE_ENABLED == true`). Neither uses `MASK_PROJECTILES`. The `collide_with_areas = true` flag is MANDATORY — without it, `intersect_ray` returns only `CollisionObject3D` bodies, and the head `Area3D` (F.5) is silently skipped. This was flagged as a /design-review blocker.
+Aim vector is perturbed by a random offset inside a cone whose half-angle depends on shooter state + range (formula in §D F.2). This preserves environmental audio feedback: a near-miss hits the wall and the wall-impact SFX fires. Eve-fired shots cast against `MASK_AI | MASK_WORLD`; guard-fired shots cast against `MASK_WORLD | MASK_AI | MASK_PLAYER` (AI included iff `GUARD_FRIENDLY_FIRE_ENABLED == true`). Neither uses `MASK_PROJECTILES`. The `collide_with_areas = true` flag is MANDATORY — without it, `intersect_ray` returns only `CollisionObject3D` bodies, and the head `Area3D` (F.5) is silently skipped.
 
-**Guard self-exclusion** (resolves ai-programmer Finding 7): the firing guard's own RID is always excluded from its own raycast via `query.exclude = [shooter.get_rid()]`. Without this, a guard's hitscan can intersect its own body capsule at the ray origin when `MASK_AI` is included (friendly-fire mode) and apply damage to itself.
+**Guard self-exclusion (revised 2026-04-22 — multi-RID)**: since `collide_with_areas = true` exposes the head `Area3D` to hitscan, a guard's own hitscan in friendly-fire mode could intersect its own head `Area3D` (a distinct `CollisionObject3D` with its own RID, separate from the body capsule's RID). The exclusion list must cover **every owned collision object**:
+
+```gdscript
+static func _collect_self_rids(shooter: Node) -> Array[RID]:
+    var rids: Array[RID] = []
+    if shooter is CollisionObject3D:
+        rids.append(shooter.get_rid())
+    for child in shooter.find_children("*", "CollisionObject3D", true, false):
+        # includes BoneAttachment3D → Area3D("headshot_zone") and any future child colliders
+        rids.append((child as CollisionObject3D).get_rid())
+    return rids
+```
+
+This resolves godot-specialist B1 + ai-programmer F7: without it, a guard in friendly-fire mode can self-headshot at the ray origin. AC-CD-18 (new) asserts this invariant (see §Acceptance Criteria).
+
+**Mask rebuild is per-shot, not cached**: `_build_mask_for_shooter(shooter)` constructs a local `int` mask per fire call, reading the current value of `SectionConfig.guard_friendly_fire_enabled` at construction time. No mask is stored as a cached field on the guard. If Mission Scripting flips the config between shots, the next shot honors the new value (resolves ai-programmer Finding 10).
 
 **Mask rebuild is per-shot, not cached**: `_build_mask_for_shooter(shooter)` constructs a local `int` mask per fire call, reading the current value of `SectionConfig.guard_friendly_fire_enabled` at construction time. No mask is stored as a cached field on the guard. If Mission Scripting flips the config between shots, the next shot honors the new value (resolves ai-programmer Finding 10).
 
@@ -150,17 +169,31 @@ func _on_body_entered(body: Node) -> void:
     queue_free()
 ```
 
-Resolves /design-review: dart-on-wall no longer spams `push_warning` (world geometry is filtered early); same-tick double-hit (body + head Area3D) is suppressed by `_has_impacted` flag. Darts exiting map bounds or living > 4 s auto-free.
+Resolves /design-review: dart-on-wall no longer spams `push_warning` (world geometry is filtered early); same-tick double-hit (body + head Area3D) is suppressed by `_has_impacted` flag. Darts exiting map bounds or living > 4 s auto-free. **Also handles Area3D-only contact (revised 2026-04-22 — godot-specialist B8 fix)**: the dart scene connects BOTH `body_entered` (physics body contact) AND `area_entered` (Area3D overlap) to the same `_on_impact(other: Node)` handler. In Godot 4.6, a `RigidBody3D` overlapping an `Area3D` fires `area_entered` on the RigidBody3D side; if the dart grazes only the head `Area3D` without touching the body capsule, `body_entered` never fires but `area_entered` does. The shared handler ensures damage applies. `_has_impacted` still guards against double-fire when both signals trigger same-tick.
 
-**CR-7 Melee contact (fists).** Cone-shaped ShapeCast3D from camera origin, ~0.7 m range, 30° half-angle, 1 hit per swing. Windup 0.3 s → hit resolves on windup-end frame → recovery 0.4 s. Deliberately high shot count to KO a full-HP guard (§D specifies).
+**Dart wall-spawn edge case (revised 2026-04-22 — godot-specialist B14 fix)**: if Eve is flush against cover, the spawn offset (`camera.global_position + aim_direction × 0.5`, F.4) can place the dart *inside* wall geometry. The dart's `_on_impact` fires at spawn time with `body is StaticBody3D`, and the dart frees silently with no SFX, no damage, no player feedback. To prevent this silent failure, Combat's fire routine performs a `PhysicsRayQueryParameters3D.create(camera_pos, spawn_pos)` pre-check against `MASK_WORLD`; if occluded, the shot is cancelled at the fire site — a dry-fire click SFX plays (Audio-owned), no dart is spawned, no ammo is consumed, and `weapon_fired` does NOT emit. Documented in E.41 below.
 
-**CR-8 Crosshair.** Static Ink Black `#1A1A1A` center dot, ~6 px diameter at 1080p, period-scope-reticle style. **Enabled by default.** Disableable via `Settings → Accessibility → Crosshair`. The dot does NOT expand/contract, does NOT change color on enemy hover, does NOT hit-marker flash. Pillar 5 preserved — it reads as a period-plausible reticle dot, not modern FPS UX.
+**CR-7 Melee contact (fists).** Revised 2026-04-22 — 3-swing KO cycle per user decision; primitive correction per godot-specialist B9.
 
-**CR-9 Aim-down-sights (rifle only).** `Aim` input hold tweens camera FOV 85° → 55° over 200 ms (ease-out), fades in an optical-scope reticle overlay, reduces muzzle sway 50%, halves accuracy spread cone. Release reverses over 150 ms. ADS is cancelled by: reloading, weapon-switch, or damage ≥ `interact_damage_cancel_threshold` (10 HP). Pistol / dart / fists have no ADS analog.
+Fists use a forward-sweep detection volume from camera origin:
+- Godot 4.6 has no `ConeShape3D`. The detection volume is a `SphereShape3D` of radius 0.35 m swept from camera origin along the forward axis for 0.7 m via `ShapeCast3D.target_position = -camera.basis.z * 0.7`. The spherical swept volume approximates a 30° half-angle cone at 0.7 m reach within ±0.1 m tolerance — acceptable for melee feel and computationally cheap.
+- 1 hit per swing (OQ-CD-4 gates multi-target selection: nearest-collider sort pending prototype).
+- Windup 0.3 s → hit resolves on windup-end frame → recovery 0.4 s → total cycle 0.7 s.
+- KO threshold: 3 swings at `fist_base_damage = 40` → 120 HP cumulative against a 100 HP guard. Per-KO time budget: 2.1 s (down from 4.9 s). Viable as deliberate silent non-lethal KO per CR-3 revised role.
 
-**CR-10 Fire input gating.** Fire blocked while `_is_reloading || _is_switching_weapon || _is_fist_swinging || _is_hand_busy || InputContext != GAMEPLAY`. No fire-queue on gated input — press is dropped.
+**CR-8 Crosshair.** Revised 2026-04-22 to resolve ux-designer BLOCKER-2 (resolution scaling) and BLOCKER-3 (contrast claim). See UI-1 for complete specification — Combat describes behavior; HUD Core renders.
 
-**CR-11 Ammo scarcity (Pillar 2 enforcement).** Eve starts each mission with limited reserves per weapon (final values §D). Guards yield a single-magazine drop of whatever weapon they held, picked up via PC's existing `player_interacted` raycast. Dart gun reserves are deliberately scarce — its non-lethal premium is paid in bullets. Fall-through when primary runs dry: pistol → fists (never dart; dart scarcity is the cue to seek pickups). Rifle is rare and kept for chosen moments, not a de-facto fallback.
+- Dot color Ink Black `#1A1A1A`, scaled to **0.19% of viewport vertical resolution** (approx. 4 px at 1080p, 5 px at 1440p, 8 px at 4K), clamped min 3 px max 12 px.
+- Halo stroke 1 physical pixel, Parchment `#E8DFC8` outer + Ink Black `#1A1A1A` inner 1 px (tri-band, not single-band): this guarantees ≥3:1 contrast against BOTH dark interiors (Parchment band dominates) AND light exterior/sepia backgrounds (Ink Black inner band dominates). Halo contrast claim against "any gameplay background" is now empirically supported.
+- **Enabled by default.** Disableable via `Settings → Accessibility → Crosshair` AND `Settings → HUD → Crosshair` (single source of truth, two discovery paths — UI-1 + UI-6).
+- Does NOT expand/contract, does NOT change color on enemy hover, does NOT hit-marker flash.
+- **Accessibility affordance, not diegetic.** Not subject to the §B Design Test. See UI-1 rationale.
+
+**CR-9 Aim-down-sights (rifle only).** `Aim` input hold tweens camera FOV 85° → 55° over 200 ms (ease-out), fades in an optical-scope reticle overlay, reduces muzzle sway 50%, halves accuracy spread cone. Release reverses over 150 ms. ADS is cancelled by: reloading, weapon-switch, or damage ≥ `interact_damage_cancel_threshold` (10 HP). Pistol / dart / fists have no ADS analog. **Vestibular comfort note**: 150°/s FOV rate at default 200 ms exceeds the 90°/s reference threshold for motion-sensitive players; forward-dep `ads_tween_duration_multiplier` in Settings & Accessibility GDD (OQ-CD-12 item 5) exposes a slower tween option.
+
+**CR-10 Fire input gating.** Fire blocked while `_is_reloading || _is_switching_weapon || _is_fist_swinging || _is_hand_busy || InputContext != GAMEPLAY`. No fire-queue on gated input — press is dropped. **Takedown input (revised 2026-04-22)** is gated separately: Takedown fires only when (a) SAI emits a context-prompt signal indicating an eligible unaware guard within ~1.5 m in front/behind arc AND (b) `InputContext == GAMEPLAY`. Takedown and Fire are independent bindings — pressing Fire never triggers Takedown and vice versa (per CR-3 revised dedicated-input contract). Melee input (fists) gates on `_is_fist_swinging == false` only; Melee is always available when not mid-cycle.
+
+**CR-11 Ammo scarcity (Pillar 2 enforcement).** Eve starts each mission with limited reserves per weapon (final values §D). Guards yield a **net-negative** drop (revised 2026-04-22 — NOLF1-authentic): 3 pistol rounds per lethal kill (below 3-shot TTK cost when reload overhead included), 3 rifle rounds partial, 1 dart on dart-KO (break-even), 0 darts on fist-KO (fist-farm closed). Aggressive depletes progressively across the mission. Fall-through when primary runs dry: pistol → fists (fists are now a viable non-lethal melee tool AND the ammo-dry fallback; dart-gun route remains valid iff dart reserves remain).
 
 **CR-12 Guard return-fire cadence** (revised 2026-04-21 — Combat owns all return-fire state defensively; no SAI contract obligations).
 
@@ -177,34 +210,60 @@ Return-fire is implemented as a per-guard `GuardFireController` scene-attached n
 **State ownership (resolves LOS-to-suppression transition ambiguity)**: `GuardFireController` holds its own internal state `FireMode ∈ {IDLE, DRAW, LOS, SUPPRESSION, CAPPED}`. Transitions:
 
 - `IDLE → DRAW` on COMBAT entry signal, `DRAW → LOS` on first-shot-delay timeout
-- `LOS ⇄ SUPPRESSION` based on SAI's cached LOS result (read every idle tick; no guard-of-Eve state peek)
+- `LOS ⇄ SUPPRESSION` based on SAI's public LOS accessor (see LOS interface below)
 - `SUPPRESSION → CAPPED` when `suppression_count == 3`; CAPPED is silent (no further shots) until LOS reacquired
 - `CAPPED → LOS` resets `suppression_count = 0` on LOS reacquisition (fresh suppression cycle if LOS lost again)
-- Any → `IDLE` on `guard.alert_state_changed(state != COMBAT)` OR `is_instance_valid(self) == false` OR `guard.alert_state == DEAD | UNCONSCIOUS`
+- Any → `IDLE` on `guard.alert_state_changed(state != COMBAT)` OR `is_instance_valid(self) == false` OR `guard.alert_state == DEAD | UNCONSCIOUS`. **`IDLE` entry via this path MUST set `suppression_count = 0` AND stop both timers** (revised 2026-04-22 per ai-programmer F1 — prevents stale count carrying across COMBAT→SEARCHING→COMBAT bounces).
+
+**LOS interface — SAI public accessor (revised 2026-04-22 per ai-programmer F3, godot-specialist B3-context)**: SAI must expose `guard.has_los_to_player() -> bool` as a public method that returns the guard's most recent F.1 perception cache result (cache-hit path, no new raycast). This resolves the previously-phantom "SAI's cached LOS result" reference. The accessor is stale-safe — SAI's F.1 cache is frame-invalidated, so reading at idle tick frequency produces at most 1-physics-frame lag, acceptable for return-fire cadence. Added to OQ-CD-1 SAI amendment scope.
 
 **Defensive gate (replaces E.24's SAI obligation)**: every timer callback begins with:
 ```gdscript
 if not is_instance_valid(guard) or guard.current_alert_state in [AlertState.DEAD, AlertState.UNCONSCIOUS]:
     _fire_mode = FireMode.IDLE
+    _suppression_count = 0
     _los_timer.stop()
     _suppression_timer.stop()
     return
 ```
 This means: if a guard dies or is dart-KO'd, the fire controller silently cleans up on its next scheduled tick. No unilateral obligation on SAI's DEAD-entry handler.
 
-**Projectile cleanup on respawn (replaces phantom `section_exited(reason)` signal)**: the controller subscribes to `Events.respawn_triggered` (already declared in ADR-0002). On that signal, all per-guard fire timers stop and the global `ProjectileManager` frees in-flight darts. This uses the EXISTING signal, not a phantom `section_exited(reason=RESPAWN)` overload that doesn't exist in ADR-0002.
+**Projectile cleanup on respawn (revised 2026-04-22 — no central ProjectileManager; self-cleanup pattern)**: `ProjectileManager` was a phantom reference in the prior revision and is removed. Instead, each dart `RigidBody3D` self-subscribes to `Events.respawn_triggered` in its own `_ready()` (`Events.respawn_triggered.connect(_on_respawn)`), disconnects in `_exit_tree()`, and the handler calls `queue_free()` on itself. GuardFireController likewise subscribes to `Events.respawn_triggered` directly and, on signal, transitions itself to IDLE and stops its own timers. No central registry is needed. `GuardFireController._exit_tree()` MUST disconnect the subscription to avoid dangling autoload references (godot-specialist B12).
 
-Timers are per-guard `Timer` nodes on the idle tick (not `_physics_process`). Timer node count scales with guard-count-in-COMBAT (typically 0–3 simultaneous at MVP guard density); performance budget reviewed against SAI's AC-SAI-4.4 (1 ms signals+state sub-budget) — add Combat timer cost to that measurement.
+Timers are per-guard `Timer` nodes on the idle tick (not `_physics_process`). Timer node count scales with guard-count-in-COMBAT (typically 0–3 simultaneous at MVP guard density). **Performance budget note (revised 2026-04-22 per ai-programmer F12)**: prior draft consumed SAI's AC-SAI-4.4 `1 ms signals+state` sub-budget unilaterally. Combat's per-guard timer cost is now declared as an INDEPENDENT Combat budget line of **0.3 ms mean / 0.5 ms P95** at 3-guard-COMBAT density, measured against the total frame budget (16.6 ms), NOT inside SAI's sub-budget. Cross-system budget reconciliation is flagged for the pending performance-budget ADR (SAI GDD Recommended Follow-ups line 540).
 
 **CR-13 Guard friendly fire.** `GUARD_FRIENDLY_FIRE_ENABLED` (default `true`). When true, a guard's hitscan ray striking another guard calls that guard's `receive_damage` at base damage (no 2× — no guard-on-guard headshots). Per-section override available via the section's `SectionConfig` resource (Mission Scripting's authoring concern). When false, guard-fired rays cast with `collision_mask = MASK_WORLD | MASK_PLAYER` only (AI mask excluded).
 
 **CR-14 Return-fire timer handshake (cross-system contract with SAI).** Each guard subscribes to `Events.player_damaged`. Handler resets the guard's `_combat_lost_target_timer` (owned by SAI — defined in SAI Tuning Knobs as `COMBAT_LOST_TARGET_SEC`, default 8.0 s) iff `source == self AND current_alert_state == COMBAT`. This is the sole mechanism by which "Eve took damage from me" feeds SAI's COMBAT → SEARCHING de-escalation logic. Combat does NOT call guard methods directly — the signal bus is the coupling.
 
-**Signal-connection-order discipline** (resolves E.25 same-frame ordering race): the guard's `_ready()` MUST connect `Events.player_damaged` BEFORE `_combat_lost_target_timer.timeout`. Godot's dispatch preserves signal-emission order; connecting in this order guarantees the reset handler runs before the timeout handler in the same frame. This is a SAI implementation note — Combat defines the ordering guarantee, SAI honors it in the guard scene script.
+**Synchronous reset discipline** (revised 2026-04-22 — godot-specialist B11 + ai-programmer F4 fix): the prior "connect `Events.player_damaged` before `timer.timeout` and Godot FIFO guarantees ordering" claim was incorrect. Godot 4.6's FIFO ordering is **per-signal**, not cross-signal; it cannot guarantee that `player_damaged` handlers run before an unrelated `Timer.timeout` in the same frame. The correct mechanism is synchronous in-handler reset:
 
-**CR-15 Takedown lethal-damage delegation** (revised 2026-04-21 — now uses takedown blade). When SAI's `receive_takedown(STEALTH_BLADE, attacker)` routes to lethal damage, SAI calls `CombatSystem.apply_damage_to_actor(self, blade_takedown_damage=100, attacker, DamageType.MELEE_BLADE)`. This resolves the SAI forward dependency — `apply_damage_to_actor` ships here. The silenced pistol is NOT a takedown-delegation target; it is gunfight-only. `receive_takedown(SILENCED_PISTOL, ...)` is removed from the takedown-type enumeration (coordination with SAI amendment — see OQ-CD-1).
+- Guard's `_on_player_damaged(amount, source, _is_critical)` handler calls `_combat_lost_target_timer.stop(); _combat_lost_target_timer.start(COMBAT_LOST_TARGET_SEC)` IMMEDIATELY (no await, no deferred call, no tween).
+- Because Godot signal dispatch is synchronous within the emit call stack, the reset completes before emit returns. Any `timer.timeout` scheduled for the same frame would fire later in the frame (timers evaluate during their own process tick); by then the timer has been restarted to its full duration and no timeout fires.
+- There is no cross-signal ordering dependency. Connection order of `player_damaged` vs `timer.timeout` is irrelevant.
+- This is a SAI implementation note — but no SAI cross-domain contract is created; the guarantee is a property of Godot's synchronous emit, not of connection sequencing.
 
-**CR-16 UNCONSCIOUS state consequence.** Guards reaching 0 HP via `DamageType.DART_TRANQUILISER` transition to `SAI.AlertState.UNCONSCIOUS` (6th state, SAI GDD amendment required — see OQ-CD-1). Guards reaching 0 HP via any other lethal DamageType transition to `SAI.AlertState.DEAD`. UNCONSCIOUS guards: no perception, no vocal, body remains at final pose, outline tier MEDIUM persists. For MVP, UNCONSCIOUS behaves identically to DEAD at the gameplay level — the state exists to preserve narrative distinction (alive-but-sleeping vs dead) and future-proof post-MVP body-drag + Mission Scripting tagging.
+**CR-15 Takedown lethal-damage delegation** (revised 2026-04-22 — Takedown input path). When the player presses the dedicated `Takedown` input (CR-3) while SAI's context prompt is live, SAI's `receive_takedown(STEALTH_BLADE, eve)` handler fires. SAI calls `Combat.apply_damage_to_actor(self, blade_takedown_damage=100, eve, DamageType.MELEE_BLADE)`. `apply_damage_to_actor` invokes `guard.receive_damage(100, ...)` (synchronous), which reduces HP to 0, transitions `current_alert_state = DEAD` (synchronous state mutation before return), and returns `is_dead = true`. Combat then emits `enemy_damaged(guard, 100, eve)` followed by `enemy_killed(guard, eve)` in the same call stack. The silenced pistol is NOT a takedown-delegation target; it is gunfight-only. `receive_takedown(SILENCED_PISTOL, ...)` is removed from the takedown-type enumeration — SAI amendment OQ-CD-1 item 3. **Call-stack synchronicity (2026-04-22 clarification per systems-designer F8)**: SAI's DEAD-state transition inside `receive_damage` must be synchronous (state field mutation, not deferred) so `GuardFireController`'s defensive gate (reading `current_alert_state`) sees DEAD on its next tick. Declared in OQ-CD-1 amendment.
+
+**CR-16 UNCONSCIOUS state consequence (revised 2026-04-22 — Transitional model per user decision; non-lethal DamageTypes routing).** Guards reaching 0 HP via a **non-lethal DamageType** (`DART_TRANQUILISER` OR `MELEE_FIST`) transition to `SAI.AlertState.UNCONSCIOUS` (6th state, SAI GDD amendment OQ-CD-1). Guards reaching 0 HP via any lethal DamageType (`BULLET`, `MELEE_BLADE`, `FALL_OUT_OF_BOUNDS`) transition to `SAI.AlertState.DEAD`. UNCONSCIOUS guards: no perception, no vocal, body remains at final pose, outline tier MEDIUM persists.
+
+**Lethality classification (CR-16 extension)**: the `DamageType` enum is accompanied by a lethality-bit helper:
+```gdscript
+static func is_lethal_damage_type(damage_type: DamageType) -> bool:
+    return damage_type in [
+        DamageType.BULLET,
+        DamageType.MELEE_BLADE,
+        DamageType.FALL_OUT_OF_BOUNDS,
+        DamageType.TEST,  # conservative: test path mimics lethal for AC-5 compatibility
+    ]
+```
+`DART_TRANQUILISER` and `MELEE_FIST` are non-lethal. SAI's `receive_damage` reads `Combat.is_lethal_damage_type(damage_type)` to decide DEAD vs UNCONSCIOUS. This makes fists a viable deliberate non-lethal KO tool per CR-3 revised role while keeping MELEE_BLADE firmly lethal for stealth kills.
+
+**Signal semantics on UNCONSCIOUS entry**: `receive_damage(150, eve, DART_TRANQUILISER)` sets HP = 0 (or clamped floor), transitions state to UNCONSCIOUS, **returns `is_dead = false`**. Rationale: `is_dead` in the `apply_damage_to_actor` contract means "this damage call produced a death-equivalent state that should fire `enemy_killed`." UNCONSCIOUS is NOT death — Mission Scripting's "no-lethals" objective must distinguish it. Combat's C.5 therefore emits `enemy_damaged` but NOT `enemy_killed` on dart-KO entry. AC-CD-7.1 unchanged in its assertion.
+
+**Subsequent damage on UNCONSCIOUS guard (Transitional model — resolves E.1 vs E.3 contradiction)**: an UNCONSCIOUS guard struck by lethal DamageType (BULLET, MELEE_BLADE, MELEE_FIST, rifle, fall) transitions UNCONSCIOUS → DEAD. `receive_damage` returns `is_dead = true`; `apply_damage_to_actor` emits `enemy_damaged` then `enemy_killed`. E.1's "DEAD/UNCONSCIOUS gate" rule is tightened: **only DEAD is fully terminal (no-op on further damage). UNCONSCIOUS accepts lethal-DamageType further damage and transitions to DEAD; UNCONSCIOUS accepts further DART_TRANQUILISER damage as no-op (guard is already fully KO'd; re-darting is idempotent).**
+
+**Gameplay consequence**: Mission Scripting's "eliminate all hostiles" objective counts DEAD via `enemy_killed` subscription. UNCONSCIOUS guards don't complete that objective — consistent with non-lethal intent. A player who KOs a guard with a dart and then shoots the corpse triggers UNCONSCIOUS → DEAD, completes the elimination, and loses the "no-lethals" achievement. This preserves narrative distinction AND lets mission objectives count both lethal paths cleanly.
 
 ### C.2 Player Combat State (booleans, no enum)
 
@@ -225,22 +284,26 @@ var _is_fist_swinging: bool = false
 
 **Weapon-switch rules.** Duration 0.35 s holster-draw blend. **Not cancellable** once started (prevents input-spam cycling). Damage during switch does NOT cancel; the switch completes on schedule.
 
-**Fist-swing rules.** Windup 0.3 s → hit resolves → recovery 0.4 s → total cycle 0.7 s. **Not cancellable** once windup begins. Damage during swing does NOT cancel. Fist-swinging locks weapon-switch until recovery completes.
+**Fist-swing rules.** Windup 0.3 s → hit resolves → recovery 0.4 s → total cycle 0.7 s. **Not cancellable** once windup begins. Damage during swing does NOT cancel. Fist-swinging locks weapon-switch until recovery completes. Per CR-7 (2026-04-22 revision), KO threshold is 3 swings at `fist_base_damage = 40`; per-KO time 2.1 s total.
+
+**Takedown-input gating (NEW 2026-04-22).** The `Takedown` input (CR-3 revised) is blocked while any of: `_is_reloading || _is_switching_weapon || _is_fist_swinging || _is_hand_busy || InputContext != GAMEPLAY`. Additionally gated on SAI's context-prompt being live (i.e., an eligible guard is in range + unaware + behind-arc per SAI's `takedown_prompt_active(target: Node) -> bool` accessor — bundled into OQ-CD-1 SAI amendment). Without both gates, Takedown input drops silently (no animation, no audio, no SAI call).
 
 ### C.3 Interactions with Other Systems
 
 | System | Direction | Interface | Contract owner |
 |---|---|---|---|
 | **Player Character** | Inbound (upstream) | `actor.apply_damage(amount, source, damage_type)` | PC F.6 frozen. Combat calls; PC emits `player_damaged` → `player_health_changed` → optional `player_died` internally. |
-| **Stealth AI — guard damage intake** | Inbound (upstream) | `actor.receive_damage(amount, source, damage_type) -> bool is_dead` | SAI §Interactions — pending amendment OQ-CD-1 to add `-> bool` return. SAI owns → DEAD or → UNCONSCIOUS transition per DamageType. |
-| **Stealth AI — takedown delegation** | Inbound (SAI calls here) | `CombatSystem.apply_damage_to_actor(...)` | This GDD ships the helper. SAI calls for `STEALTH_BLADE` lethal takedown path. |
-| **Stealth AI — return-fire timer** | Outbound (signal) | Guard subscribes `Events.player_damaged` | Guard resets `_combat_lost_target_timer` iff `source == self && state == COMBAT`. |
+| **Stealth AI — guard damage intake** | Inbound (upstream) | `actor.receive_damage(amount, source, damage_type) -> bool is_dead` | SAI §Interactions — pending amendment OQ-CD-1 to add `-> bool` return. Per Transitional UNCONSCIOUS model (CR-16 revised 2026-04-22): dart-KO returns `is_dead = false` (UNCONSCIOUS is not death); subsequent lethal damage on UNCONSCIOUS guard returns `is_dead = true` (transitions to DEAD). |
+| **Stealth AI — takedown delegation** | Inbound (SAI calls here) | `Combat.apply_damage_to_actor(...)` (via autoload) | This GDD ships the helper. SAI calls for `STEALTH_BLADE` lethal takedown path triggered by dedicated `Takedown` input (CR-3). |
+| **Stealth AI — return-fire timer** | Outbound (signal) | Guard subscribes `Events.player_damaged` | Guard resets `_combat_lost_target_timer` iff `source == self && state == COMBAT`. Reset is synchronous in-handler (CR-14 revised 2026-04-22). |
+| **Stealth AI — LOS accessor** | Inbound (read) | `guard.has_los_to_player() -> bool` (NEW 2026-04-22 — bundled in OQ-CD-1) | `GuardFireController` polls this each idle tick to decide LOS ⇄ SUPPRESSION transitions. SAI internal raycast cache; no new raycast per call. |
+| **Stealth AI — takedown-prompt accessor** | Inbound (read) | `guard.takedown_prompt_active(eve) -> bool` (NEW 2026-04-22 — bundled in OQ-CD-1) | Combat's Takedown-input gate polls this. SAI owns eligibility (behind-arc + unseen + range). |
 | **Audio** | Outbound (signal bus) | `weapon_fired`, `enemy_damaged`, `enemy_killed`, `player_damaged` (PC), `player_health_changed` (PC), `player_died` (PC) | ADR-0002 frozen. All 6 consumed by Audio §Combat domain. |
 | **HUD Core** | Outbound (via PC signal) | `Events.player_health_changed` | Forward dep. PC emits; HUD subscribes. Combat does not emit. |
 | **Inventory & Gadgets** | Bidirectional (forward dep) | `Events.weapon_fired(weapon, position, direction)` emit-site in Inventory | Inventory owns weapon Resources; Combat reads `weapon.base_damage`, `weapon.fire_rate_sec`, `weapon.magazine_size`, `weapon.damage_type` on each fire. Weapon Resource schema declared in Inventory GDD. |
 | **Failure & Respawn** | Outbound (via PC signal) | `Events.player_died(cause: CombatSystem.DeathCause)` | Forward dep. PC emits; Failure & Respawn subscribes. Combat owns the `DeathCause` enum. |
 | **Mission & Level Scripting** | Outbound (signal) | `Events.enemy_killed(enemy, killer)` | Forward dep. Subscribed for objective progression ("eliminate all hostiles in zone"). |
-| **Level Streaming** | Inbound (signal) | `Events.respawn_triggered(section_id: StringName)` + `Events.section_entered(section_id: StringName)` | **Revised 2026-04-21**: `section_exited(section_id, reason: TransitionReason)` was a phantom signature — ADR-0002 only declares `section_exited(section_id: StringName)` with no `reason` parameter. Combat now subscribes to the EXISTING `respawn_triggered` signal (already in ADR-0002) for in-flight dart cleanup + GuardFireController IDLE transitions. Normal section transitions listen to `section_entered` for checkpoint-save timing only. |
+| **Level Streaming** | Inbound (signal) | `Events.respawn_triggered(section_id: StringName)` + `Events.section_entered(section_id, reason: TransitionReason)` | Each dart `RigidBody3D` self-subscribes to `Events.respawn_triggered` and `queue_free()`s itself on emit (revised 2026-04-22 — no central ProjectileManager). `GuardFireController` subscribes to same signal for IDLE transition. Normal section transitions use `section_entered` for checkpoint-save timing. `section_entered`'s `reason: TransitionReason` parameter is per Level Streaming's pending ADR-0002 amendment (LS-Gate-1); Combat consumes the parameter when it lands. |
 | **Save/Load** | Bidirectional (ADR-0003) | Per player: `current_weapon_id`, `ammo_magazine[weapon_id]`, `ammo_reserve[weapon_id]`. Per guard (dead/unconscious): `alert_state`, `position`, `rotation`, `final_damage_type` (drives restore pose). | ADR-0003 format. Not serialised: mid-shot state, in-flight darts, fire-cadence timers (reset on restore). |
 | **Signal Bus** | Outbound (publisher) | 2 signals owned here: `enemy_damaged`, `enemy_killed`. 4 observed/forwarded: `weapon_fired` (Inventory), `player_damaged`/`player_health_changed`/`player_died` (PC). | ADR-0002 frozen. |
 
@@ -351,18 +414,18 @@ where `H = 2.0` iff `(is_headshot == true AND target_is_guard == true)`, else `H
 | Headshot multiplier | `H` | float | {1.0, 2.0} | Conditional; Eve is ineligible by `target_is_guard` gate |
 | Final damage | `final_damage` | float | > 0 | Passed to `apply_damage_to_actor`; `enemy_damaged.amount` carries this value |
 
-**Per-weapon base damage values (canonical)** — revised 2026-04-21 to reflect takedown-blade split:
+**Per-weapon base damage values (canonical)** — revised 2026-04-22 to reflect fists rework (3-swing deliberate KO):
 
 | Weapon | `base_damage` | Body TTK (100 HP guard) | Headshot result | Notes |
 |---|---|---|---|---|
-| **Takedown blade** (NEW) | **100** | 1-shot lethal (stealth only) | N/A — stealth blade has no hit zones | SAI calls via `receive_takedown(STEALTH_BLADE, eve)` → `apply_damage_to_actor(guard, 100, eve, DamageType.MELEE_BLADE)`. Gated by contact prompt; CANNOT be used in COMBAT state |
+| **Takedown blade** | **100** | 1-shot lethal (Takedown-input gated) | N/A — stealth blade has no hit zones | Takedown input (CR-3) → SAI `receive_takedown(STEALTH_BLADE, eve)` → `Combat.apply_damage_to_actor(guard, 100, eve, DamageType.MELEE_BLADE)`. Gated by SAI context prompt + unaware guard; CANNOT be used in COMBAT state. |
 | Silenced pistol (gunfight only) | **34** | 3 body shots (102 dmg) | 68 dmg (2-shot head kill) | Body kill: shot 1 = 34, shot 2 = 68, shot 3 = 102 (lethal). 1 headshot = 68 (damaging); 1 head + 1 body = 102 (lethal). **No takedown damage constant** — takedowns route exclusively to the blade. |
 | Dart gun | **150** | 1 dart (KO) | N/A — routed via `DART_TRANQUILISER` → UNCONSCIOUS | 150 > 100 HP ensures 1-shot KO with tuning headroom |
 | Rifle | **120** | 1 body shot (lethal) | 240 dmg (overkill) | Tonal exception — "chosen moments" weapon per §B weapon-register table. 1-shot body-kill niche; headshot is double-overkill |
-| Fists | **16** | 7 hits (112 dmg) | N/A — no headshot on melee cone | **Edge-case fallback only** — see §B fists carve-out. 7 swings × 0.7 s cycle = 4.9 s per guard. Expected frequency kept low via §F.6 ammo generosity |
-| Guard pistol (vs Eve) | **18** | 5.5-hit kill (100 / 18) | N/A — guards hit body only | Above PC `interact_damage_cancel_threshold` (10 HP); Pillar 3 survivable at 5–6 hits. **Safe range tightened** from `[14, 25]` to `[14, 20]` to honor AC-CD-14.1's "Eve cannot die in fewer than 5 hits" invariant (`ceil(100/20) = 5`) |
+| **Fists** *(reworked 2026-04-22)* | **40** | **3 hits (120 dmg) — 2.1 s cycle** | N/A — no headshot on melee cone | Deliberate silent non-lethal KO (per user direction). 3 swings × 0.7 s = 2.1 s per KO. Used for close-range non-lethal stealth AND ammo-dry fallback. Safe range `[34, 50]` preserves 2–3-swing KO window (ceil(100/50) = 2, ceil(100/34) = 3). |
+| Guard pistol (vs Eve) | **18** | 5.5-hit kill (100 / 18) | N/A — guards hit body only | Above PC `interact_damage_cancel_threshold` (10 HP); Pillar 3 survivable at 5–6 hits. Safe range `[14, 20]` honors AC-CD-14.1 invariant (`ceil(100/20) = 5`). |
 
-**Output Range:** `final_damage ∈ [13, 240]` (fist_base_damage at safe floor to rifle headshot). Raw value passed through; `apply_damage_to_actor` does not clamp — receiving actor's intake path handles sub-zero / DEAD gates. Registry `damage_formula.output_range` updated to `[13, 240]` (was incorrectly `[16, 240]`).
+**Output Range (revised 2026-04-22):** at DEFAULT tuning values, `final_damage ∈ [34, 240]` (lowest default = pistol body at 34; highest default = rifle headshot at 240). At SAFE-RANGE ceilings, `final_damage ∈ [34, 300]` (rifle safe ceiling 150 × 2 headshot = 300). Registry `damage_formula.output_range` updated to TWO values: `default_range = [34, 240]`, `safe_range = [34, 300]`. Minimum floor 34 reflects the smallest legal base_damage in combat use (pistol); fist minimum of 34 at safe floor is covered separately in fist-specific tests. Raw value passed through; `apply_damage_to_actor` does not clamp — receiving actor's intake path handles sub-zero / DEAD gates.
 
 **Worked example — silenced pistol headshot on guard:**
 `final_damage = 34 × 2.0 = 68`. Guard at 100 HP → 32 HP after first headshot → 0 HP (lethal) after second headshot. Two-headshot kill; one body + one headshot = 34 + 68 = 102 = lethal.
@@ -456,7 +519,7 @@ func sample_cone_direction(aim_basis: Basis, spread_angle_deg: float) -> Vector3
 | Aim basis | `aim_basis` | Basis | — | Camera basis (Eve) or guard transform (guards) |
 | Perturbed direction | `perturbed_direction` | Vector3 | unit | Final ray direction |
 
-**Design rationale for sqrt(randf()):** Uniform `randf()` (flat disk density) would produce equal probability of 1° miss and 9° miss — unrealistic. `sqrt(randf())` transforms to radially-uniform disk density: probability ∝ `r`, so most shots cluster near center with a diminishing tail toward the cone edge. This approximates the perceived "mostly near misses, occasional wild shots" feel. **Why not `randfn()`?** `randfn(mean, deviation)` has existed since Godot 4.0 (the pre-revision claim that it's "post-4.5" was factually incorrect — flagged by godot-specialist). The real reason to prefer `sqrt(randf())` is that a Gaussian can produce unbounded samples requiring rejection sampling or clamping to stay within the spread cone. `sqrt(randf())` is bounded-by-construction and has no rejection loop.
+**Design rationale for sqrt(randf()):** Uniform `randf()` (flat disk density) would produce equal probability of 1° miss and 9° miss — unrealistic. `sqrt(randf())` transforms to radially-uniform disk density (the standard disk-sampling trick): probability ∝ `r`, so the *linear* distribution in `r` means center-weighted miss density but NOT heavy center-cluster. **Statistical properties (corrected 2026-04-22 per systems-designer F11)**: for `r = sqrt(randf())` on [0, 1), the distribution has CDF `F(r) = r²`, so the median of `r` is `√0.5 ≈ 0.707`. For a 13° cone, median polar angle is `13° × 0.707 ≈ 9.2°` (not 7.5° as prior draft claimed). This is still *more* center-biased than flat-disk (which would median at `0.5 × 13° = 6.5°` in `r`, but with equal-probability rings producing visually uniform distribution at the edge). AC-CD-9.2 assertion revised to `< 9.5°` (tolerance above the analytical 9.2° median). **Why not `randfn()`?** `randfn(mean, deviation)` has existed since Godot 4.0. The preference for `sqrt(randf())` is that a Gaussian can produce unbounded samples requiring rejection sampling or clamping to stay within the spread cone. `sqrt(randf())` is bounded-by-construction and has no rejection loop.
 
 **Output Range:** Unit Vector3 with angular deviation from `aim_dir` in `[0, spread_rad)`. No clamping needed — `r` is bounded by construction.
 
@@ -484,11 +547,13 @@ lifetime        = dart_lifetime_s  (auto-queue_free on timeout)
 | Max range (derived) | `max_range_m` | float (m) | `dart_speed × lifetime` | 20 × 4 = 80 m |
 
 **Spawn contract (for the weapon Resource to honor at spawn time):**
+- **Pre-fire occlusion check** (NEW 2026-04-22): Combat performs a `PhysicsRayQueryParameters3D.create(camera.global_position, spawn_pos)` against `MASK_WORLD` BEFORE spawning. If occluded, the fire is cancelled at the call site — dry-fire click SFX plays, no dart spawned, no ammo consumed, no `weapon_fired` signal. Prevents silent "fire inside wall" when Eve is flush against cover (godot-specialist B14).
 - Spawn position: `camera.global_position + aim_direction × 0.5` (prevents Eve's capsule self-collision)
 - `collision_layer = PhysicsLayers.MASK_PROJECTILES` (layer 5)
 - `collision_mask = MASK_WORLD | MASK_AI` (hits world and guards; NOT Eve, NOT other projectiles)
-- `continuous_cd = true` (Jolt CCD — prevents tunneling at 20 m/s through thin geometry)
-- On `body_entered(body)`: calls `CombatSystem.apply_damage_to_actor(body, dart_damage, self, DamageType.DART_TRANQUILISER)` then `queue_free()`
+- `continuous_cd = true` **(@prototype_gated — OQ-CD-2 item 3)**: Jolt may or may not honor Godot-Physics's `continuous_cd` property; OQ-CD-2's prototype validates whether CCD is active under Jolt or requires a Jolt-specific property path. Implementers MUST wait for prototype verdict before shipping dart physics.
+- On `body_entered(body)` OR `area_entered(area)`: both signals connect to the same `_on_impact(other)` handler (CR-6 revised 2026-04-22 — handles both PhysicsBody3D contact and Area3D overlap). Handler calls `Combat.apply_damage_to_actor(other, dart_damage, self, DamageType.DART_TRANQUILISER)` with guard (`_has_impacted` flag) against double-fire, then `queue_free()`.
+- On `Events.respawn_triggered` emit: dart `queue_free()`s itself (self-cleanup, no central manager — CR-12 revised 2026-04-22). Dart MUST disconnect the subscription in `_exit_tree()` to avoid dangling autoload references.
 
 **Why zero gravity?** At 20 m/s over 5–15 m engagement range, real gravity (9.8 m/s²) would drop 0.31–2.76 m — visible, disruptive, would break aim-for-head shots. Zero gravity = straight flight = reads as a precision tool. Subtle 0.5 m/s² arc option is prototype-gated for Tier 1 iff "dart feels too surgical."
 
@@ -536,44 +601,47 @@ phantom_guard.tscn
 
 **Query flag requirement**: the raycast query used for hit detection (CR-5) MUST set `query.collide_with_areas = true`. Without this, Godot 4.x returns only `CollisionObject3D` bodies and the head Area3D is silently skipped. This was the primary blocker surfaced by /design-review godot-specialist.
 
-**Jolt caveats (OQ-CD-2 scope expanded):** Set the Area3D's shape to `LAYER_AI` (layer 3) with mask 0 (it does NOT initiate overlap queries itself). The prototype at `prototypes/guard-combat-prototype/` must validate THREE Jolt-specific unknowns:
-1. **Bone-attached Area3D + intersect_ray**: does Jolt return the Area3D as `collider` in `intersect_ray` results with `collide_with_areas = true`? (primary OQ-CD-2 question)
-2. **BoneAttachment3D pose lag in physics tick**: does the Area3D world-space transform reflect the CURRENT animated pose when queried from `_physics_process`, or does it lag one frame behind `_process`? (added per godot-specialist Finding 7)
-3. **`RigidBody3D.continuous_cd` under Jolt**: does Jolt respect the CCD property for the dart projectile, or does it require a Jolt-specific property? (added per godot-specialist Finding 8)
+**Jolt caveats (OQ-CD-2 — BLOCKING PROTOTYPE):** Set the Area3D's shape to `LAYER_AI` (layer 3) with mask 0 (it does NOT initiate overlap queries itself). **The "Area3D returned as `collider`" behavior below is EXPECTED — NOT confirmed.** The prototype at `prototypes/guard-combat-prototype/` must validate THREE Jolt-specific unknowns; implementers MUST wait for prototype verdict before shipping headshot detection:
 
-**Output:** Binary — `true` or `false`.
+1. **Bone-attached Area3D + intersect_ray**: does Jolt return the Area3D as `collider` in `intersect_ray` results with `collide_with_areas = true`? Hypothesis: yes (matches Godot-Physics behavior). If NO, fallback path: use a non-Area collider (e.g., a child `CollisionShape3D` on a sibling `StaticBody3D` bone-attached, layered but masked-off from damage). Decision tree: if Jolt returns `CharacterBody3D` (parent) instead of the Area3D, we need a different head-detection strategy (e.g., distance-to-bone-origin check on the hit collider).
+2. **BoneAttachment3D pose lag in physics tick**: does the Area3D world-space transform reflect the CURRENT animated pose when queried from `_physics_process`, or does it lag one frame behind `_process`? **Mitigation path (pre-specified 2026-04-22 per godot-specialist M6)**: if lag is confirmed, set guards' `AnimationPlayer.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS` so skeleton pose updates inside the physics tick, syncing with the hitscan query. If that resolves the lag, no GDD change is needed; if it doesn't, a manual `BoneAttachment3D.update_transform()` call in `_physics_process` before raycast is the alternative.
+3. **`RigidBody3D.continuous_cd` under Jolt**: does Jolt respect the CCD property for the dart projectile, or does it require a Jolt-specific property (e.g., a Jolt physics server extension)? If NO, fallback: increase dart speed cap OR shorten tick interval for dart physics; both acceptable at 20 m/s over ≤16 m engagement ranges.
 
-**Worked example — rifle shot hits guard head zone:**
-`hit_collider` = `<Area3D on BoneAttachment3D>`; `is_in_group("headshot_zone") == true` → `is_headshot = true`. F.1: `120 × 2.0 = 240`. 240 > 100 HP → instant lethal.
+**Worked example (PENDING OQ-CD-2 item 1 CONFIRMATION) — rifle shot hits guard head zone:**
+Expected: `hit_collider` = `<Area3D on BoneAttachment3D>`; `is_in_group("headshot_zone") == true` → `is_headshot = true`. F.1: `120 × 2.0 = 240`. 240 > 100 HP → instant lethal. **If OQ-CD-2 returns differently (e.g., Jolt returns `CharacterBody3D`), the detection path changes and AC-CD-11.x assertions are re-authored.**
 
 **Worked example — pistol shot hits guard torso:**
 `hit_collider` = `<CapsuleShape3D on body>`, not in `headshot_zone` group → `is_headshot = false`. F.1: `34 × 1.0 = 34` (body damage).
 
+**Output:** Binary — `true` or `false`.
+
 ### F.6 Ammo Economy Tables
 
-**Design pivot 2026-04-21** — revision pass in response to /design-review: ammo reserves raised substantially (expected supply ~30% above expected demand at normal-route play). The softened Pillar 2 scarcity is intentional — per user direction, "normal amount of ammo, not pressured low." Pillar 2 (Discovery Rewards Patience) is preserved through observation incentive, guard patrol patterns (SAI), and cache placement that rewards off-path exploration; it no longer rides entirely on ammo starvation.
+**Design pivot 2026-04-22 — NOLF1-authentic rebalance** (per user decision on economy). Starting reserves stay at the 2026-04-21 raised values (pistol 32, dart 16) so Eve isn't "pressured low from the first door." But guard drops are **net-negative for Aggressive** (3 pistol rounds per lethal kill, below the 3-shot body-TTK cost once reload overhead is counted), which restores Pillar 2's ammo-depletion pressure. NOLF1's Pillar 2 signature — "even when you win a shootout, you lost" — returns. Caches remain the secondary reward for off-path observation. Pillar 2 is owned jointly by Combat (depletion-via-drops) + Level Design (cache placement), with combat-side depletion as the primary lever.
 
-**Starting inventory at Tier 1 mission start (REVISED):**
+**Starting inventory at Tier 1 mission start:**
 
 | Weapon | Magazine Size | Starting Reserve | Total | Notes |
 |---|---|---|---|---|
-| Takedown blade | 1 (the blade itself) | — | — | Unlimited uses; gated by SAI contact prompt (cannot be used in COMBAT state) |
-| Silenced pistol | 8 rounds | **32 rounds** (was 16) | 40 rounds | ~8 body-kills or ~12 headshot kills before dry; Aggressive dry by Section 4–5 (was Section 3) |
-| Dart gun | 4 darts | **16 darts** (was 8) | 20 darts | Ghost can KO ~20 guards standalone; with placed caches + 100% pickup rate has comfortable surplus |
+| Takedown blade | — (draw-per-takedown) | — | — | Unlimited uses; gated by Takedown input + SAI context prompt |
+| Silenced pistol | 8 rounds | **32 rounds** | 40 rounds | ~13 body-TTK kills or ~20 headshot-lead kills before dry; Aggressive dry by Section 3–4 with guard drops included |
+| Dart gun | 4 darts | **16 darts** | 20 darts | Ghost can KO 20 guards standalone; placed caches + break-even drops provide margin at 70–80% real-play pickup |
 | Rifle | 0 | 0 | 0 | Pickup-only — never in starting inventory |
-| Fists | ∞ | ∞ | ∞ | Always available; 7 hits/guard (4.9 s). **Expected frequency: rare** per §B carve-out. |
+| Fists | — | — | — | Always available. 3-swing / 2.1 s cycle per KO (revised 2026-04-22). Viable deliberate non-lethal melee tool OR ammo-dry fallback. No ammo counter. |
 
-**Guard drops (pickup via PC's `player_interacted` raycast) — REVISED:**
+**Guard drops (pickup via PC's `player_interacted` raycast) — REVISED 2026-04-22 (NOLF1 authentic):**
 
-| Kill method | Guard carrying silenced pistol | Guard carrying rifle | Any guard dart-KO'd | Any guard fist-KO'd |
+| Kill method | Guard carrying silenced pistol | Guard carrying rifle | Dart-KO dart drop | Fist-KO dart drop |
 |---|---|---|---|---|
-| Lethal (pistol/rifle/blade) | 8 rounds (1 magazine) | 3 rounds (partial) | — | — |
+| Lethal (pistol/rifle/blade) | **3 rounds** (was 8) | 3 rounds (partial) | — | — |
 | Non-lethal dart KO | 0 pistol rounds | 0 rifle rounds | **1 dart** (break-even) | — |
-| Non-lethal fist KO | 0 pistol rounds | 0 rifle rounds | — | **0 darts** (revised from 1 — closes fist-farm loop) |
+| Non-lethal fist KO | 0 pistol rounds | 0 rifle rounds | — | **0 darts** (no farm) |
 
-**Dart anti-farm invariant (revised)**: KO'ing a guard via dart spends 1 dart and yields 1 dart. Net = 0. Fist KO yields 0 darts (fists are a zero-cost weapon — cannot net-positive dart supply). The break-even rule is now strictly "dart-for-dart"; fists cannot be used to farm darts. `guard_drop_dart_ko_rounds` replaced by two knobs: `guard_drop_dart_on_dart_ko = 1` (break-even) and `guard_drop_dart_on_fist_ko = 0` (no farm).
+**Design intent**: a lethal pistol kill costs 3 rounds and drops 3 rounds — break-even at 100% pickup. With realistic pickup friction (reload cost: 1 spilled round at reload-on-empty; missed shots on spread; partial pickups interrupted by next alert), Aggressive accumulates a NET LOSS over the mission. Ghost's dart break-even is unchanged. Fists remain zero-yield on fist-KO.
 
-**Real-play pickup rate acknowledgement**: the break-even invariant assumes 100% dart retrieval. In practice, ~80% is a more realistic estimate (some darts land off-ledge, behind locked doors, or in hot zones). The raised starting reserve (16, was 8) provides the margin to absorb the ~20% drain without forcing Section-5 ghost softlock. Placed caches (below) cover the remainder. Section 5 boss adds a bespoke non-lethal path specified in Mission & Level Scripting forward dep — **boss can be fist-KO'd if ghost is fully dart-dry** (tonal exception already accepted for fists).
+**Dart anti-farm invariant (unchanged from 2026-04-21)**: `guard_drop_dart_on_dart_ko = 1` (break-even); `guard_drop_dart_on_fist_ko = 0` (no farm). Even though fists are now a viable deliberate non-lethal KO tool, fist-KO'd guards still drop 0 darts — fists cannot subsidize the dart economy.
+
+**Real-play pickup rate acknowledgement**: dart break-even assumes 100% retrieval. In practice, ~80% (darts land off-ledge, in hot zones, behind locked doors). Starting reserve (16) + placed caches + break-even drops absorb the ~20% drain. Ghost economy sanity check below. Section 5 boss: with fists now 2.1 s / 3-swing, fist-KO on a standard-HP boss (100 HP) is a 2.1 s action — viable as a last-resort non-lethal boss path. Boss HP forward-dep remains with Mission & Level Scripting; the contract here is "if boss HP ≤ 100, fist-KO path works; if Mission Scripting gives boss > 100 HP, it must either tune fist damage up OR provide a bespoke non-lethal takedown slot."
 
 **Placed pickups per section (Tier 1) — REVISED (generosity adjusted):**
 
@@ -608,9 +676,28 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 
 **Between-section carryover:** **Full carryover**. Scarcity compounds across the mission. Ghost's accumulated darts, Aggressive's depletion, both persist. Checkpoint saves fire at Level Streaming's `section_entered` (already in ADR-0003 save format).
 
-**Depletion curve sanity check (revised numbers):**
-- Aggressive player (all lethal, pistol-only): 30 guards × 3 shots = 90 rounds needed. Starting 40 + caches (8+8+8+12+12+8=56) = 96 total if all caches collected. Expected dry around Section 4–5 if caches are skipped, surviving Section 5 with rifle pickup supplementing. **Softer than before but still creates Pillar 2 reward for observation** (finding caches matters).
-- Ghost player (all dart KO): 30 guards × 1 dart = 30 darts needed. Starting 20 + caches (3×5 sections + 4 Sec4 = 16) + break-even drops ≈ 30+ darts available at ~80% pickup. **Viable without fists**, with margin.
+**Depletion curve sanity check (revised 2026-04-22 — NOLF1 math, per-section):**
+
+| Section | Guards (mid) | Aggressive spend (3/guard) | Cache contribution (pistol) | Guard drops (3/guard) | Net end-of-section balance |
+|---|---|---|---|---|---|
+| Start | — | — | 40 starting total | — | **40** |
+| Sec 1 Plaza (4 guards) | 4 | 12 | +8 (cache) | +12 (4×3) | 40 − 12 + 8 + 12 = **48** |
+| Sec 2 Scaffolds (6 guards) | 6 | 18 | +8 | +18 | 48 − 18 + 8 + 18 = **56** |
+| Sec 3 Restaurant (7 guards) | 7 | 21 | +12 (8+4) | +21 | 56 − 21 + 12 + 21 = **68** |
+| Sec 4 Upper (8 guards) | 8 | 24 | +12 | +24 | 68 − 24 + 12 + 24 = **80** |
+| Sec 5 Chamber (5 guards) | 5 | 15 | +8 | +15 | 80 − 15 + 8 + 15 = **88** |
+
+**Aggressive at 100% cache + 100% pickup** would END at 88 reserves — overflow. BUT: real-play friction reduces this:
+- Missed shots (spread on moving Eve vs moving guard): assume 15% miss rate × 90 spent = 13.5 wasted rounds
+- Reload-on-empty loses 1 round (remaining mag discarded): assume 6 reloads × 1 = 6 wasted
+- Partial pickups interrupted by new alerts: assume 30% of pickups miss = 18 guard-drop rounds lost; 8 cache rounds lost
+- Corrected end: 88 − 13.5 − 6 − 18 − 8 = **~42 rounds** (a single magazine's cushion at mission end — genuine Pillar 2 feel)
+
+**Aggressive skipping caches (observation penalty)** = 88 − 48 cache total − friction 37 = **~3 rounds left** entering Section 5. The NOLF1 signature returns: skip observation, feel the cost. With `pistol_max_reserve = 48` cap, late-game drift is capped — late-mission Aggressive maxes at 48 + 8 mag = 56 total, never the 80+ of the accumulation-curve draft.
+
+**Ghost player (dart-KO focus, 30 guards × 1 dart)**: starting 20 + caches (3+3+3+4+3 = 16) + break-even drops × 80% pickup (24 recovered) = 60 darts gross inflow against 30 spent = **30 net darts** at mission-end assuming 100% pickup. At 80% pickup (realistic), Ghost ends with ~24 darts — comfortable margin. Dart scarcity is NOT the Pillar 2 lever for Ghost; observation-discovering-caches is. Ghost's pressure is getting caught mid-KO (alert triangle), not running out of ammo.
+
+**Mixed archetype (default expected play — mix of darts, fists for close-range KO, pistol for shootouts)**: economy holds with substantial margin; fists fill the close-range silent slot without ammo cost.
 
 **Pickup cap** (resolves E.32): per-weapon reserve cap is `pistol_max_reserve = 48`, `dart_max_reserve = 24` (~1.5× starting reserve). Pickup past cap loses excess. Inventory & Gadgets forward-dep owns the clamp.
 
@@ -622,8 +709,8 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 | `blade_takedown_damage` | 100 | [100, 150] | No | Stealth blade 1-shot-lethal damage (CR-15 SAI delegation via `DamageType.MELEE_BLADE`). Replaces `silenced_pistol_takedown_damage` per CR-3 revision 2026-04-21. |
 | `dart_damage` | 150 | [100, 200] | No | 1-shot KO with headroom |
 | `rifle_base_damage` | 120 | [100, 150] | No | 1-shot body kill niche |
-| `fist_base_damage` | 16 | [13, 20] | No | 7-hit desperation |
-| `guard_pistol_damage_vs_eve` | 18 | [14, 20] | **Yes** (Tier 1 playtest) | Pillar 3 survivability feel. Tightened from [14, 25] on 2026-04-21 to honor AC-CD-14.1 (`ceil(100/20) = 5` min hits to kill). |
+| `fist_base_damage` | **40** (revised 2026-04-22 from 16) | **[34, 50]** | No | 3-swing deliberate KO (default); 2-swing at safe ceiling. Safe range preserves 2–3-swing window; outside this range fists either slapstick (>3 swings) or overpowered (<2 swings). |
+| `guard_pistol_damage_vs_eve` | 18 | [14, 20] | **Yes** (Tier 1 playtest) | Pillar 3 survivability feel. Safe range honors AC-CD-14.1 (`ceil(100/20) = 5` min hits to kill). |
 | `guard_first_shot_delay_s` | 0.65 | [0.4, 1.0] | No | Reaction window |
 | `guard_los_cadence_s` | 1.4 | [1.0, 2.0] | No | LOS fire rhythm |
 | `guard_suppression_cadence_s` | 2.8 | [2.0, 4.0] | No | Must stay ≥1.5× LOS |
@@ -643,15 +730,19 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 | `head_zone_radius_m` | 0.15 | [0.10, 0.20] | **Yes** (fairness) | |
 | `head_zone_y_offset_m` | 1.65 | [1.55, 1.75] | No | Bone-attached; bone pose authoritative |
 | `pistol_magazine_size` | 8 | [6, 12] | No | Paired with fire rate |
-| `pistol_starting_reserve` | 32 | [16, 48] | No | 4× magazine ratio. Revised from 16 on 2026-04-21 to cover Aggressive-player depletion curve through Section 4–5 without cache reliance. |
+| `pistol_starting_reserve` | 32 | [16, 48] | No | 4× magazine ratio. Covers Aggressive through the mission assuming NOLF1 drops (3/kill); dry around Section 4–5 without caches. |
 | `dart_magazine_size` | 4 | [3, 6] | No | Paired with dart scarcity |
-| `dart_starting_reserve` | 16 | [8, 24] | No | 4× magazine ratio. Revised from 8 on 2026-04-21 to absorb ~20% dart-pickup miss rate and keep Ghost path viable without fists. |
+| `dart_starting_reserve` | 16 | [8, 24] | No | 4× magazine ratio. Absorbs ~20% dart-pickup miss rate and keeps Ghost path viable. |
 | `rifle_magazine_size` | 3 | [2, 5] | No | Pickup-only |
 | `rifle_pickup_reserve` | 6 | [3, 9] | No | Per-pickup amount |
-| `respawn_floor_pistol_total` | 16 | [8, 32] | No | TOTAL (magazine + reserve) minimum at respawn. Consumed by Failure & Respawn. Renamed from `respawn_ammo_floor_pistol` (magazine-only ambiguity resolved 2026-04-21). |
-| `respawn_floor_dart_total` | 8 | [4, 16] | No | TOTAL (magazine + reserve) minimum at respawn. Renamed from `respawn_ammo_floor_dart` 2026-04-21. |
-| `guard_drop_dart_on_dart_ko` | 1 | {1} fixed | No | Break-even anti-farm invariant. Split from `guard_drop_dart_ko_rounds` 2026-04-21. |
-| `guard_drop_dart_on_fist_ko` | 0 | {0} fixed | No | Fist-KO yields no darts — closes fist-farm loop (Pillar 2). Split from `guard_drop_dart_ko_rounds` 2026-04-21. |
+| `respawn_floor_pistol_total` | 16 | [8, 32] | No | TOTAL (magazine + reserve) minimum at respawn. Consumed by Failure & Respawn. |
+| `respawn_floor_dart_total` | 8 | [4, 16] | No | TOTAL (magazine + reserve) minimum at respawn. |
+| `pistol_max_reserve` | 48 | [24, 64] | No | Hard cap on reserve ammo; pickup past cap loses excess (E.32). Also used in `restore_weapon_ammo` clamp. |
+| `dart_max_reserve` | 24 | [16, 32] | No | Hard cap on dart reserve. |
+| `guard_drop_pistol_rounds` | **3** (revised 2026-04-22 from 8) | [2, 5] | No | Per-lethal-kill drop from guard carrying silenced pistol. NOLF1-authentic — below 3-shot body-TTK cost once reload overhead + miss rate are counted → Aggressive net-negative. |
+| `guard_drop_rifle_rounds` | 3 | [1, 5] | No | Per-lethal-kill drop from guard carrying rifle. |
+| `guard_drop_dart_on_dart_ko` | 1 | {1} fixed | No | Break-even anti-farm invariant. |
+| `guard_drop_dart_on_fist_ko` | 0 | {0} fixed | No | Fist-KO yields no darts — closes fist-farm loop (Pillar 2). |
 | `guard_friendly_fire_enabled` | true | {true, false} | No | Per-section overridable |
 
 **Prototype-gated values (5):** `guard_pistol_damage_vs_eve`, `eve_spread_deg`, `dart_speed_m_s`, `dart_gravity_scale`, `head_zone_radius_m`. Recommend `prototypes/guard-combat-prototype/` covers all 5 in a single playtest scene.
@@ -660,9 +751,9 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 
 ### Damage resolution
 
-- **E.1 Two damage calls arrive for the same actor on the same physics frame**: both execute sequentially; if the first already killed the actor, the second's `receive_damage` must gate on `current_alert_state in [DEAD, UNCONSCIOUS]` and return `is_dead = true` without re-emitting state changes. `apply_damage_to_actor` emits `enemy_damaged` both times; subscribers tolerate duplicates. `enemy_killed` fires only on the first kill.
+- **E.1 Two damage calls arrive for the same actor on the same physics frame** (revised 2026-04-22 per Transitional UNCONSCIOUS model): both execute sequentially. If the first lethally kills the actor (state → DEAD), the second's `receive_damage` gates on `current_alert_state == DEAD` and returns `is_dead = true` without re-emitting state changes. If the first puts the actor UNCONSCIOUS and the second is lethal DamageType (BULLET/MELEE_BLADE/MELEE_FIST/rifle/fall), UNCONSCIOUS → DEAD transitions and `is_dead = true`. If both are DART_TRANQUILISER on an UNCONSCIOUS target, the second is no-op (`is_dead = false`). `apply_damage_to_actor` emits `enemy_damaged` on every call; `enemy_killed` fires once at the moment the actor reaches DEAD (which is first-kill for lethal path, or on the post-UNCONSCIOUS-lethal-hit for the transitional path).
 - **E.2 Dead guard receives a subsequent bullet**: `receive_damage` returns `is_dead = true` immediately (DEAD gate). `enemy_damaged` emits on corpse; `enemy_killed` does not re-emit. No state change. Audio plays no vocal (guard is DEAD).
-- **E.3 UNCONSCIOUS guard is shot by pistol/rifle/fists**: SAI overwrites UNCONSCIOUS → DEAD per CR-16. `enemy_killed` fires with the shooter as killer (the original UNCONSCIOUS dart-hit did NOT fire `enemy_killed` — see OQ-CD-2 below). Second-hit kill path is intentional for Mission Scripting tagging (e.g. "no-lethals run" objective can't be satisfied if player re-shoots KO'd guards).
+- **E.3 UNCONSCIOUS guard is shot by pistol/rifle/fists/blade** (revised 2026-04-22 — Transitional model): state transitions UNCONSCIOUS → DEAD (via `receive_damage` seeing `current_alert_state == UNCONSCIOUS` + lethal DamageType, reducing HP further into negative, committing DEAD state). `receive_damage` returns `is_dead = true`. `apply_damage_to_actor` emits `enemy_damaged(guard, damage, source)` followed by `enemy_killed(guard, source)`. Intended for Mission Scripting tagging: a "no-lethals" objective cannot be satisfied if the player re-shoots KO'd guards (the re-shot fires `enemy_killed`, which Mission Scripting counts as a lethal). The original dart path that produced UNCONSCIOUS did NOT fire `enemy_killed`; only the subsequent lethal re-hit does.
 - **E.4 Eve fires exact lethal shot AND guard kills Eve same frame**: both `player_died` (PC emit) and `enemy_killed` (Combat emit) fire same frame. Subscribers run independently in emission order. Failure & Respawn freezes input on `player_died`; Mission Scripting counts the guard kill. Dramatic mutual-elimination is intended.
 - **E.5 Guard hitscan ray penetrates Eve's capsule and would continue to a second guard**: `intersect_ray` returns the first hit only. Ray stops at Eve. Second guard never receives damage. Intentional — Jolt is single-hit by design (CR-5).
 - **E.6 Eve fires at a guard mid-draw (0.65 s first-shot-delay window)**: Eve's hitscan resolves immediately. Guard's draw-animation timer is independent; if Eve's shot kills the guard, SAI's DEAD-state entry stops the fire-cadence timer (E.24). If Eve's shot only wounds, the draw completes at 0.65 s and fire cadence starts normally.
@@ -683,17 +774,17 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 
 ### Projectile
 
-- **E.18 Dart hits UNCONSCIOUS guard**: `collision_mask` still includes `MASK_AI`; dart collides, `receive_damage` sees UNCONSCIOUS target, returns `is_dead=true` without state change (UNCONSCIOUS terminal for darts — re-KO is no-op). `enemy_damaged` emits; `enemy_killed` does NOT re-emit (see OQ-CD-2 for the original UNCONSCIOUS-entry emission question).
+- **E.18 Dart hits UNCONSCIOUS guard** (revised 2026-04-22): `collision_mask` includes `MASK_AI`; dart collides, `receive_damage` sees UNCONSCIOUS target + DART_TRANQUILISER DamageType → idempotent no-op, returns `is_dead = false`. `enemy_damaged` emits (redundant-tolerant subscribers); `enemy_killed` does NOT emit. Re-darting an already-KO'd guard doesn't count as an elimination. If a LETHAL DamageType arrives on the same UNCONSCIOUS target (e.g., dart then pistol), E.3 applies.
 - **E.19 Dart hits Eve**: dart `collision_mask = MASK_WORLD | MASK_AI` explicitly excludes `MASK_PLAYER`. Dart passes through Eve's capsule. Intentional per F.4 spawn contract.
 - **E.20 Dart hits dead guard corpse**: corpse remains on `LAYER_AI`; dart collides, `receive_damage` returns `is_dead=true` (DEAD gate). `enemy_damaged` emits on corpse. Dart frees. Duplicate-on-corpse tolerated by subscribers.
-- **E.21 Dart hits world geometry (wall, floor)**: `apply_damage_to_actor` routes via duck-type; `has_method("apply_damage")` false, `has_method("receive_damage")` false → `push_warning` + return. Dart frees. Wall-impact SFX is a separate Audio subscriber on `body_entered`, not Combat's concern.
-- **E.22 Two darts in flight simultaneously**: both exist as independent RigidBody3D. Each has own `body_entered`. Darts do not collide with each other (`MASK_PROJECTILES` excluded from dart mask).
-- **E.23 Eve dies while a dart is in flight**: `player_died` → `section_exited(reason=RESPAWN)` → ProjectileManager frees all tracked in-flight darts before they hit anything. `enemy_killed` from that dart will NOT fire.
+- **E.21 Dart hits world geometry (wall, floor)** (revised 2026-04-22 — CR-6 match): dart's `_on_impact(body)` filters world early (`body.is_in_group("world") or body is StaticBody3D`) and `queue_free()`s with NO `push_warning`, NO damage call. Wall-impact SFX is a separate Audio subscriber on the dart's own `body_entered` signal (Audio reads the event before queue_free completes in the same tick). The pre-revision "routes via duck-type → `push_warning`" description was wrong; CR-6 filters world before any `apply_damage_to_actor` call.
+- **E.22 Two darts in flight simultaneously**: both exist as independent RigidBody3D. Each has own `_on_impact`. Darts do not collide with each other (`MASK_PROJECTILES` excluded from dart mask).
+- **E.23 Eve dies while a dart is in flight** (revised 2026-04-22 — self-cleanup pattern): `player_died` → Failure & Respawn emits `Events.respawn_triggered(section_id)` (per ADR-0002:183). Every in-flight dart is self-subscribed to `respawn_triggered` and calls `queue_free()` on its own handler. No central ProjectileManager is involved. `enemy_killed` from any in-flight dart will NOT fire (dart is freed before impact). `GuardFireController` simultaneously transitions to IDLE via the same signal.
 
 ### Guard fire cadence
 
 - **E.24 Guard killed while fire-cadence timer is running** (revised 2026-04-21): `GuardFireController` callbacks begin with a defensive state-check (CR-12 defensive gate). If the guard is DEAD or UNCONSCIOUS when a scheduled timer fires, the callback enters IDLE and stops its own timers. **No SAI obligation** — SAI's DEAD-entry handler does not need to stop Combat's timers. This resolves the cross-domain contract violation flagged in the /design-review.
-- **E.25 COMBAT_LOST_TARGET_SEC expires same frame as Eve takes damage**: CR-14's reset is synchronous (`_combat_lost_target_timer.stop(); _combat_lost_target_timer.start(COMBAT_LOST_TARGET_SEC)`). **Signal-connection-order guarantee** (CR-14 addition): `Events.player_damaged` must be connected before `_combat_lost_target_timer.timeout` in the guard scene `_ready()` — this ordering ensures the reset handler runs before the timeout handler in the same idle tick. If connection order is violated, the reset loses the race; verified by AC-CD-5.1.
+- **E.25 COMBAT_LOST_TARGET_SEC expires same frame as Eve takes damage** (revised 2026-04-22 — synchronous reset discipline): CR-14's reset is synchronous in the `Events.player_damaged` handler. The `stop(); start(COMBAT_LOST_TARGET_SEC)` call completes inside the signal dispatch call stack, BEFORE the emit returns. Any `Timer.timeout` scheduled for the same frame fires during its own process tick (evaluating timer state as of that moment); by then the timer has been restarted and no timeout fires. **No cross-signal FIFO guarantee is needed** — synchronous mutation inside the handler is the mechanism, not connection order.
 - **E.26 Guard in COMBAT-no-LOS reaches suppression_max_shots (3)** (revised 2026-04-21): Combat's `GuardFireController` enters `CAPPED` state. `CAPPED` is a silent state — no further shots fire regardless of LOS state. The guard naturally de-escalates via SAI's existing COMBAT → SEARCHING transition (triggered by `COMBAT_LOST_TARGET_SEC` expiring with no damage taken). On LOS reacquisition, `CAPPED → LOS` resets `suppression_count = 0` (fresh cycle). **No post-cap SAI content needed** — the existing SAI de-escalation path handles it.
 - **E.27 Eve in kill-plane free-fall and guard cadence timer fires**: guard's ray can hit Eve mid-fall (CapsuleShape3D still present until `player_died` emits). PC F.6 `apply_damage` gates on DEAD state. Functionally unreachable at kill_plane_y = -50 m (far beyond 16 m guard fire range), but the gate exists.
 
@@ -724,6 +815,8 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 - **E.38 Dart in flight enters Mission Scripting trigger volume**: dart's RigidBody3D registers `body_entered` with Area3D triggers it passes through. Mission Scripting's trigger handlers must filter by `body.is_in_group("player")` or equivalent — darts must NOT fire mission triggers. Flag for Mission Scripting GDD: trigger handlers must gate on actor type.
 - **E.39 Eve in interact (`_is_hand_busy`) takes damage ≥ 10 HP**: interact cancels per PC F.6 E.6; Combat's fire gate (CR-10) was already blocking fire, so no Combat-side interaction. PC handles the cancel internally.
 - **E.40 Settings toggle crosshair disabled mid-gunfight**: HUD queries the setting each frame (or reacts to `setting_changed` signal). Combat holds no state for the crosshair — toggling is purely HUD's concern. No Combat-side effect.
+- **E.41 Dart fire with Eve flush against cover** (NEW 2026-04-22 — godot-specialist B14): CR-6 pre-fire occlusion check detects spawn-point-inside-world-geometry. Fire is cancelled at the call site; dry-fire click SFX plays; no ammo consumed; no `weapon_fired` emit. Prevents silent dart loss when Eve is pressed against a wall.
+- **E.42 Rapid back-to-back hits on Eve exceed WCAG 3 Hz flash rate** (NEW 2026-04-22 — ux-designer BLOCKER-1): two guards each firing at 1.4 s cadence offset can land hits ~700 ms apart → 1.4 Hz sustained, or burst 3+ hits/sec during multi-guard alpha strikes. At `hud_damage_flash_duration_frames = 1` (default 16 ms) the aggregate flash rate can briefly exceed 3 Hz. HUD Core enforces a minimum inter-flash interval of `hud_damage_flash_cooldown_ms = 333` (3 Hz ceiling) — damage events arriving during the cooldown window coalesce into a single flash (the HUD latches "damage since last flash" and fires one flash per cooldown window regardless of hit count). The secondary cues (camera dip, audio SFX) are NOT rate-limited — only the visual flash is gated. Also flags first-boot photosensitivity warning as a forward-dep to Settings & Accessibility GDD (OQ-CD-12 item 7).
 
 ## Dependencies
 
@@ -744,8 +837,8 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 | System | Status | Interface | Why soft |
 |---|---|---|---|
 | **Audio** | ✅ Approved | Subscribes to all 6 Combat signals for SFX + music state transitions | Combat fires correctly without Audio; Audio presence is felt but does not block fire/damage mechanics. |
-| **Level Streaming** | ✅ Approved | `Events.section_exited(section_id, reason: TransitionReason)` | Combat listens for RESPAWN to clean up in-flight projectiles. Without subscription, in-flight darts during respawn cause minor visual artifacts but no crash (darts auto-free at 4.0 s). |
-| **Input** | Designed | `Fire`, `Aim`, `Reload`, `WeaponSwitch`, `Melee` input actions | Combat reads these per-frame. Without Input's action definitions, Combat cannot trigger — but input mapping is Input GDD's authoring concern, not a live integration. |
+| **Level Streaming** | ✅ Approved | `Events.respawn_triggered(section_id: StringName)` (Failure & Respawn emits; dart + GuardFireController self-subscribe) | Used for self-cleanup of in-flight darts + GuardFireController IDLE transition on respawn. Without subscription, darts auto-free at `dart_lifetime_s = 4.0 s` anyway — visual artifacts only. |
+| **Input** | Designed | `Fire`, `Aim`, `Reload`, `WeaponSwitch`, `Melee`, **`Takedown`** (NEW 2026-04-22) input actions | Combat reads these per-frame. Takedown is a new dedicated action for blade takedowns (CR-3 revised). Input GDD forward-dep: add Takedown action + default bindings (kbd `F`, gamepad Y). |
 | **ADR-0001 Stencil Contract** | Proposed | Tier 0 for muzzle flashes + hit sparks; Tier 3 for dart mesh | Aesthetic ties — Combat's VFX would render without stencil tagging but would not match the outline-tier grammar. Art Bible §8K amendment (flagged) formalizes. |
 | **ADR-0005 FPS Hands Outline** | Accepted (Amendment active) | Weapon mesh in Eve's hand inherits SubViewport outline | Weapon visual outline. Combat does not render the hands pipeline — it supplies the weapon mesh that renders inside it. |
 
@@ -774,16 +867,18 @@ These are stubbed in this GDD with placeholder contracts:
 |---|---|---|
 | **Inventory & Gadgets** | Weapon Resource schema (`base_damage`, `fire_rate_sec`, `magazine_size`, `damage_type`); `WorldItem` drop entity for ammo pickups; weapon-switch input handler | Inventory GDD authors the Resource schema; Combat reads Resource fields. For tests, a stub Weapon Resource in `tests/fixtures/` with hard-coded values. |
 | **HUD Core** | Subscribes to `player_health_changed` + `weapon_fired` + `enemy_damaged`; reads weapon Resource for ammo counts | Combat fires signals with or without HUD Core shipped. HUD can subscribe lazily. |
-| **Failure & Respawn** | `respawn_floor_pistol = 8`, `respawn_floor_dart = 4`, `RESPAWN_AMMO_FLOOR_*` constants declared here; respawn logic reads them | Combat owns the constants; Failure & Respawn GDD will cite them. |
-| **Mission & Level Scripting** | `SectionConfig.guard_friendly_fire_enabled` field consulted per-shot; trigger volumes must filter dart body types | Combat GDD defines the query contract; Mission Scripting authors the Resource. |
+| **Failure & Respawn** | `respawn_floor_pistol_total = 16`, `respawn_floor_dart_total = 8` (TOTAL, not mag-only); first-death-per-checkpoint flag; `restore_weapon_ammo(snapshot, floor, max_cap)` contract | Combat owns the constants + function signature; Failure & Respawn GDD implements + cites. |
+| **Mission & Level Scripting** | `SectionConfig.guard_friendly_fire_enabled` field consulted per-shot; trigger volumes must filter dart body types; boss HP contract (if > 100 HP, specify a bespoke non-lethal takedown slot) | Combat GDD defines the query contract; Mission Scripting authors the SectionConfig Resource + boss HP value. |
 | **Rifle entity** | Rifle weapon Resource at pickup-only spawn points; `rifle_pickup_reserve = 6` standard drop | Inventory & Gadgets authors the Rifle Resource; Level Streaming's section registry places pickup locations. |
+| **Settings & Accessibility** | 7 contracts: crosshair opt-out (UI-1), Enhanced Hit Feedback toggle (V.6), Damage Flash Duration slider (G.8), Damage Flash Cooldown ms (G.8 NEW — photosensitivity rate-gate), `Settings → HUD → Crosshair` duplicate entry (UI-6), ADS tween duration multiplier (vestibular — UI-4), first-boot photosensitivity warning | Settings & Accessibility GDD owns persistence + UI placement; Combat defines behavioral contracts. |
+| **Input GDD** | Add `Takedown` input action (NEW 2026-04-22) with default bindings: keyboard `F`, gamepad Y/△. Must NOT be bindable to the same key as `Fire` (validation rule) | Input GDD authoring must include Takedown in InputMap. |
 
 ### ADR dependencies (consumed, not authored here)
 
 | ADR | Status | Combat's consumption |
 |---|---|---|
 | **ADR-0001 Stencil ID Contract** | Proposed | Muzzle flashes + impact sparks = tier 0 (no outline); dart projectile + trail = tier 3 LIGHT. **ADR-0001 needs clarification added: explicit VFX-exempt language** (flagged in Art Bible §8K amendment). |
-| **ADR-0002 Signal Bus + Event Taxonomy** | Proposed | 6 Combat-domain signals; `CombatSystem.DamageType` and `CombatSystem.DeathCause` enum ownership. **ADR-0002 amendment pending (SAI's severity param + `takedown_performed` 3-arg sig) — shared with SAI, not new work for Combat.** |
+| **ADR-0002 Signal Bus + Event Taxonomy** | Proposed | 6 Combat-domain signals; `CombatSystem.DamageType` and `CombatSystem.DeathCause` enum ownership. **ADR-0002 amendment pending** — bundles: (a) SAI's severity param + `takedown_performed` 3-arg sig (prior); (b) update signal type annotations from `CombatSystem.DeathCause` → `CombatSystemNode.DeathCause` (prior); (c) **NEW 2026-04-22**: if OQ-CD-1 SAI amendment adds LOS + takedown-prompt accessors, declare them in ADR-0002's accessor-convention section. Also: PC GDD (Approved) + Audio GDD (Approved) reference `CombatSystem.DeathCause` in frozen signatures and will need a coordinated type-rename pass; producer should sequence this with the ADR-0002 amendment landing. |
 | **ADR-0003 Save Format Contract** | Proposed | Per-weapon ammo + per-guard state serialization; respawn floor applied at restore (logic lives in Failure & Respawn, format lives here). |
 | **ADR-0004 UI Framework** | Proposed | HUD crosshair rendering uses the UI Framework's input-context stack (crosshair visible only when InputContext == GAMEPLAY). |
 | **ADR-0006 Collision Layer Contract** | Proposed | `MASK_PROJECTILES`, `MASK_AI`, `MASK_WORLD`, `MASK_PLAYER` all consumed via `PhysicsLayers` constants. |
@@ -814,8 +909,8 @@ What they control: per-weapon TTK and damage balance.
 | `blade_takedown_damage` (NEW) | 100 | [100, 150] | <100 = takedown fails to kill | >150 = no functional impact (overkill on 100 HP). **Replaces** `silenced_pistol_takedown_damage` — takedowns now route to the new blade weapon (CR-3 revision 2026-04-21) |
 | `dart_damage` | 150 | [100, 200] | <100 = guards survive darts (breaks non-lethal contract) | >200 = no functional impact |
 | `rifle_base_damage` | 120 | [100, 150] | <100 = no 1-shot body kill niche, rifle becomes just "louder pistol" | >150 = no functional impact (already 1-shot) |
-| `fist_base_damage` | 16 | [13, 20] | <13 = 8+ swing KO, fists become impractical | >20 = 5-swing KO, fists become too viable (breaks Pillar 2 ammo scarcity pressure) |
-| `guard_pistol_damage_vs_eve` | 18 | **[14, 20]** (tightened 2026-04-21) | <14 = Eve takes 7+ hits, combat feels weightless | >20 = Eve dies in 4 hits, Pillar 3 "5+ hit survivability" breaks. Previous ceiling of 25 allowed 4-hit kill, inconsistent with AC-CD-14.1 |
+| `fist_base_damage` | **40** *(reworked 2026-04-22)* | **[34, 50]** | <34 = 4+ swing KO, drifts back toward Matt Helm slapstick territory (§V.8 anti-pattern) | >50 = 1-swing KO, fists become OP vs dart gun / blade, breaks weapon roster differentiation |
+| `guard_pistol_damage_vs_eve` | 18 | [14, 20] | <14 = Eve takes 7+ hits, combat feels weightless | >20 = Eve dies in 4 hits, Pillar 3 "5+ hit survivability" breaks (AC-CD-14.1 invariant) |
 
 **Interaction warning**: `silenced_pistol_base_damage` and `blade_takedown_damage` are INTENTIONALLY DIFFERENT constants on DIFFERENT weapons. A designer tuning pistol base damage should not affect blade-takedown lethality — the blade owns takedowns; the pistol owns gunfights. This separation preserves the 1-shot-lethal takedown contract regardless of gunfight TTK tuning.
 
@@ -870,40 +965,43 @@ What they control: Pillar 2 (Discovery Rewards Patience) enforcement via scarcit
 | Knob | Default | Safe Range | Breaks if too low | Breaks if too high |
 |---|---|---|---|---|
 | `pistol_magazine_size` | 8 | [6, 12] | <6 = constant reloads, breaks Deadpan Witness register | >12 = reload is never a beat, removes theatrical pause |
-| `pistol_starting_reserve` | **32** (revised 2026-04-21 from 16) | [16, 48] | <16 = aggressive player dry by Section 2 | >48 = softens Pillar 2 too far; depletion curve stops producing observation reward |
+| `pistol_starting_reserve` | 32 | [16, 48] | <16 = aggressive player dry by Section 2 | >48 = softens Pillar 2 too far; depletion curve stops producing observation reward |
 | `dart_magazine_size` | 4 | [3, 6] | 3 = uncomfortable | >6 = spray darts, non-lethal premium collapses |
-| `dart_starting_reserve` | **16** (revised 2026-04-21 from 8) | [8, 24] | <8 = ghost player can't KO tutorial chokepoints even with break-even | >24 = Pillar 2 non-lethal premium collapses; placed caches become irrelevant |
+| `dart_starting_reserve` | 16 | [8, 24] | <8 = ghost player can't KO tutorial chokepoints even with break-even | >24 = Pillar 2 non-lethal premium collapses; placed caches become irrelevant |
 | `rifle_magazine_size` | 3 | [2, 5] | 2 = cannot use rifle tactically | >5 = rifle too generous |
 | `rifle_pickup_reserve` | 6 | [3, 9] | <3 = rifle pickup worthless | >9 = rifle too dominant |
-| `guard_drop_pistol_rounds` | 8 | [4, 12] | <4 = balanced player goes dry | >12 = aggressive player's depletion curve breaks |
+| `guard_drop_pistol_rounds` | **3** *(NOLF1 revision 2026-04-22 from 8)* | [2, 5] | <2 = aggressive player softlocks by Section 3 | >5 = ammo-positive per guard, Pillar 2 collapses to late-game cap drift |
 | `guard_drop_rifle_rounds` | 3 | [1, 5] | <1 = no point carrying rifle | >5 = rifle ammo becomes farmable |
-| `guard_drop_dart_on_dart_ko` (renamed 2026-04-21) | 1 | {1} | — | Fixed at 1 — break-even invariant. Previous `{0, 1}` range incorrectly allowed Pillar-2-breaking value |
-| `guard_drop_dart_on_fist_ko` (NEW 2026-04-21) | 0 | {0} | — | Fixed at 0 — fist KO cannot farm darts (closes fist-farm loop flagged by economy-designer + systems-designer) |
+| `guard_drop_dart_on_dart_ko` | 1 | {1} | — | Fixed at 1 — break-even invariant. |
+| `guard_drop_dart_on_fist_ko` | 0 | {0} | — | Fixed at 0 — fist KO cannot farm darts (closes fist-farm loop). |
 
-**Invariants**: `guard_drop_dart_on_dart_ko == 1` and `guard_drop_dart_on_fist_ko == 0`. Any other values break the break-even anti-farm rule (see F.6 + AC-CD-12.2).
+**Invariants**: `guard_drop_dart_on_dart_ko == 1` and `guard_drop_dart_on_fist_ko == 0`. Additionally, `guard_drop_pistol_rounds < pistol_body_shots_per_kill` (`3 < 3` at default — break-even threshold; miss rate + reload overhead make realized drops net-negative). Any value ≥ 5 would make Aggressive ammo-positive, breaking Pillar 2. See F.6 + AC-CD-12.2.
 
-### G.6 Respawn floor (Cross-system — consumed by Failure & Respawn) — revised 2026-04-21
-
-| Knob | Default | Safe Range | Notes |
-|---|---|---|---|
-| `respawn_floor_pistol_total` | 16 | [8, 32] | TOTAL (magazine + reserve) minimum at respawn. Consumed by Failure & Respawn at restore. Prevents softlock; applied ONLY on first death per checkpoint (see F.6 floor anti-farm). Revised from `respawn_ammo_floor_pistol = 8` (magazine-only ambiguity resolved). |
-| `respawn_floor_dart_total` | 8 | [4, 16] | Same — TOTAL minimum dart reserve at respawn. Replaces `respawn_ammo_floor_dart` (ambiguous scope). |
-| `pistol_max_reserve` (NEW) | 48 | [24, 64] | Hard cap on reserve ammo; pickup past cap loses excess (E.32 + Inventory forward dep). Also used by `clamp()` in restore_weapon_ammo to sanitize corrupted snapshots. |
-| `dart_max_reserve` (NEW) | 24 | [16, 32] | Hard cap on dart reserve; same function as pistol cap. |
-
-### G.8 Accessibility (NEW — added 2026-04-21 per UX review)
+### G.6 Respawn floor (Cross-system — consumed by Failure & Respawn)
 
 | Knob | Default | Safe Range | Notes |
 |---|---|---|---|
-| `hud_damage_flash_duration_frames` | 1 | [1, 6] | Health-numeric white flash duration. Default 1 frame preserves Deadpan Witness restraint; 6-frame max (100 ms) sits above the ~50 ms conscious-perception threshold. Exposed to players via `Settings → Accessibility → Damage Flash Duration` (forward dep to Settings GDD). |
-| `enhanced_hit_feedback_enabled` | `false` | {true, false} | Opt-in non-diegetic direction pulse per V.6 + UI-5. Default OFF preserves Pillar 5 diegetic fiction; ON surfaces damage-direction signal for hearing-impaired players. Owned by Settings & Accessibility GDD. |
-| `crosshair_halo_enabled` | `true` | {true, false} | 1 px Parchment halo ring around crosshair dot per UI-1. Default ON for contrast legibility. Users on pure-Pillar-5 immersion play can disable halo while keeping dot on (or disable crosshair entirely via `crosshair_enabled`). |
+| `respawn_floor_pistol_total` | 16 | [8, 32] | TOTAL (magazine + reserve) minimum at respawn. Consumed by Failure & Respawn at restore. Prevents softlock; applied ONLY on first death per checkpoint (see F.6 floor anti-farm). |
+| `respawn_floor_dart_total` | 8 | [4, 16] | Same — TOTAL minimum dart reserve at respawn. |
+| `pistol_max_reserve` | 48 | [24, 64] | Hard cap on reserve ammo; pickup past cap loses excess (E.32 + Inventory forward dep). Also used by `clamp()` in restore_weapon_ammo to sanitize corrupted snapshots. |
+| `dart_max_reserve` | 24 | [16, 32] | Hard cap on dart reserve; same function as pistol cap. |
 
 ### G.7 Behavior flags (Designer-facing)
 
 | Knob | Default | Range | Notes |
 |---|---|---|---|
 | `guard_friendly_fire_enabled` | `true` | {true, false} | Per-section overridable via Mission Scripting `SectionConfig`. Global default on for comedy (Pillar 1). |
+
+### G.8 Accessibility (NEW — added 2026-04-21; expanded 2026-04-22 per ux-designer BLOCKER-1/2/3)
+
+| Knob | Default | Safe Range | Notes |
+|---|---|---|---|
+| `hud_damage_flash_duration_frames` | 1 | [1, 6] | Health-numeric white flash duration per hit. Default 1 frame preserves Deadpan Witness restraint; 6-frame max (100 ms) sits above the ~50 ms conscious-perception threshold. Player-exposed via `Settings → Accessibility → Damage Flash Duration`. |
+| `hud_damage_flash_cooldown_ms` | **333** *(NEW 2026-04-22)* | {333 fixed at ceiling} | Minimum interval between consecutive visual flashes (3 Hz WCAG 2.3.1 ceiling for photosensitivity safety). During cooldown, additional damage events coalesce into a single deferred flash at cooldown end. Fixed at 333 ms; not player-tunable below (safety). Can be raised (≤1000 ms) if player finds even 3 Hz uncomfortable — forward-dep Settings & Accessibility. |
+| `crosshair_dot_size_pct_v` | **0.19%** *(NEW 2026-04-22 — resolution-independent)* | [0.15%, 0.30%] | Crosshair dot size as percentage of viewport vertical resolution. At 1080p = ~2 px; at 1440p = ~3 px; at 4K = ~4 px. Clamped min 3 physical pixels max 12 physical pixels in implementation. Replaces the pre-revision "~4 px at 1080p" fixed-pixel spec per ux-designer BLOCKER-2. |
+| `crosshair_halo_style` | **tri_band** *(NEW 2026-04-22 per ux-designer BLOCKER-3)* | {none, parchment_only, tri_band} | Halo stroke composition. `tri_band` = Parchment outer + Ink Black inner bands (each 1 physical px), guaranteeing ≥3:1 contrast against both light and dark backgrounds. `parchment_only` is the pre-revision spec (fails against sepia exterior per ux-designer BLOCKER-3); kept as an option for players who prefer minimal halo. `none` disables halo entirely (Ink Black dot alone). |
+| `enhanced_hit_feedback_enabled` | `false` | {true, false} | Opt-in non-diegetic direction pulse per V.6 + UI-5. Default OFF preserves Pillar 5 diegetic fiction; ON surfaces damage-direction signal for hearing-impaired players. Direction model: **4-quadrant** (NE / NW / SE / SW pulse on corresponding screen corner) based on angle(eve_forward, eve_position → shot_origin) at hit frame. Simpler than continuous radial gradient; testable. Owned by Settings & Accessibility GDD. |
+| `crosshair_enabled` | `true` | {true, false} | Opt-out toggle. When false, dot + halo both hidden. Surfaced in Settings under BOTH Accessibility AND HUD paths (UI-6). |
 
 ### Tuning knob ownership
 
@@ -978,11 +1076,11 @@ Four registers change on hit by default. A fifth is available as opt-in accessib
 | **Camera** | 3° downward dip over 6 frames, recovery over 10 frames (world's register — the *hit* moved her, not a subjective fear-state) | PC (existing hard-landing dip node; separate tuning knob for hit) |
 | **Audio** | 150 ms hit SFX (non-spatial, Audio GDD §Combat catalog). Below 25 HP: clock-tick loop at 90 bpm on UI bus | Audio (existing subscriber to `player_damaged` + `player_health_changed`) |
 | **Period-authenticity cut** (DEFAULT) | NO damage vignette. NO FOV nudge. NO "LOW HEALTH" text. NO damage-direction indicator. NO hit marker. | Forbidden patterns (Pillar 5 governs diegetic fiction) |
-| **Enhanced Hit Feedback** (OPT-IN, Settings → Accessibility) | A subtle radial-edge pulse localized to the incoming shot direction (15% screen-edge opacity, 120 ms duration, desaturated warm-grey, NOT a red vignette). Surfaces damage-direction information for hearing-impaired players. Off by default; honors the accessibility carve-out ruling. | Settings & Accessibility GDD (forward dep); Combat supplies the behavioral contract here |
+| **Enhanced Hit Feedback** (OPT-IN, Settings → Accessibility) | Subtle desaturated warm-grey pulse at a specific screen-corner (**4-quadrant model** — NE / NW / SE / SW — based on angle between Eve's forward vector and the shot origin at hit frame). 15% edge opacity, 120 ms duration, NOT a red vignette. Surfaces damage-direction information for hearing-impaired players. Off by default. | Settings & Accessibility GDD (forward dep); Combat supplies the behavioral contract here |
 
 **Accessibility carve-out rationale (creative-director ruling, 2026-04-21)**: Pillar 5 (Period Authenticity Over Modernization) governs *diegetic period fiction* — no GPS markers, no modern UX paternalism, no kill cams. It does NOT govern accessibility scaffolding. A hearing-impaired player who cannot perceive the 150 ms hit SFX OR the ≤25 HP clock-tick has only two remaining hit signals: the 1-frame HUD flash (16 ms, below typical conscious-perception threshold) and the 3° / 100 ms camera dip. Both are low-salience under combat stress. Without an opt-in carve-out, Pillar 5 becomes a structural access barrier.
 
-**Enhanced Hit Feedback specification**: the opt-in pulse is INTENTIONALLY non-diegetic — it reads as an accessibility aid, not as a "damage vignette" Eve sees. It is desaturated (not red), brief (120 ms), and only 15% edge opacity. It is direction-localized (maps to the world-space angle between Eve and the shot origin). When the setting is OFF (default), no such pulse is ever rendered — the out-of-box experience is identical to the pre-revision "period-authenticity cut." When ON, the toggle changes ONLY this one signal; all other Pillar 5 forbidden patterns (red vignette, hit marker, LOW HEALTH text, damage arrow) remain forbidden.
+**Enhanced Hit Feedback specification (revised 2026-04-22 — 4-quadrant direction model)**: the opt-in pulse is INTENTIONALLY non-diegetic — it reads as an accessibility aid, not as a "damage vignette" Eve sees. It is desaturated (not red), brief (120 ms), only 15% edge opacity, and localized to ONE of four screen corners (NE/NW/SE/SW) based on the angle between Eve's forward vector and the shot origin at hit frame. The 4-quadrant model is deliberately coarse — it communicates "shot came from your back-right quadrant" not a precise bearing. This is sufficient for accessibility (alert the player where to turn) without producing a high-fidelity targeting overlay that would cross into hit-marker territory. When the setting is OFF (default), no such pulse is ever rendered — the out-of-box experience is identical to the period-authenticity cut. When ON, the toggle changes ONLY this one signal; all other Pillar 5 forbidden patterns (red vignette, hit marker, LOW HEALTH text, continuous damage arrow) remain forbidden.
 
 ### V.7 Reload + weapon-switch visual grammar
 
@@ -1024,24 +1122,25 @@ Courrèges navy sleeve (§5.1) visible in first frames — establishes Eve ident
 
 ## UI Requirements
 
-### UI-1 Crosshair (revised 2026-04-21 — rationale rewritten, contrast halo added)
+### UI-1 Crosshair (revised 2026-04-22 — resolution-independent sizing + tri-band halo)
 
-**Rationale revised.** The pre-revision draft framed the crosshair as "period-scope reticle style" to justify Pillar 5 compliance. The /design-review pass flagged this as rationalization: a static center dot is a modern FPS affordance, not a 1960s optical scope. The honest framing is **accessibility-first**: most players expect a crosshair for ranged-weapon aim, and removing it entirely would create unnecessary friction for a significant portion of the audience. The crosshair is accepted as an accessibility affordance, and is kept honest by being OPT-OUT rather than rationalized as period-authentic.
+**Rationale.** The crosshair is an accessibility affordance, not a diegetic element. The Section B Design Test is NOT applied here — see the Design Test "Scope" note. Kept honest by being OPT-OUT.
 
-**Specification:**
+**Specification (revised 2026-04-22):**
 
-- Static Ink Black `#1A1A1A` center dot, **~4 px diameter** at 1080p (reduced from 6 to minimize visual weight)
-- **1 px Parchment `#E8DFC8` halo ring** around the dot (1 px stroke). Provides minimum 3:1 contrast against any gameplay background — addresses low-contrast failure against dark environments (shadowed alleys, night-side geometry)
-- **Enabled by default** (accessibility-first default)
-- Opt-out via `Settings → Accessibility → Crosshair` toggle AND surfaced as a duplicate entry point under `Settings → HUD → Crosshair` for discovery (both UIs read the same setting value — single source of truth owned by Settings & Accessibility GDD)
-- Does NOT expand/contract with movement
-- Does NOT change color on enemy hover
-- Does NOT hit-marker flash on kill
-- Hidden when `InputContext != GAMEPLAY` (menu, document overlay, cutscenes, loading, pause)
+- Dot color Ink Black `#1A1A1A`.
+- **Dot size: `crosshair_dot_size_pct_v = 0.19%` of viewport vertical resolution** (approx. 2 px at 1080p, 3 px at 1440p, 4 px at 4K), clamped `min 3 physical px, max 12 physical px`. Replaces the prior "~4 px at 1080p" fixed-pixel spec that failed at 4K sub-pixel rendering (ux-designer BLOCKER-2).
+- **Halo: tri-band** (`crosshair_halo_style = tri_band`, default) — 1 px Parchment `#E8DFC8` outer ring + 1 px Ink Black `#1A1A1A` inner ring. The tri-band guarantees ≥3:1 contrast against BOTH light backgrounds (Ink Black inner band dominates) AND dark backgrounds (Parchment band dominates). Resolves ux-designer BLOCKER-3 — the pre-revision single-Parchment halo failed against sepia exterior scenes (~1.1:1 contrast).
+- **Enabled by default** (accessibility-first).
+- Opt-out via `Settings → Accessibility → Crosshair` AND duplicate entry at `Settings → HUD → Crosshair` (UI-6). Single source of truth (`Settings.crosshair_enabled`), two discovery paths.
+- Does NOT expand/contract with movement.
+- Does NOT change color on enemy hover.
+- Does NOT hit-marker flash on kill.
+- Hidden when `InputContext != GAMEPLAY` (menu, document overlay, cutscenes, loading, pause).
 
-**Why keep it on by default?** Practical: most players expect a crosshair and removing it creates needless friction on a first boot. Honest: this is NOT a period-authenticity claim. Players who want a fully period-immersed experience can opt out in one click. Players who need the crosshair for motor/visual accommodation have it available by default. The Section B "Composed Removal" design test is NOT applied here — it governs diegetic fiction, not accessibility affordances (see §B design test final row, added 2026-04-21).
+**Why keep it on by default?** Practical: most players expect a crosshair and removing it creates needless friction on a first boot. Players who want a fully period-immersed experience can opt out in one click. Players who need the crosshair for motor/visual accommodation have it by default. The Design Test does not apply (see §B scope note).
 
-**Implementation ownership:** HUD Core renders the crosshair widget; Combat has no direct UI responsibility beyond specifying the behavior. HUD Core consumes `Settings.crosshair_enabled` from the Settings & Accessibility GDD (single setting, two discovery paths).
+**Implementation ownership:** HUD Core renders the crosshair widget; Combat has no direct UI responsibility beyond specifying the behavior. HUD Core consumes `Settings.crosshair_enabled` + `crosshair_dot_size_pct_v` + `crosshair_halo_style` from the Settings & Accessibility GDD.
 
 ### UI-2 Ammo counter
 
@@ -1057,7 +1156,8 @@ Courrèges navy sleeve (§5.1) visible in first frames — establishes Eve ident
 
 - Existing readout per Player Character GDD §UI (owned by PC + HUD Core)
 - Combat contributes: `player_health_changed` signal emission (via PC's internal emit in F.6), drives the damage flash
-- **Flash duration** is now configurable via `hud_damage_flash_duration_frames` knob (G.8), default 1 frame, safe range [1, 6]. Accessibility opt-in via Settings → Accessibility → Damage Flash Duration.
+- **Flash duration** is configurable via `hud_damage_flash_duration_frames` knob (G.8), default 1 frame, safe range [1, 6]. Accessibility opt-in via Settings → Accessibility → Damage Flash Duration.
+- **Flash rate-gate (NEW 2026-04-22 — photosensitivity)**: a minimum inter-flash interval of `hud_damage_flash_cooldown_ms = 333` (3 Hz ceiling per WCAG 2.3.1) is enforced by HUD Core. During cooldown, additional damage events coalesce into a single deferred flash at cooldown end. Audio SFX + camera dip are NOT rate-limited — only the visual flash is gated.
 - Below 25 HP: color shifts to Alarm Orange (Art Bible §4.4, PC GDD)
 - **Colorblind-safe secondary cue** (NEW): at the 25 HP threshold, the numeric's font weight also shifts from Regular to Bold. This is a pure typographic change readable by all players regardless of color perception. No period-authenticity conflict — typographic weight shift is era-appropriate. Art Bible §7D amendment flagged in V.9.
 
@@ -1089,13 +1189,15 @@ Courrèges navy sleeve (§5.1) visible in first frames — establishes Eve ident
 
 - Subtle desaturated radial-edge pulse (15% opacity, 120 ms, warm-grey) locating the incoming shot direction. Explicitly NOT a red vignette; intentionally reads as accessibility aid not Eve's subjective state. See V.6 Enhanced Hit Feedback row.
 
-**Not affected by Pillar 5 (accessibility defaults, always rendered):**
+**Not affected by Pillar 5 (accessibility defaults, rendered by default — individually opt-out available):**
 
-- Center-dot crosshair with 1 px Parchment halo (UI-1) — default on, opt-out only
-- Health numeric flash (default 1 frame, configurable 1–6 frames per `hud_damage_flash_duration_frames`)
+- Center-dot crosshair with tri-band halo (UI-1) — rendered by default, opt-out via `Settings → Accessibility → Crosshair`
+- Health numeric flash (default 1 frame, configurable 1–6 frames per `hud_damage_flash_duration_frames`, rate-gated at 3 Hz per `hud_damage_flash_cooldown_ms`)
 - 25 HP threshold typographic weight shift (Bold) as colorblind-safe secondary to Alarm Orange hue shift
 
-Coverage: AC-CD-14.3 validates absence of the "Always forbidden" items via screenshot evidence at 15 HP during active gunfight WITH Enhanced Hit Feedback OFF. Separate AC (AC-CD-14.4) validates that the enabled pulse is NOT red and renders only when toggle is ON.
+Wording clarification (revised 2026-04-22 — ux-designer R5): prior "always rendered" phrasing was contradicted by the opt-out toggle; corrected to "rendered by default; individually opt-out available."
+
+Coverage: AC-CD-14.3 validates absence of the "Always forbidden" items via screenshot evidence at 15 HP during active gunfight WITH Enhanced Hit Feedback OFF. Separate AC (AC-CD-14.4) validates that the enabled pulse is NOT red, uses the 4-quadrant direction model, and renders only when toggle is ON.
 
 ### UI-6 Crosshair toggle — dual discovery path (revised 2026-04-21)
 
@@ -1136,15 +1238,16 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
   - Variant: `receive_damage` returns `is_dead = false` — `enemy_killed` must NOT emit.
 
-- **AC-CD-1.5 [Logic]** **GIVEN** the `damage_type_to_death_cause()` static function, **WHEN** called with each of the 5 `DamageType` values (`BULLET`, `DART_TRANQUILISER`, `MELEE_FIST`, `FALL_OUT_OF_BOUNDS`, `TEST`), **THEN** returns the corresponding `DeathCause` value as specified in C.4, with no `push_warning` for any mapped value. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
+- **AC-CD-1.5 [Logic]** **GIVEN** the `damage_type_to_death_cause()` static function, **WHEN** called with each of the **6** `DamageType` values (`BULLET`, `DART_TRANQUILISER`, `MELEE_FIST`, `MELEE_BLADE`, `FALL_OUT_OF_BOUNDS`, `TEST`), **THEN** returns the corresponding `DeathCause` value as specified in C.4 (`BULLET→SHOT`, `DART_TRANQUILISER→TRANQUILISED`, `MELEE_FIST→MELEE`, `MELEE_BLADE→MELEE`, `FALL_OUT_OF_BOUNDS→ENVIRONMENTAL`, `TEST→UNKNOWN`), with no `push_warning` for any mapped value. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
 
   - Variant: calling with an out-of-range integer literal triggers `push_warning` and returns `DeathCause.UNKNOWN`.
+  - Revised 2026-04-22 — MELEE_BLADE added per C.4 enum (prior 5-value list was stale after 2026-04-21 blade split).
 
 ### AC-CD-2 Weapon Damage Values (F.1)
 
-- **AC-CD-2.1 [Logic]** **GIVEN** a guard stub at 100 HP and `is_headshot = false`, **WHEN** `apply_damage_to_actor` is called with the canonical `base_damage` for each weapon, **THEN** the guard's HP delta equals `base_damage × 1.0` within epsilon 0.001 for: silenced pistol (34), dart gun (150), rifle (120), fists (16), guard pistol vs Eve path (18). Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
+- **AC-CD-2.1 [Logic]** **GIVEN** a guard stub at 100 HP and `is_headshot = false`, **WHEN** `apply_damage_to_actor` is called with the canonical `base_damage` for each weapon, **THEN** the guard's HP delta equals `base_damage × 1.0` within epsilon 0.001 for: silenced pistol (34), dart gun (150), rifle (120), fists (**40** — revised 2026-04-22), blade takedown (100), guard pistol vs Eve path (18). Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
 
-  - Parametrized: [silenced_pistol=34, dart=150, rifle=120, fists=16, guard_pistol=18].
+  - Parametrized: [silenced_pistol=34, dart=150, rifle=120, fists=40, blade=100, guard_pistol=18].
 
 - **AC-CD-2.2 [Logic]** **GIVEN** a guard stub at 100 HP and `is_headshot = true`, **WHEN** `apply_damage_to_actor` is called for silenced pistol (base 34) and rifle (base 120), **THEN** the damage applied equals `base_damage × 2.0` within epsilon 0.001 (pistol: 68.0, rifle: 240.0). Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
 
@@ -1154,7 +1257,9 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
   - Variant: two headshots (34 × 2 = 68 each = 136 cumulative) → DEAD after shot 2.
 
-- **AC-CD-2.5 [Logic]** **GIVEN** the blade takedown path (CR-15) with `blade_takedown_damage = 100`, **WHEN** SAI calls `apply_damage_to_actor(guard, 100, eve, DamageType.MELEE_BLADE)` with `is_headshot = false`, **THEN** guard receives exactly 100 HP damage and `receive_damage` returns `is_dead = true` (guard at 100 HP → dead in one call). Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
+- **AC-CD-2.5 [Logic]** **GIVEN** the blade takedown path (CR-15) with `blade_takedown_damage = 100`, **WHEN** SAI calls `apply_damage_to_actor(guard, 100, eve, DamageType.MELEE_BLADE)` with `is_headshot = false`, **THEN** guard receives exactly 100 HP damage AND **`is_headshot` is explicitly `false` at the point of damage application** (asserted by spy on `receive_damage` args) AND `receive_damage` returns `is_dead = true`. Guards against a regression where a headshot multiplier is accidentally applied on the blade path. Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
+
+- **AC-CD-2.6 [Logic] (NEW 2026-04-22)** **GIVEN** a guard stub at 100 HP, **WHEN** three fist swings of `fist_base_damage = 40` are applied sequentially via `apply_damage_to_actor(guard, 40, eve, DamageType.MELEE_FIST)`, **THEN** guard is KO'd (state → UNCONSCIOUS per CR-16 non-lethal routing) after the 3rd swing — cumulative damage 120 ≥ 100 HP. At safe-range ceiling `fist_base_damage = 50`, two swings suffice. Confirms the 2–3-swing KO window AND the non-lethal routing (fists → UNCONSCIOUS per CR-16 lethality classification). Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
 
 ### AC-CD-3 Input Gating (CR-10)
 
@@ -1190,11 +1295,15 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
 ### AC-CD-7 UNCONSCIOUS State (CR-16)
 
-- **AC-CD-7.1 [Logic]** **GIVEN** a guard at 100 HP, **WHEN** `apply_damage_to_actor(guard, 150, eve, DamageType.DART_TRANQUILISER)` is called, **THEN** guard transitions to `AlertState.UNCONSCIOUS` (not `DEAD`), `receive_damage` returns `is_dead = true`, `Events.enemy_damaged` emits, and `Events.enemy_killed` does NOT emit. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
+- **AC-CD-7.1 [Logic]** (revised 2026-04-22 — Transitional model) **GIVEN** a guard at 100 HP, **WHEN** `apply_damage_to_actor(guard, 150, eve, DamageType.DART_TRANQUILISER)` is called, **THEN** guard transitions to `AlertState.UNCONSCIOUS` (not `DEAD`), `receive_damage` returns `is_dead = false` (per CR-16 Transitional model — UNCONSCIOUS is not death), `Events.enemy_damaged` emits, and `Events.enemy_killed` does NOT emit. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
 
-  @blocked(reason: "OQ-CD-1 must close: SAI GDD amendment needed to add `UNCONSCIOUS` AlertState and confirm `enemy_killed` suppression on DART path — verify before writing the `enemy_killed` suppression assertion.")
+  @blocked(reason: "OQ-CD-1 SAI amendment required to add `UNCONSCIOUS` AlertState + `is_lethal_damage_type()` helper consumption in SAI's `receive_damage` implementation. Enforced via `tests/.blocked-tests.md` manifest.")
 
-- **AC-CD-7.2 [Logic]** **GIVEN** a guard at 100 HP, **WHEN** `apply_damage_to_actor(guard, 120, eve, DamageType.BULLET)` is called, **THEN** guard transitions to `AlertState.DEAD` (not `UNCONSCIOUS`). Parametrized: `[DamageType.BULLET, DamageType.MELEE_FIST, DamageType.FALL_OUT_OF_BOUNDS]` — all lethal types → DEAD. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
+- **AC-CD-7.2 [Logic]** (revised 2026-04-22 — lethality split) **GIVEN** a guard at 100 HP, **WHEN** `apply_damage_to_actor` is called with a **lethal** DamageType (`[BULLET, MELEE_BLADE, FALL_OUT_OF_BOUNDS]`), **THEN** guard transitions to `AlertState.DEAD` and `receive_damage` returns `is_dead = true`. **Separately**: with a **non-lethal** DamageType (`[DART_TRANQUILISER, MELEE_FIST]` cumulatively reaching 0 HP), guard transitions to `AlertState.UNCONSCIOUS` and `receive_damage` returns `is_dead = false`. Parametrized per `Combat.is_lethal_damage_type(dt)`. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
+
+- **AC-CD-7.3 [Logic] (NEW 2026-04-22 — UNCONSCIOUS → DEAD transition per E.3)** **GIVEN** a guard already in `AlertState.UNCONSCIOUS` (HP ≤ 0), **WHEN** `apply_damage_to_actor(guard, 34, eve, DamageType.BULLET)` is called (subsequent lethal hit), **THEN** guard transitions UNCONSCIOUS → DEAD, `receive_damage` returns `is_dead = true`, `Events.enemy_damaged` emits, AND `Events.enemy_killed(guard, eve)` emits. **Separately**: additional `DART_TRANQUILISER` on UNCONSCIOUS target is idempotent no-op — no state change, `is_dead = false`, no `enemy_killed`. Evidence: `tests/unit/combat/combat_damage_routing_test.gd`
+
+  @blocked(reason: "Same OQ-CD-1 gate as AC-CD-7.1.")
 
 ### AC-CD-8 Spread Cone Formula (F.2)
 
@@ -1212,7 +1321,9 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
 - **AC-CD-9.1 [Logic]** **GIVEN** `sample_cone_direction` seeded with a fixed RNG seed (e.g. `seed(12345)`), **WHEN** called 1000 times with `spread_angle_deg = 13.0`, **THEN** the angular deviation of every returned vector from `aim_dir` is within `[0°, 13°]` (assert `max_deviation <= 13.0°` across all 1000 calls). Evidence: `tests/unit/combat/combat_sample_cone_distribution_test.gd`
 
-- **AC-CD-9.2 [Logic]** **GIVEN** the same seeded run of 1000 samples with `spread_angle_deg = 13.0`, **WHEN** the distribution is analyzed, **THEN** median angular deviation is less than 7.5° (confirming center-biased density from `sqrt(randf())` — a flat distribution would median near 9.2°). Evidence: `tests/unit/combat/combat_sample_cone_distribution_test.gd`
+- **AC-CD-9.2 [Logic]** (revised 2026-04-22 — correct median + seed restated) **GIVEN** `sample_cone_direction` seeded with `seed(12345)` — same seed as AC-CD-9.1 — **WHEN** 1000 samples are drawn with `spread_angle_deg = 13.0`, **THEN** median angular deviation falls in `[8.5°, 9.9°]` (analytically 9.2° for `sqrt(randf())` — the CDF-derived median is `13° × sqrt(0.5) ≈ 9.19°`; the tolerance band accommodates statistical variance at n=1000). A flat-disk (uniform `randf()`) would median at `0.5 × 13° = 6.5°`, so values in the ~6.5° range indicate the square-root transform is not applied — the `[8.5°, 9.9°]` window discriminates the correct implementation. Evidence: `tests/unit/combat/combat_sample_cone_distribution_test.gd`
+
+  **Note on prior claim**: the pre-revision assertion "< 7.5°" was mathematically incorrect for `sqrt(randf())`. Fix documented in F.3 revised rationale.
 
 - **AC-CD-9.3 [Logic]** **GIVEN** the returned `perturbed_direction` vector, **WHEN** `length()` is called, **THEN** result equals `1.0 ± 0.0001` (unit vector contract). Evidence: `tests/unit/combat/combat_sample_cone_distribution_test.gd`
 
@@ -1222,9 +1333,13 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
 - **AC-CD-10.2 [Logic]** **GIVEN** a dart in flight past its `dart_lifetime_s = 4.0 s`, **WHEN** the timer fires, **THEN** `queue_free()` is called (dart node is no longer in the scene tree). Evidence: `tests/unit/combat/combat_dart_projectile_test.gd`
 
-- **AC-CD-10.3 [Logic]** **GIVEN** a dart's `body_entered(body)` signal fires against a guard Node, **WHEN** the callback executes, **THEN** `CombatSystem.apply_damage_to_actor(body, dart_damage, self, DamageType.DART_TRANQUILISER)` is called exactly once, then `queue_free()` is called. Evidence: `tests/unit/combat/combat_dart_projectile_test.gd`
+- **AC-CD-10.3 [Logic]** (revised 2026-04-22 — dual-signal handler) **GIVEN** a dart's `_on_impact(other)` handler fires via EITHER `body_entered` (physics body) OR `area_entered` (Area3D overlap, e.g., head zone), **WHEN** the callback executes against a guard Node, **THEN** `Combat.apply_damage_to_actor(other, dart_damage, self, DamageType.DART_TRANQUILISER)` is called exactly once (via `_has_impacted` flag guarding double-fire), then `queue_free()` is called. Evidence: `tests/unit/combat/combat_dart_projectile_test.gd`
+
+  - Variant: both signals fire same-tick (body + head Area3D) — damage applied only once.
 
 - **AC-CD-10.4 [Logic]** **GIVEN** a dart spawned with `collision_mask` set per F.4 contract, **WHEN** collision layers are read, **THEN** `MASK_PLAYER` bit is NOT set in the collision mask (dart cannot hit Eve). Evidence: `tests/unit/combat/combat_dart_projectile_test.gd`
+
+- **AC-CD-10.5 [Logic] (NEW 2026-04-22 — pre-fire occlusion check)** **GIVEN** Eve pressed flush against a wall such that `camera.global_position + aim_direction × 0.5` falls inside a `StaticBody3D` (world geometry), **WHEN** Fire input is pressed with dart equipped, **THEN** (1) no dart RigidBody3D is spawned, (2) `Events.weapon_fired` does NOT emit, (3) ammo is not consumed, (4) Audio subscribes to a separate "dry-fire click" signal emit. Evidence: `tests/unit/combat/combat_dart_projectile_test.gd`
 
 ### AC-CD-11 Headshot Detection (F.5)
 
@@ -1234,32 +1349,42 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
 - **AC-CD-11.3 [Logic]** **GIVEN** the takedown delegation path (CR-15), **WHEN** `receive_takedown(STEALTH_BLADE, attacker)` routes to `apply_damage_to_actor(guard, 100, eve, DamageType.MELEE_BLADE)`, **THEN** `is_headshot` is explicitly `false` — takedown damage of 100 is passed without multiplier (blade has no hit zones). Evidence: `tests/unit/combat/combat_headshot_detection_test.gd`
 
-- **AC-CD-11.4 [Integration]** **GIVEN** a guard scene with `Area3D` on `BoneAttachment3D(bone: "head")` tagged `"headshot_zone"`, **WHEN** the guard is placed in a Godot 4.6 + Jolt physics scene and a raycast targets the head Area3D, **THEN** `intersect_ray` returns the Area3D as `collider`. Evidence: `tests/integration/combat/combat_headshot_detection_jolt_test.gd`
+- **AC-CD-11.4 [Integration]** **GIVEN** a guard scene with `Area3D` on `BoneAttachment3D(bone: "head")` tagged `"headshot_zone"`, **WHEN** the guard is placed in a Godot 4.6 + Jolt physics scene and a raycast targets the head Area3D with `collide_with_areas = true`, **THEN** `intersect_ray` returns the Area3D as `collider`. Evidence: `tests/integration/combat/combat_headshot_detection_jolt_test.gd`
 
-  @prototype_gated(reason: "OQ-CD-2 — Jolt + bone-attached Area3D inclusion in intersect_ray results must be validated in the fire-cadence prototype.")
+  @prototype_gated(reason: "OQ-CD-2 item 1 — Jolt + bone-attached Area3D inclusion in intersect_ray results must be validated in the fire-cadence prototype. If Jolt returns a different collider (e.g., parent CharacterBody3D), the fallback path in F.5 decision tree applies and this AC is rewritten.")
+
+- **AC-CD-11.5 [Logic] (NEW 2026-04-22 — multi-RID self-exclusion)** **GIVEN** a guard in friendly-fire mode (`GUARD_FRIENDLY_FIRE_ENABLED = true`) firing its own hitscan from camera origin outward, **WHEN** the exclude list is computed via `_collect_self_rids(shooter)`, **THEN** the exclusion list contains the guard's `CharacterBody3D` RID AND the head `Area3D` RID (collected via `find_children("*", "CollisionObject3D", true, false)`). Raycast result `collider` is NEVER the firing guard's own body or head zone. Evidence: `tests/unit/combat/combat_headshot_detection_test.gd`
 
 ### AC-CD-12 Ammo Economy (F.6)
 
-- **AC-CD-12.1 [Logic]** **GIVEN** a fresh mission start, **WHEN** player inventory is initialized, **THEN** silenced pistol has `magazine = 8, reserve = 16`; dart gun has `magazine = 4, reserve = 8`; rifle has `magazine = 0, reserve = 0`. Evidence: `tests/unit/combat/combat_ammo_economy_test.gd`
+- **AC-CD-12.1 [Logic]** (revised 2026-04-22 — stale values corrected) **GIVEN** a fresh mission start, **WHEN** player inventory is initialized, **THEN** silenced pistol has `magazine = 8, reserve = 32`; dart gun has `magazine = 4, reserve = 16`; rifle has `magazine = 0, reserve = 0`. Values sourced from `pistol_starting_reserve` (G.5) and `dart_starting_reserve` (G.5) knobs. Evidence: `tests/unit/combat/combat_ammo_economy_test.gd`
 
-- **AC-CD-12.2 [Logic]** **GIVEN** a guard KO'd via dart (non-lethal), **WHEN** the loot drop is generated, **THEN** dart drop count == 1 (break-even anti-farm invariant). Evidence: `tests/unit/combat/combat_ammo_economy_test.gd`
+- **AC-CD-12.2 [Logic]** (revised 2026-04-22 — NOLF1 drop values + fist-farm closure) **GIVEN** a guard KO'd via dart (non-lethal), **WHEN** the loot drop is generated, **THEN** dart drop count == 1 (`guard_drop_dart_on_dart_ko = 1` — break-even anti-farm invariant). Evidence: `tests/unit/combat/combat_ammo_economy_test.gd`
 
-  - Variant: guard KO'd via fists → dart drop count == 1.
-  - Variant: guard killed lethally carrying silenced pistol → pistol drop == 8 rounds; dart drop == 0.
+  - Variant: guard KO'd via fists → dart drop count == **0** (`guard_drop_dart_on_fist_ko = 0` — no fist-farm).
+  - Variant: guard killed lethally carrying silenced pistol → pistol drop == **3 rounds** (`guard_drop_pistol_rounds = 3` per NOLF1 rebalance 2026-04-22); dart drop == 0.
+  - Variant: guard killed lethally carrying rifle → rifle drop == 3 rounds.
 
 - **AC-CD-12.3 [Logic]** **GIVEN** ammo at respawn checkpoint below the floor values, **WHEN** respawn restore is applied, **THEN** pistol total ammo (magazine + reserve) = `max(snapshot_total, respawn_floor_pistol_total=16)` and dart total ammo = `max(snapshot_total, respawn_floor_dart_total=8)`; rifle ammo = snapshot value unchanged. Evidence: `tests/integration/combat/combat_respawn_ammo_floor_test.gd`
 
   - Variant: ammo at checkpoint ABOVE the floor → restore returns checkpoint value unchanged (no free refill).
+  - Variant: ammo at checkpoint ABOVE `pistol_max_reserve = 48` (if save file corrupted or edge-case accumulation) → restore clamps to 48; rounds above cap are silently lost. Documented as intentional behavior.
 
-- **AC-CD-12.4 [Integration]** **GIVEN** a simulated aggressive playthrough killing all guards lethally in Sections 1–2, **WHEN** entering Section 3, **THEN** pistol reserve is ≤ 0 OR requires Section 3 pickup to continue. Evidence: `production/qa/evidence/combat-damage/manual-pillar-2-depletion-curve.md`
+- **AC-CD-12.4 [Integration]** (revised 2026-04-22 — NOLF1 math) **GIVEN** a simulated aggressive playthrough killing all guards lethally in Sections 1–2 without collecting any caches, **WHEN** entering Section 3, **THEN** pistol total ammo (magazine + reserve) is ≤ 16 rounds (one magazine cushion). Derivation: start 40 + 10 guards × (3 drop − 3 TTK) = 40 + 0 − reload losses (~4 rounds) = ~36. With spread misses (~15%) = ~30. With partial pickup friction (~30% rounds lost on interrupted pickups) = ~16. Evidence: `production/qa/evidence/combat-damage/manual-pillar-2-depletion-curve.md`
 
-  @prototype_gated(reason: "Tier 0 playtest required to confirm guard count per section and drop rates produce depletion by Section 3.")
+  @prototype_gated(reason: "Tier 0 playtest required to confirm guard counts per section, real-play miss rates, and pickup friction produce the predicted depletion. Exact 16-round threshold may shift ±4 after playtest; AC adjusts post-playtest.")
 
 ### AC-CD-13 Crosshair and ADS (CR-8, CR-9)
 
-- **AC-CD-13.1 [UI]** **GIVEN** the game launched fresh with default settings, **WHEN** Eve is in GAMEPLAY InputContext, **THEN** a static Ink Black `#1A1A1A` center dot (~6 px at 1080p) is visible, does not expand or contract with movement, and does not change color on enemy hover. Evidence: `production/qa/evidence/combat-damage/manual-crosshair-accessibility-toggle.md`
+- **AC-CD-13.1 [UI]** (revised 2026-04-22 — resolution-independent sizing + tri-band halo) **GIVEN** the game launched fresh with default settings at 1080p, **WHEN** Eve is in GAMEPLAY InputContext, **THEN** a static Ink Black `#1A1A1A` center dot (~2 physical px; `0.19% × 1080 = 2.05`, clamped to min 3 px effective) is visible, surrounded by a tri-band halo (1 px Parchment `#E8DFC8` outer + 1 px Ink Black `#1A1A1A` inner). Dot does not expand/contract with movement, does not change color on enemy hover, does not hit-marker flash. Evidence: `production/qa/evidence/combat-damage/manual-crosshair-accessibility-toggle.md`
 
-- **AC-CD-13.2 [UI]** **GIVEN** `Settings → Accessibility → Crosshair` is toggled off, **WHEN** the setting is applied, **THEN** the center dot disappears and does not reappear until re-enabled; no other HUD element is affected. Evidence: `production/qa/evidence/combat-damage/manual-crosshair-accessibility-toggle.md`
+  - Variant at 1440p: dot ~3 physical px; halo unchanged.
+  - Variant at 4K: dot ~4 physical px (clamped by max 12 px ceiling); halo unchanged.
+  - Variant (contrast test): screenshot dot against light (Parchment-adjacent) background → Ink Black inner halo band provides ≥3:1 contrast; dot against dark indoor background → Parchment outer band provides ≥3:1 contrast. Verified via pixel-sampling protocol in evidence markdown.
+
+- **AC-CD-13.2A [UI]** (split from prior AC-CD-13.2, revised 2026-04-22) **GIVEN** `Settings → Accessibility → Crosshair` is toggled off, **WHEN** the setting is applied, **THEN** the center dot and halo disappear; no other HUD element is affected; `Settings.crosshair_enabled` value reads `false`. Evidence: `production/qa/evidence/combat-damage/manual-crosshair-accessibility-toggle.md`
+
+- **AC-CD-13.2B [UI] (NEW 2026-04-22 — dual-surface discovery)** **GIVEN** `Settings → HUD → Crosshair` is toggled off (from the HUD menu, not Accessibility), **WHEN** the setting is applied, **THEN** (1) the center dot and halo disappear same as AC-CD-13.2A; (2) `Settings.crosshair_enabled` value reads `false` — SAME stored setting as the Accessibility path; (3) re-opening `Settings → Accessibility → Crosshair` shows the toggle in the OFF state (single source of truth). Evidence: `production/qa/evidence/combat-damage/manual-crosshair-accessibility-toggle.md`
 
 - **AC-CD-13.3 [Logic]** **GIVEN** Eve holding the rifle and pressing `Aim` input, **WHEN** time is advanced via `gut.simulate(player, 13, 1.0/60.0)` (~216 ms > 200 ms tween duration), **THEN** camera FOV == `55.0° ± 0.5°` (tweened from 85° over 200 ms ease-out, sampled at tween end). Evidence relocated 2026-04-21 from `combat_weapon_damage_test.gd` to dedicated `tests/unit/combat/combat_ads_test.gd`.
 
@@ -1269,15 +1394,17 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
 ### AC-CD-14 Pillar Compliance
 
-- **AC-CD-14.1 [Logic]** **GIVEN** Eve at 100 HP and `guard_pistol_damage_vs_eve = 18` (default), **WHEN** the minimum number of guard shots to reach 0 HP is computed, **THEN** `ceil(100 / 18) = 6` shots required — Eve dies in EXACTLY 6 hits at default. **Safe-range invariant**: at safe-range ceiling `guard_pistol_damage_vs_eve = 20` (tightened 2026-04-21 from 25), `ceil(100 / 20) = 5` — Eve cannot die in fewer than 5 hits under ANY legal tuning. Pillar 3 "no single-hit kill from full health, 5+ hit survivability" is guaranteed across the safe range. Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
+- **AC-CD-14.1 [Logic]** **GIVEN** Eve at 100 HP and `guard_pistol_damage_vs_eve = 18` (default), **WHEN** the minimum number of guard shots to reach 0 HP is computed, **THEN** `ceil(100 / 18) = 6` shots required — Eve dies in EXACTLY 6 hits at default. Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
 
-  @prototype_gated(reason: "Final default value may shift within [14, 20] after Tier 1 playtest. Assertion `ceil(100 / value) >= 5` holds for all values in the safe range.")
+  @prototype_gated(reason: "Final default value may shift within [14, 20] after Tier 1 playtest.")
+
+- **AC-CD-14.1b [Logic] (NEW 2026-04-22 — safe-range invariant as assertion)** **GIVEN** `guard_pistol_damage_vs_eve` at ANY value within its declared safe range `[14, 20]`, **WHEN** `ceil(100 / guard_pistol_damage_vs_eve) >= 5` is evaluated, **THEN** the assertion holds. Implemented as a constant-validation test that parametrizes over the safe-range endpoints and several interior values; same pattern as AC-CD-4.4 and AC-CD-8.5. Guards against a future tuning-range expansion that would let Eve die in <5 hits (breaking Pillar 3 survivability floor). Evidence: `tests/unit/combat/combat_weapon_damage_test.gd`
 
 - **AC-CD-14.2 [Integration]** **GIVEN** an aggressive playthrough of Sections 1–3 where Eve kills all guards lethally, **WHEN** Eve reaches Section 3 without picking up any caches, **THEN** pistol reserve is 0 and weapon falls through to fists — Pillar 2 ammo scarcity is felt. Evidence: `production/qa/evidence/combat-damage/manual-pillar-2-depletion-curve.md`
 
-- **AC-CD-14.3 [Visual]** **GIVEN** Eve at 15 HP (below 25 HP clock-tick threshold), actively in a gunfight, AND `enhanced_hit_feedback_enabled == false` (default), **WHEN** a screenshot is taken of the full viewport, **THEN** the screenshot contains: no red or color-tinted screen edge vignette, no hit marker overlaid on the crosshair, no damage-direction indicator, and no "LOW HEALTH" text. **Pass criterion**: screenshot reviewed by QA lead (manual inspection of all four screen-edge pixel regions + crosshair area); reviewer records verdict in evidence markdown. Evidence: `production/qa/evidence/combat-damage/manual-pillar-5-no-modern-ui.md`
+- **AC-CD-14.3 [Visual]** (revised 2026-04-22 — pixel-sampling protocol) **GIVEN** Eve at 15 HP (below 25 HP clock-tick threshold), actively in a gunfight, AND `enhanced_hit_feedback_enabled == false` (default), **WHEN** a screenshot is taken of the full viewport at 1080p, **THEN** the screenshot contains: no red or color-tinted screen edge vignette, no hit marker overlaid on the crosshair, no damage-direction indicator, no "LOW HEALTH" text. **Pass criterion (objective)**: sample 5 pixels from each of the four screen-edge regions (top-left `(20, 20)`, top-right `(1900, 20)`, bottom-left `(20, 1060)`, bottom-right `(1900, 1060)`, center `(960, 540)`). Mean channel values must match the underlying scene render (reviewer compares against control screenshot at full HP, same scene, same frame). Pixel-sampling procedure + control-screenshot capture process detailed in evidence markdown template. Evidence: `production/qa/evidence/combat-damage/manual-pillar-5-no-modern-ui.md`
 
-- **AC-CD-14.4 [Visual] (NEW 2026-04-21)** **GIVEN** Eve at 15 HP, `enhanced_hit_feedback_enabled == true` (opt-in), AND a guard fires from the right, **WHEN** Eve takes a hit and a screenshot is captured during the 120 ms pulse window, **THEN** the right screen edge shows a desaturated warm-grey pulse at ≤15% opacity (NO red / saturated color), localized to the guard's world-space angle from Eve. **AND** with `enhanced_hit_feedback_enabled == false` under identical conditions, NO such pulse renders. **Pass criterion**: screenshot review confirms opacity + hue constraints; toggle-off screenshot is blank-edge (matches AC-CD-14.3). Evidence: `production/qa/evidence/combat-damage/manual-enhanced-hit-feedback.md`
+- **AC-CD-14.4 [Visual]** (revised 2026-04-22 — 4-quadrant direction model + pixel-sampling) **GIVEN** Eve at 15 HP, `enhanced_hit_feedback_enabled == true` (opt-in), AND a guard fires from the NE quadrant (in front + to the right of Eve's forward vector), **WHEN** Eve takes a hit and a screenshot is captured during the 120 ms pulse window, **THEN** the NE corner pulse region (roughly `(1600, 0)` to `(1920, 300)` at 1080p) shows a desaturated warm-grey pulse at ≤15% opacity (sampled alpha in range `[0.00, 0.15 ± 0.02]`) AND hue is desaturated warm-grey (NOT red: H ∉ `[0°, 20°] ∪ [340°, 360°]` in HSV). The other three corners show background render (no pulse). **AND** with `enhanced_hit_feedback_enabled == false` under identical conditions, the NE corner matches the control screenshot (no pulse). **Pass criterion**: alpha sampling in specified regions; HSV hue test; opacity threshold verified via image-editor dropper tool (procedure in evidence markdown). Evidence: `production/qa/evidence/combat-damage/manual-enhanced-hit-feedback.md`
 
 ### AC-CD-15 Signal Contracts (ADR-0002)
 
@@ -1315,15 +1442,24 @@ All ACs in this section assume the following test infrastructure exists (to be b
 
   @prototype_gated(reason: "Tier 1 playtest decides whether subtle arc (0.5) is introduced.")
 
-- **AC-CD-17.5 [Config/Data]** **GIVEN** `head_zone_radius_m` is at default value 0.15, **WHEN** a smoke check runs, **THEN** value is within safe range `[0.10, 0.20]` and headshot-fairness playtest has recorded a verdict. Evidence: `production/qa/evidence/combat-damage/manual-dart-feel-playtest.md`.
+- **AC-CD-17.5 [Config/Data]** (revised 2026-04-22 — separate evidence file) **GIVEN** `head_zone_radius_m` is at default value 0.15, **WHEN** a smoke check runs, **THEN** value is within safe range `[0.10, 0.20]` and headshot-fairness playtest has recorded a verdict. Evidence: `production/qa/evidence/combat-damage/manual-headshot-fairness-playtest.md` *(split from manual-dart-feel-playtest for separation of concerns per qa-lead NIT-5)*.
 
   @prototype_gated(reason: "Tier 1 playtest required to confirm 0.15 m radius does not feel lottery or shoulder-overlapping.")
 
-### Open blocked items (revised 2026-04-21 — enforcement via tests/.blocked-tests.md manifest)
+### AC-CD-18 Photosensitivity rate-gate (NEW 2026-04-22 — WCAG 2.3.1 compliance)
 
-- **AC-CD-7.1** is blocked on **OQ-CD-1** (SAI UNCONSCIOUS AlertState amendment + `receive_damage -> bool` signature).
-- **AC-CD-11.4** is blocked on **OQ-CD-2** (Jolt + bone-attached Area3D in `intersect_ray` results — EXPANDED SCOPE: also validates BoneAttachment3D physics-tick pose lag + RigidBody3D CCD under Jolt).
-- **AC-CD-16.1, AC-CD-16.2** (NEW entry 2026-04-21) blocked on ADR-0003 (Save Format Contract) Accepted status + Save/Load GDD authoring.
+- **AC-CD-18.1 [Logic]** **GIVEN** `hud_damage_flash_duration_frames = 6` (max tuning) AND `hud_damage_flash_cooldown_ms = 333` (default), **WHEN** 10 `player_damaged` signals emit at 50 ms intervals over 500 ms (simulating rapid multi-hit), **THEN** no more than `ceil(500 / 333) = 2` visual flashes render on the HUD (asserted by spying on HUD's flash widget animation trigger). The intervening damage events are coalesced — the secondary SFX + camera dip still fire for each, but visual flashes are rate-gated. Evidence: `tests/integration/combat/combat_photosensitivity_rate_gate_test.gd`
+
+### AC-CD-19 Test infrastructure gate (NEW 2026-04-22 — explicit sprint gate)
+
+- **AC-CD-19.1 [Meta]** **GIVEN** any sprint containing stories that consume AC-CD-1.x, 2.x, 4.x, 6.1, 7.x, 9.x, 11.x, 12.x, 13.3, 15.x, or 18.1, **WHEN** the sprint-start smoke-check runs, **THEN** `tests/helpers/SignalRecorder.gd` + `tests/helpers/WarningCapture.gd` MUST exist in the repository AND `tests/.blocked-tests.md` manifest MUST exist. If any are missing, stories referencing those ACs are moved to the next sprint; `/test-setup` is the blocking deliverable. Evidence: sprint-start smoke-check log.
+
+### Open blocked items (revised 2026-04-22)
+
+- **AC-CD-7.1, AC-CD-7.3** are blocked on **OQ-CD-1** (SAI amendment: UNCONSCIOUS AlertState + `receive_damage -> bool` signature + `is_lethal_damage_type` helper consumption + `has_los_to_player()` accessor + `takedown_prompt_active(actor)` accessor + `STEALTH_BLADE` takedown-type rename).
+- **AC-CD-11.4** is blocked on **OQ-CD-2** (Jolt + bone-attached Area3D in `intersect_ray` results — 3-item prototype scope).
+- **AC-CD-16.1, AC-CD-16.2** blocked on ADR-0003 (Save Format Contract) Accepted status + Save/Load GDD authoring.
+- **All AC references to SignalRecorder / WarningCapture / `.blocked-tests.md`** gated by AC-CD-19.1 (`/test-setup` prerequisite).
 - **AC-CD-11.4** has hard deadline: unblocked before any sprint containing headshot-implementation stories can enter.
 
 ### Test file tree (revised 2026-04-21 — split oversized files, added helpers)
@@ -1334,14 +1470,14 @@ tests/helpers/
   WarningCapture.gd                      (push_warning spy for AC-CD-1.2, 1.3)
 
 tests/unit/combat/
-  combat_damage_routing_test.gd          (AC-CD-1.1–1.5, 7.1–7.2)
-  combat_weapon_damage_test.gd           (AC-CD-2.1–2.5, 14.1)
-  combat_input_gating_test.gd            (AC-CD-3.1–3.2)          # NEW — split from weapon_damage
-  combat_ads_test.gd                     (AC-CD-13.3, 13.4)       # NEW — split from weapon_damage
+  combat_damage_routing_test.gd          (AC-CD-1.1–1.5, 7.1–7.3)
+  combat_weapon_damage_test.gd           (AC-CD-2.1–2.6, 14.1, 14.1b)
+  combat_input_gating_test.gd            (AC-CD-3.1–3.2)
+  combat_ads_test.gd                     (AC-CD-13.3, 13.4)
   combat_spread_cone_test.gd             (AC-CD-8.1–8.5)
   combat_sample_cone_distribution_test.gd (AC-CD-9.1–9.3)
-  combat_dart_projectile_test.gd         (AC-CD-10.1–10.4)
-  combat_headshot_detection_test.gd      (AC-CD-11.1–11.3)
+  combat_dart_projectile_test.gd         (AC-CD-10.1–10.5)
+  combat_headshot_detection_test.gd      (AC-CD-11.1–11.3, 11.5)
   combat_ammo_economy_test.gd            (AC-CD-12.1–12.2)
   combat_guard_cadence_test.gd           (AC-CD-4.1–4.4)
   combat_signal_ordering_test.gd         (AC-CD-15.1–15.3)
@@ -1351,6 +1487,7 @@ tests/integration/combat/
   combat_return_fire_timer_test.gd       (AC-CD-5.1)
   combat_respawn_ammo_floor_test.gd      (AC-CD-12.3, 16.1–16.2 — BLOCKED on ADR-0003 + Save/Load GDD)
   combat_headshot_detection_jolt_test.gd (AC-CD-11.4 — BLOCKED pending OQ-CD-2)
+  combat_photosensitivity_rate_gate_test.gd (AC-CD-18.1 — NEW)
 
 production/qa/evidence/combat-damage/
   manual-pillar-2-depletion-curve.md     (AC-CD-12.4, 14.2)
@@ -1358,24 +1495,27 @@ production/qa/evidence/combat-damage/
   manual-pillar-5-no-modern-ui.md        (AC-CD-14.3)
   manual-enhanced-hit-feedback.md        (AC-CD-14.4 — NEW 2026-04-21)
   manual-crosshair-accessibility-toggle.md (AC-CD-13.1–13.2)
-  manual-dart-feel-playtest.md           (AC-CD-17.3, 17.5)
+  manual-dart-feel-playtest.md           (AC-CD-17.3)
+  manual-headshot-fairness-playtest.md   (AC-CD-17.5 — split 2026-04-22)
 
-tests/.blocked-tests.md                  (manifest — enforces @blocked annotations)
+tests/.blocked-tests.md                  (manifest — enforces @blocked annotations; MUST exist per AC-CD-19.1)
 ```
 
 ## Open Questions
 
 ### Pre-implementation gates (BLOCKING — must resolve before Combat stories enter sprints)
 
-- **OQ-CD-1 [SAI amendment — MINIMAL SCOPE]** Stealth AI GDD requires two amendments (trimmed from the pre-revision 3-item bundle; timer-stop obligation and post-suppression-cap behavior removed per Combat defensive-internal decision 2026-04-21):
-  1. Add `AlertState.UNCONSCIOUS` as 6th alert state (per CR-16 dart routing).
+- **OQ-CD-1 [SAI amendment — REVISED SCOPE 2026-04-22]** Stealth AI GDD requires the following amendments to unblock Combat stories:
+  1. Add `AlertState.UNCONSCIOUS` as 6th alert state (per CR-16 revised).
   2. Change `receive_damage(amount, source, damage_type)` signature to return `bool is_dead` (per C.5 duck-type dispatch).
+  3. SAI's `receive_damage` consumes `Combat.is_lethal_damage_type(damage_type)` helper to decide DEAD (lethal) vs UNCONSCIOUS (non-lethal). Transitional model per CR-16: UNCONSCIOUS accepts further lethal damage → DEAD (see E.3); UNCONSCIOUS + DART_TRANQUILISER or MELEE_FIST is idempotent no-op.
+  4. Takedown-type enum: include `STEALTH_BLADE` (new) and remove `SILENCED_PISTOL` (obsolete).
+  5. **NEW accessors (public methods, called by GuardFireController on each idle tick)**:
+     - `guard.has_los_to_player() -> bool` — returns SAI's F.1 perception cache LOS result. No new raycast per call.
+     - `guard.takedown_prompt_active(attacker: Node) -> bool` — returns whether `attacker` is eligible to invoke `receive_takedown(STEALTH_BLADE, attacker)` right now (behind-arc + unseen + within ~1.5 m).
+  6. Synchronicity guarantee: SAI's `receive_damage` must mutate `current_alert_state` synchronously (no `call_deferred`) before returning, so Combat's signal ordering (`enemy_damaged` → `enemy_killed`) and `GuardFireController`'s defensive gate both observe the correct state within the same call stack.
 
-  **Resolved contradiction** (flagged by /design-review ai-programmer): `enemy_killed` does NOT emit when UNCONSCIOUS is first reached. Per AC-CD-7.1 (authoritative), the dart path emits `enemy_damaged` only; UNCONSCIOUS is a non-DEAD terminal state for Mission Scripting bookkeeping purposes. This resolves the pre-revision draft's conflict between OQ-CD-1 item 3 and AC-CD-7.1.
-
-  **Takedown-type amendment (NEW — bundled here)**: SAI's takedown-type enum must include `STEALTH_BLADE` (new) and REMOVE `SILENCED_PISTOL` (obsolete — pistol no longer performs takedowns). See CR-3 + CR-15 revision.
-
-  **Owner**: `technical-director` + SAI author (user) via a new `/design-system` revision of SAI. **Blocks**: AC-CD-7.1 unblocks; AC-CD-6.1 is-dead return value works correctly. **Estimated effort**: 1 session (touch 2–3 paragraphs of SAI GDD + update registry).
+  **Owner**: user via `/design-system` revision of SAI + `technical-director` approval. **Blocks**: AC-CD-7.1, AC-CD-7.3 unblock; AC-CD-6.1 is-dead return works correctly; LOS-based return-fire cadence works; Takedown-input flow works. **Estimated effort**: 1.5 sessions (touch 4–5 paragraphs of SAI GDD + update registry + update Audio/PC GDD cross-references for the takedown-type rename).
 
 - **OQ-CD-2 [Jolt physics validation — EXPANDED SCOPE 2026-04-21]** Godot 4.6 + Jolt 3D prototype must verify three API unknowns (per F.5 revision):
   1. Does `PhysicsDirectSpaceState3D.intersect_ray` (with `collide_with_areas = true`) include `Area3D` on `BoneAttachment3D` children as `collider`?
@@ -1391,17 +1531,21 @@ tests/.blocked-tests.md                  (manifest — enforces @blocked annotat
 
 - **OQ-CD-5 [Mission objective save race]** Does Mission Scripting save objective state synchronously at the same checkpoint that Combat's `enemy_killed` fires, or lazily? If lazy, a one-frame race exists where a guard is killed and saved as DEAD but the objective "eliminate guard X" has not yet completed. Affects E.36. **Owner**: Mission Scripting GDD authoring pass. **Combat contract**: `enemy_killed` fires synchronously from `apply_damage_to_actor`; save checkpoint timing is Mission Scripting's concern.
 
-- **OQ-CD-11 [Takedown blade Resource schema — Inventory & Gadgets] (NEW 2026-04-21)** With the pistol-takedown split, the takedown blade is a new weapon Resource. Inventory & Gadgets GDD must author: blade Resource fields (`base_damage = 100`, `damage_type = DamageType.MELEE_BLADE`, no magazine / no reserve); blade-draw input binding; context-prompt gating (blade only available when SAI `receive_takedown` prompt is live). Combat contract is frozen here; Inventory resolves the Resource shape.
+- **OQ-CD-11 [Takedown blade Resource schema — Inventory & Gadgets] (revised 2026-04-22 — dedicated Takedown input)** With the pistol-takedown split AND the Takedown-input decision (CR-3 revised), the takedown blade is a new weapon Resource but does NOT occupy a regular weapon slot. Inventory & Gadgets GDD must author: blade Resource fields (`base_damage = 100`, `damage_type = DamageType.MELEE_BLADE`, `fire_rate_sec = 0.0` with comment "context-gated single-use per prompt", no magazine, no reserve); blade-draw input binding is the dedicated `Takedown` input (NOT a weapon-switch); context-prompt gating consults SAI's `takedown_prompt_active` accessor. Combat contract frozen here; Inventory resolves the Resource shape and how the Takedown input is wired.
 
-- **OQ-CD-12 [Settings & Accessibility forward deps] (NEW 2026-04-21)** Multiple accessibility contracts are declared here with no owning GDD yet:
-  1. `Settings → Accessibility → Crosshair` toggle (opt-out)
-  2. `Settings → Accessibility → Enhanced Hit Feedback` toggle (opt-in non-diegetic direction pulse)
-  3. `Settings → Accessibility → Damage Flash Duration` slider (1–6 frames)
-  4. `Settings → HUD → Crosshair` duplicate discovery entry
-  5. Potential `ads_tween_duration_multiplier` knob (vestibular sensitivity)
-  **Owner**: Settings & Accessibility GDD authoring pass. **Combat contract**: behavioral spec is here; persistence + UI placement owned by Settings.
+- **OQ-CD-12 [Settings & Accessibility forward deps] (revised 2026-04-22 — expanded)** Multiple accessibility contracts declared in Combat require Settings & Accessibility GDD to own:
+  1. `Settings → Accessibility → Crosshair` toggle (opt-out, boolean)
+  2. `Settings → Accessibility → Enhanced Hit Feedback` toggle (opt-in, boolean)
+  3. `Settings → Accessibility → Damage Flash Duration` slider (1–6 frames, int)
+  4. `Settings → Accessibility → Damage Flash Cooldown (Photosensitivity)` slider (333–1000 ms, int; default 333, cannot go below — safety floor)
+  5. `Settings → HUD → Crosshair` duplicate discovery entry (single source of truth — writes to same `Settings.crosshair_enabled` value)
+  6. `Settings → Accessibility → ADS Tween Duration Multiplier` (vestibular sensitivity, 1.0×–3.0×, float)
+  7. First-boot photosensitivity warning dialog (auto-shown on first launch; dismissible)
+  8. `Settings → Accessibility → Clock-tick Enabled` (cross-ref to Audio GDD `clock_tick_enabled` — if disabled, the ≤25 HP clock-tick loop does not play. Hearing-impaired players depending on Enhanced Hit Feedback may prefer the clock-tick silent.)
+  9. **Motor accessibility flag (NEW 2026-04-22 — ux-designer R2)**: aim-assist is NOT in MVP scope, but Settings & Accessibility GDD should document motor-accessibility as a deliberate gap with a post-MVP plan (magnetism + sticky-aim + crosshair-scale multiplier).
+  **Owner**: Settings & Accessibility GDD authoring pass. **Combat contract**: behavioral spec in this GDD; persistence + UI placement owned by Settings.
 
-- **OQ-CD-13 [Pillar 5 boundary clarification doc] (NEW 2026-04-21)** The creative-director ruled during revision that Pillar 5 governs diegetic fiction, NOT accessibility scaffolding. This ruling affects multiple future GDDs (HUD State Signaling, Document Overlay UI, Settings & Accessibility). A short Pillar 5 Boundary Clarification doc should be written to the design directory so future authors don't re-litigate. **Owner**: `creative-director` — optional follow-up, does not block Combat approval.
+- **OQ-CD-13 [Pillar 5 boundary clarification doc] (revised 2026-04-22 — now BLOCKING for dependent GDDs)** The creative-director ruled during 2026-04-21 revision that Pillar 5 governs diegetic fiction, NOT accessibility scaffolding. This ruling is load-bearing in this GDD (UI-1, V.6, UI-5, §B Design Test scope note) AND propagates to HUD State Signaling, Document Overlay UI, Menu System, Settings & Accessibility. **BLOCKING CHANGE 2026-04-22**: a short Pillar 5 Boundary Clarification doc (~1 page at `design/pillar-5-boundary.md`) MUST be authored BEFORE any of those downstream GDDs enters `/design-system`. Does NOT block Combat approval; DOES block downstream GDD authoring. **Owner**: `creative-director` — 1 session. **Blocks**: HUD State Signaling, Document Overlay UI, Menu System, Settings & Accessibility GDD authoring.
 
 ### Tier 1 playtest-gated (5 values)
 

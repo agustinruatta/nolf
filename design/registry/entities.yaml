@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: 2026-04-21   # Consistency resolution pass (2026-04-21): C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total (value 8→16, now TOTAL mag+reserve); C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total (value 4→8, now TOTAL).
+last_updated: 2026-04-22   # OQ-CD-1 SAI amendment closure (2026-04-22, this pass): phantom_guard gains UNCONSCIOUS 6th alert_state; new attributes takedown_types, terminal_state_routing, public_accessors (has_los_to_player + takedown_prompt_active), receive_damage_contract (signature + routing + synchronicity), takedown_range_m=1.5. Unblocks Combat AC-CD-7.1, 7.3, 6.1 and LOS-cadence / Takedown-input flows. Previous same-day: /consistency-check stale-registry sweep — S1 damage_formula gains spread_range [2.0, 20.0] sub-attribute (combat-damage.md §F.3 claim now matched); S2 phantom_guard gains head_bone_name="head" canonical asset contract (combat-damage.md §C.3 claim now matched); S3 kill_plane_y.referenced_by drops level-streaming.md (LS GDD CR-12 deleted its dependency). Previous: 2026-04-21 conflict-resolution pass (C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total value 8→16 now TOTAL mag+reserve; C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total value 4→8 now TOTAL).
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -62,16 +62,32 @@ entities:
     outline_tier: MEDIUM  # ADR-0001
     body_height_standing_m: 1.8  # taller than Eve (1.7) for visual contrast
     eye_height_m: 1.7
+    head_bone_name: "head"  # added 2026-04-22 per combat-damage.md §C.3 (systems-designer Finding 10). Canonical asset contract: the head bone MUST be named "head" (lowercase, exact string). Riggers using alternate names (Head / head_bone / Bip01_Head) produce silent fallback to root-origin Y=0 — a fairness failure. Enforced by asset-audit script that greps guard .tscn BoneAttachment3D bone property against this value.
     health_hp: 100  # Finalised by Combat & Damage GDD 2026-04-21 — confirmed 100 HP
     perception_channels: [sight, sound]
-    alert_states: [UNAWARE, SUSPICIOUS, SEARCHING, COMBAT, DEAD]  # PENDING: +UNCONSCIOUS (6th state) — blocked on OQ-CD-1 SAI amendment bundle (Combat & Damage GDD CR-16)
+    alert_states: [UNAWARE, SUSPICIOUS, SEARCHING, COMBAT, UNCONSCIOUS, DEAD]  # 6th state UNCONSCIOUS added 2026-04-22 via OQ-CD-1 SAI amendment (stealth-ai.md 3rd revision pass).
     takedowns_valid_in: [UNAWARE, SUSPICIOUS]
+    takedown_types: [MELEE_NONLETHAL, STEALTH_BLADE]  # MELEE_NONLETHAL → UNCONSCIOUS; STEALTH_BLADE → DEAD via Combat CR-15 MELEE_BLADE delegation.
+    terminal_state_routing:  # OQ-CD-1 closed 2026-04-22 — stealth-ai.md §C Takedown target-side effect.
+      - MELEE_NONLETHAL_takedown: UNCONSCIOUS
+      - STEALTH_BLADE_takedown: DEAD  # via Combat.apply_damage_to_actor with DamageType.MELEE_BLADE (lethal)
+      - lethal_damage_at_0_hp: DEAD   # BULLET / MELEE_BLADE / FALL_OUT_OF_BOUNDS per Combat is_lethal_damage_type()
+      - non_lethal_damage_at_0_hp: UNCONSCIOUS  # DART_TRANQUILISER / MELEE_FIST
+      - transitional_unconscious_to_dead: via lethal receive_damage on UNCONSCIOUS guard
+    public_accessors:  # NEW 2026-04-22 per OQ-CD-1 item 5 (stealth-ai.md §C.3 Combat & Damage dep row).
+      - has_los_to_player() -> bool          # returns SAI F.1 perception cache most-recent LOS result; no new raycast per call; consumed by Combat GuardFireController.
+      - takedown_prompt_active(attacker) -> bool  # eligibility: state ∈ {UNAWARE, SUSPICIOUS} + rear-180° half-cone + ≤1.5 m + no LOS; consumed by Combat Takedown-input gate (CR-10).
+    receive_damage_contract:  # NEW 2026-04-22 per OQ-CD-1 items 2–3 + 6.
+      signature: "receive_damage(amount: int, source: Node, damage_type: Combat.DamageType) -> bool is_dead"
+      routing: "lethal → DEAD + returns true; non-lethal at 0 HP → UNCONSCIOUS + returns false; UNCONSCIOUS + lethal → DEAD (Transitional) + returns true; UNCONSCIOUS + non-lethal → no-op + returns false; DEAD + any → no-op + returns true"
+      synchronicity: "current_alert_state mutated synchronously before return (NO call_deferred) — guarantees Combat CR-2 signal ordering observes correct state"
     patrol_speed_m_per_s: 1.2
     investigate_speed_m_per_s: 1.6
     combat_sprint_speed_m_per_s: 3.0
-    notes: "Generic antagonist archetype. Per-variant uniforms (caterer, custodian) and voice pools owned by Mission Scripting + Dialogue & Subtitles GDDs. Combat & Damage GDD (2026-04-21) confirms health_hp=100 and introduces UNCONSCIOUS alert state for dart KO (pending SAI amendment OQ-CD-1)."
+    takedown_range_m: 1.5  # TAKEDOWN_RANGE_M used by takedown_prompt_active accessor (NEW 2026-04-22).
+    notes: "Generic antagonist archetype. Per-variant uniforms (caterer, custodian) and voice pools owned by Mission Scripting + Dialogue & Subtitles GDDs. Combat & Damage GDD (2026-04-21) confirms health_hp=100. OQ-CD-1 SAI amendment bundle CLOSED 2026-04-22 via stealth-ai.md 3rd revision pass: UNCONSCIOUS 6th state, receive_damage -> bool is_dead synchronous contract, lethality routing via Combat.is_lethal_damage_type(), Transitional UNCONSCIOUS→DEAD model, MELEE_NONLETHAL → UNCONSCIOUS (fictional non-lethality, symmetric with Combat CR-16 MELEE_FIST), public accessors has_los_to_player + takedown_prompt_active, approach-vector capture at terminal-entry for body-drop animator (§V.4 Combat). Unblocks Combat AC-CD-7.1, AC-CD-7.3, AC-CD-6.1 return-value-correct paths."
     added: 2026-04-21
-    revised: 2026-04-21
+    revised: 2026-04-22
 
   - name: eve_sterling
     status: active
@@ -170,9 +186,10 @@ formulas:
       - H
     expression: "final_damage = base_damage × H  where H = 2.0 iff (is_headshot == true AND target_is_guard == true), else H = 1.0"
     output_range: [13, 240]   # was: [16, 240] before 2026-04-21 — corrected per combat-damage.md §F.1 self-annotation (fist_base_damage safe floor is 13, not 16).
-    notes: "Combat & Damage F.1 master damage formula. Eve's apply_damage intake and guard's receive_damage intake both consume final_damage. Headshot multiplier is computed internally in Combat BEFORE emission — enemy_damaged.amount is post-multiplier. Target_is_guard gate prevents headshot multiplier on Eve (guards always fire body-only). Min 13 = fist_base_damage safe floor; max 240 = rifle headshot (120×2)."
+    spread_range: [2.0, 20.0] # added 2026-04-22 per combat-damage.md §F.3 claim (systems-designer Finding 5 — safe-range ceilings). Default-tuning output: [2.0, 13.0]; safe-range max: 20° (9° sprint + 6° cover + 5° falloff). Co-located with damage_formula because §F.3 is the guard-spread sub-formula of the same damage pipeline.
+    notes: "Combat & Damage F.1 master damage formula. Eve's apply_damage intake and guard's receive_damage intake both consume final_damage. Headshot multiplier is computed internally in Combat BEFORE emission — enemy_damaged.amount is post-multiplier. Target_is_guard gate prevents headshot multiplier on Eve (guards always fire body-only). Min 13 = fist_base_damage safe floor; max 240 = rifle headshot (120×2). spread_range covers the F.3 guard-spread sub-formula output (default [2.0, 13.0], safe-range ceiling 20°)."
     added: 2026-04-21
-    revised: 2026-04-21
+    revised: 2026-04-22
 
 # Example:
 #
@@ -544,18 +561,18 @@ constants:
     added: 2026-04-21
     revised: ""
 
-  # ── Kill plane (read by Level Streaming for level-bounds validation) ──
+  # ── Kill plane (PC-only — LS dep removed 2026-04-22 per LS CR-12) ──
   - name: kill_plane_y
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
-      - design/gdd/level-streaming.md   # LS CR-11: section_bounds validation
+      # design/gdd/level-streaming.md REMOVED 2026-04-22 — per LS GDD CR-12 (§Detailed Design) LS no longer reads kill_plane_y. The prior CR-11 section_bounds validation was deleted as semantically vacuous; geometry-gap detection is level-designer authoring QA discipline, not an LS runtime assertion.
     value: -50.0
     unit: m
     notes: "World Y below which player_died fires. Bug-recovery safety net, not gameplay."
     added: 2026-04-19
-    revised: 2026-04-21   # level-streaming.md added to referenced_by
+    revised: 2026-04-22   # level-streaming.md removed from referenced_by (LS CR-12 dropped the dependency)
 
   # ── Level Streaming (fade timing, transition budget, authoring validation) ──
   - name: fade_out_duration

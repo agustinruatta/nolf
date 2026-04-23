@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-19
+2026-04-23 (Amendment A5: Validation Criteria gained Gate 5 — Shader Baker × `material_overlay` compatibility verification in 4.6 export build, moved from Polish to Prototype phase per godot-specialist 2026-04-22 §6 to avoid costly refactor if baking excludes `material_overlay` slots)
 
 ## Decision Makers
 
@@ -313,6 +313,7 @@ This is the project's fifth ADR. No existing code or saves to migrate. Implement
 - [ ] **Gate 2** — same scene renders identically on D3D12/Windows.
 - [ ] **Gate 3** — `resolution_scale` toggle (1.0 → 0.75) scales both outlines proportionally; no visible divergence.
 - [ ] **Gate 4** — animated rigged hand mesh (idle sway + interact reach) shows no outline artifacts at finger joints or wrist.
+- [ ] **Gate 5** (added 2026-04-23 per godot-specialist 2026-04-22 §6) — In a Godot 4.6 export build, verify Shader Baker compiles `hands_outline_material.gdshader` assigned via `material_overlay` on the skinned hands mesh. If Shader Baker excludes `material_overlay` slots from baking in 4.6, escalate to the two-surface `ShaderMaterial` fallback described in Implementation Guideline 7 (the `material_overlay` vs two-surface tradeoff stated in the Key Interfaces code comment). **This gate MUST pass before Prototype phase completes.** Moved from Polish phase (prior scope) to Prototype phase because discovering a Shader Baker exclusion during Polish would force a cascading refactor through every hands-holding weapon pose and every FPS-hands animation state — a costly and schedule-breaking rework. Prototype-phase verification is cheap; Polish-phase discovery is not.
 - [ ] Hands material does NOT call `OutlineTier.set_tier`; the PC GDD and the hands scene script are both consistent with this.
 - [ ] `resolution_scale` uniform is wired to the same `Settings.get_resolution_scale()` source that ADR-0001's `CompositorEffect` reads.
 - [ ] Outline color `#1A1A1A` matches ADR-0001 outline color uniform (code review verifies both are using the same source constant when ADR-0001 implementation lands).

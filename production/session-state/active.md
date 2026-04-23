@@ -1,6 +1,41 @@
 # Session State
 
-**Last updated:** 2026-04-22 (ADR-0002 **4th-pass LS + SAI amendment bundle** COMPLETE — section_entered/exited grew TransitionReason 2nd param; NEW signals guard_incapacitated + guard_woke_up added; signal count 34→36; enum-ownership grew by LevelStreamingService.TransitionReason; new atomicity Risks row per godot-specialist. /architecture-review Coverage Gap 1 + Conflicts 2+3 resolved; SAI pre-impl gate #1(c,d) + LS-Gate-1 closed.)
+**Last updated:** 2026-04-23 (ADR-0008 Performance Budget Distribution **WRITTEN** — 9 Iris Xe slots summing 16.6 ms + non-frame budgets + 4 validation gates. Gap 2 from /architecture-review 2026-04-23 CLOSED. SAI Recommended Follow-up #5 CLOSED. combat-damage.md L233 cross-system reconciliation flag CLOSED. Registry gained 9 performance_budgets + 1 api_decision + 2 forbidden_patterns. All priority ADRs now written (0001–0008).)
+
+## Current task (2026-04-23 — ADR-0008 performance budget distribution session)
+
+✅ **ADR-0008 WRITTEN** (Proposed; 4 validation gates pending measurements). godot-specialist validation YELLOW with 3 prose constraints folded in before write: (a) directional shadow cascade cap = 1 named in Constraints + Risk row + forbidden pattern; (b) PostProcessStack cold-boot dominance (5–15 ms Vulkan + 5–10 ms D3D12) documented in non-frame budgets table + Risk row; (c) D3D12 post-stream warm-up 3-frame allowance added to non-frame budgets table + Validation Gate 3.
+
+**Iris Xe allocation (normative, 16.6 ms total):** Rendering 3.8 · Guard systems (SAI+GuardFire) 6.5 · Post-Process chain 2.5 · Jolt physics 0.5 · Player/FC/Combat non-GF 0.3 · Audio dispatch 0.3 · UI refresh 0.3 · Pooled residual 0.8 · Reserve 1.6 = 16.6 ms.
+
+**Files modified this session:**
+- `docs/architecture/adr-0008-performance-budget-distribution.md` — **NEW** (~390 lines, 13 sections, 9-slot allocation table + non-frame budgets table + verification contract + 4 validation gates + alternatives A/B/C + 7 risks)
+- `design/gdd/combat-damage.md` L233 — cross-system reconciliation flag marked CLOSED by ADR-0008 Slot #2
+- `design/gdd/stealth-ai.md` L684 — Recommended Follow-up #5 marked CLOSED by ADR-0008
+- `docs/registry/architecture.yaml` — **last_updated 2026-04-23** (comment extended); 9 NEW performance_budgets entries (rendering-pipeline 3.8, guard-systems 6.5, post-process-chain 2.5, jolt-physics-step 0.5, player-fc-combat-nonGF 0.3, audio-dispatch 0.3, ui-refresh 0.3, pooled-residual 0.8, reserve-unallocated 1.6); outline-pipeline referenced_by expanded to include ADR-0008 (revised 2026-04-23); 1 NEW api_decisions entry (performance_budget_enforcement — CI-time reference scene gate, not runtime BudgetRegistry); 2 NEW forbidden_patterns (unbudgeted_per_frame_ticking, directional_shadow_second_cascade).
+
+**Engine specialist validation (Step 4.5):** godot-specialist returned **YELLOW** with 3 specific prose constraints + GREEN on Jolt 0.5 ms slot. Folded all 3 notes into ADR before write. Specialist observations NOT yet applied (logged for code-review phase): AudioServer bus graph rebuild on reverb swap is a 0.3–0.8 ms CPU stall on the game thread in the same frame as the swap — absorbed by reserve but worth reviewer attention when Audio's section_entered handler lands.
+
+**Technical Director review (Step 4.6):** SKIPPED — solo review mode per `production/review-mode.txt`.
+
+**Dependencies closed by this ADR:**
+- /architecture-review 2026-04-23 **Coverage Gap 2** (Performance Budget Distribution ADR) — CLOSED (pending validation gates to move Proposed → Accepted)
+- SAI GDD Recommended Follow-up #5 (line 684) — CLOSED
+- combat-damage.md L233 cross-system reconciliation flag — CLOSED
+
+**Downstream still open (producer-tracked, out of this ADR's scope):**
+- 3 GDD-coordination items (unchanged): PC rename `CombatSystem.*` → `CombatSystemNode.*` (~10 sites); Audio GDD L188–189 §Mission handler table (LS-Gate-3); Input GDD L90 `use_gadget` → dedicated `takedown` action.
+- All 8 ADRs (0001–0008) still **Proposed**. Total verification gates outstanding: **21** (prior 17 + 4 new from ADR-0008).
+- ADR-0008 Gates 1–4 require measurement on (a) Iris Xe Gen 12 min-spec, (b) RTX 2060 informative, (c) Windows D3D12 post-stream warm-up, (d) autoload boot cold-start on both platforms. Reference scene `tests/reference_scenes/restaurant_dense_interior.tscn` does not yet exist — scoped to a separate tooling story (prototyper or qa-lead).
+- CI `perf-gate` job configuration — scoped to a separate devops-engineer story.
+
+**Next action** (user runs in a FRESH session, not here): `/architecture-review` to verify Gap 2 closure and re-assess verdict (expected: CONCERNS → PASS if no new conflicts surface; remaining blockers become verification gate pass on existing ADRs + 3 producer-tracked GDD touch-ups).
+
+---
+
+## Prior task (2026-04-22 — ADR-0002 4th-pass LS + SAI amendment session)
+
+_Preserved below for context. See Session Extracts at end for /architecture-review 2026-04-23 runs and /architecture-decision autoload-load-order-registry 2026-04-23 session._
 
 ## Current task (2026-04-22 — ADR-0002 4th-pass LS + SAI amendment session)
 
@@ -137,3 +172,100 @@ SAI 3rd-pass revision introduces no new OQs beyond OQ-CD-1 closure. Combat & Dam
 - **Report**: docs/architecture/architecture-review-2026-04-22.md
 - **Traceability index**: docs/architecture/requirements-traceability.md
 - **TR registry populated**: docs/architecture/tr-registry.yaml (version 2)
+
+## Session Extract — /architecture-decision amendments A3–A6 2026-04-23
+
+All 4 specialist-recommended amendments from 2026-04-22 applied in-place:
+
+- **A3 — ADR-0003 Gate 3 refined** (L347): scope extended to explicitly exercise `Dictionary[StringName, GuardRecord]` duplicate_deep isolation — outer Dictionary cloned, inner GuardRecord Resources cloned, StringName keys intentionally NOT cloned (identity-preservation per interning is correct). Last Verified bumped to 2026-04-23.
+- **A4 — ADR-0004 Implementation Guideline 2 grew addendum**: call sites MUST use autoload key `InputContext.*`; MUST NOT use `class_name InputContextStack.*` (discoverability trap). Mirrors ADR-0002 `CombatSystemNode`/`Combat` split pattern. Last Verified bumped to 2026-04-23.
+- **A5 — ADR-0005 Gate 5 added** (after Gate 4): Shader Baker × `material_overlay` compatibility verification in 4.6 export build; moved from Polish to Prototype phase to avoid cascading refactor through every hands-holding weapon pose if baking excludes `material_overlay` slots. Last Verified bumped to 2026-04-23.
+- **A6 — ADR-0006 Risks row added**: Jolt `Area3D.body_entered` broadphase tunneling of fast-moving bodies (Combat darts at 20 m/s on LAYER_PROJECTILES); MEDIUM probability / LOW impact; mitigation folded into Combat GDD OQ-CD-2 Jolt prototype scope. Last Verified bumped to 2026-04-23.
+
+**Engine specialist consultation**: no new consultation this pass — all four amendments land verbatim from the 2026-04-22 godot-specialist findings (already GREEN in their original detail). Documented per-amendment references in each Last Verified parenthetical.
+
+**TD-ADR (step 4.6)**: SKIPPED — Solo mode.
+
+**Remaining downstream from 2026-04-23 architecture-review**:
+- ❌ Gap 2 (Performance Budget Distribution ADR — still open, cross-cutting 7 systems)
+- ❌ Producer-tracked PC GDD `CombatSystem.*` → `CombatSystemNode.*` rename (~10 sites)
+- ❌ Audio GDD L188–189 Mission handler table (LS-Gate-3) — 1-param → 2-param branching
+- ❌ Input GDD L90 `use_gadget` → dedicated `takedown` action (Combat CR-3 coordination)
+- All 6 prior ADRs (0001–0006) and ADR-0007 still Proposed — 17 verification gates outstanding total (now +Gate 5 on ADR-0005)
+
+**Next action (fresh session)**: `/architecture-review` to verify A3–A6 closure and re-assess verdict (expected move: Gap 3 closed by ADR-0007 today, 4 specialist amendments closed today → only Gap 2 + producer-tracked GDD edits remain before PASS becomes achievable).
+
+## Session Extract — /architecture-decision autoload-load-order-registry 2026-04-23
+
+- **ADR written**: `docs/architecture/adr-0007-autoload-load-order-registry.md` (300 lines, Proposed status)
+- **Canonical order**: Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6) — all with `*res://` scene-mode prefix
+- **Resolves**: /architecture-review Conflict 1 (InputContext vs LSS load-order-4 collision) and Gap 3 (autoload registration contract). PostProcessStack previously-unstated position now explicit at line 6.
+- **Specialist validation (step 4.5)**: godot-specialist GREEN/YELLOW/YELLOW across 3 claims. Framing correction for Claim 2 (instantiation vs `_ready()` ordering distinction + `_init()` cross-reference restriction) folded into ADR §Cross-Autoload Reference Safety and §Implementation Guidelines 3–5. Claim 3 hazards (@tool scripts, add_autoload_singleton, Engine.register_singleton) fenced via 2 new forbidden patterns.
+- **TD-ADR (step 4.6)**: SKIPPED — Solo mode per `production/review-mode.txt`.
+- **Bulk downstream edits (same-PR atomicity per fence design)**: 20+ sites updated across
+  - `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` — 10 edit sites (Revision History parenthetical, 2 diagrams, header comment, Impl. Guidelines 1+2, Migration Plan, 2 Validation Criteria rows, Related section)
+  - `docs/architecture/adr-0003-save-format-contract.md` — 3 edit sites (diagram, comment, Validation Criteria)
+  - `docs/architecture/adr-0004-ui-framework.md` — 5 edit sites (Impl. Guideline 2, diagram, comment, Migration Plan, Validation Criteria)
+  - `design/gdd/signal-bus.md` — 4 edit sites (Stateless infra, Edge cases, Tuning Knobs row, AC-1)
+  - `design/gdd/level-streaming.md` — 1 edit site (CR-1 — includes InputContext→4 / LSS→5 order flip + cross-autoload reference safety note)
+- **Registry updates** (`docs/registry/architecture.yaml`): `last_updated: 2026-04-23`; NEW `api_decisions.autoload_registration_order` (pattern: declarative_registry, 7 referenced_by sites); NEW `forbidden_patterns.unregistered_autoload`; NEW `forbidden_patterns.autoload_init_cross_reference`
+- **Gate status**: ADR-0007 Proposed → Accepted once (a) project.godot [autoload] block generated matching §Key Interfaces verbatim, (b) ADR-0002 Gate 1 smoke test passes (incidentally validates cross-autoload reference safety)
+- **Remaining open from 2026-04-23 review**: Gap 2 (Performance Budget Distribution ADR), A3/A4/A5/A6 (specialist-recommended amendments to ADR-0003/0004/0005/0006), all 6 prior ADRs still Proposed, producer-tracked PC rename (~10 sites), Audio LS-Gate-3 (handler table), Input↔Combat takedown coordination
+
+## Session Extract — /architecture-review 2026-04-23
+
+- **Verdict**: CONCERNS (same as 2026-04-22; scope reduced)
+- **Requirements**: 158 total TRs — ~147 covered (+2), ~10 partial, ~1 hard gap (−2: TR-LS-007 + TR-SAI-003 closed by 2026-04-22 4th-pass amendment, verified 2026-04-23)
+- **New TR-IDs registered**: None (delta run; no new GDD authorship since prior review)
+- **TRs revised**: TR-SB-002 text updated (dropped "pending amendment" qualifier — 4th-pass bundle landed; now reads "36 typed signals..."); revised: 2026-04-23
+- **GDD revision flags (carried from 2026-04-22, unchanged)**: player-character.md (CombatSystem→CombatSystemNode rename, 10 sites); audio.md L188–189 §Mission handler table (LS-Gate-3); input.md L90 `use_gadget` split for dedicated takedown action (Combat CR-3)
+- **Coverage Gap 1**: ✅ CLOSED — ADR-0002 4th-pass amendment verified in-place (36 signals, section_entered/exited 2-param TransitionReason, guard_incapacitated + guard_woke_up declared, enum-ownership grew, atomic-commit Risks row added)
+- **Conflict 2**: ✅ CLOSED (ADR-0002 Key Interfaces now match LS GDD)
+- **Conflict 3**: ✅ CLOSED (ADR-0002 Key Interfaces now include SAI 4th-pass signals)
+- **Still open**: Conflict 1 (autoload collision), Gap 2 (Performance Budget ADR), Gap 3 (Autoload registration contract), 4 specialist-recommended amendments A3–A6 (ADR-0003 Gate 3 refinement, ADR-0004 addendum, ADR-0005 Gate 5, ADR-0006 Jolt tunneling Risks row), all 6 ADRs still Proposed
+- **Cross-ADR conflicts**: 1 🔴 (Conflict 1 autoload collision — editorial, unchanged)
+- **Engine specialist**: SKIPPED this run — prior consultation covered the 4th-pass amendment (step 4.5 GREEN post-correction); no new ADRs since. 4 recommendations from 2026-04-22 carry forward unchanged.
+- **Priority action list (unchanged ordering)**: Session A resolve Conflict 1/Gap 3; Session B /architecture-decision performance-budget-distribution (Gap 2); Session C apply A3–A6 amendments
+- **Report**: docs/architecture/architecture-review-2026-04-23.md
+- **Traceability index refreshed**: docs/architecture/requirements-traceability.md (2026-04-23 history entry; TR-LS-007 + TR-SAI-003 + TR-SB-002 status refreshed; Known Gaps section restructured into cross-cutting + coordination + specialist-amendment buckets)
+- **TR registry updated**: docs/architecture/tr-registry.yaml (last_updated 2026-04-23; TR-SB-002 revised)
+
+## Session Extract — /architecture-review 2026-04-23 (third run, post-ADR-0008)
+
+- **Verdict**: **PASS** (upgraded from CONCERNS — Gap 2 CLOSED; zero remaining ADR-level architectural gaps)
+- **Requirements**: 158 total TRs — ~154 covered (+6), ~3 partial (−6), **0 hard gaps** (−1)
+- **New TR-IDs registered**: None (delta run; ADR-0008 consolidates existing per-system claims rather than introducing requirements)
+- **TRs revised**: None (all per-system numeric claims preserved verbatim by ADR-0008)
+- **GDD revision flags (carried, all unchanged, 4th consecutive review)**: player-character.md (10 sites, CombatSystem→CombatSystemNode rename); audio.md L188–189 §Mission handler table (LS-Gate-3); input.md L90 `use_gadget` → dedicated `takedown` action split
+- **Gap 2 (Performance Budget Distribution ADR)**: ✅ CLOSED — ADR-0008 allocates full 16.6 ms across 9 named slots (Rendering 3.8 · Guard systems 6.5 · Post-Process chain 2.5 · Jolt 0.5 · Player/FC/Combat non-GF 0.3 · Audio dispatch 0.3 · UI 0.3 · Pooled residual 0.8 · Reserve 1.6 = 16.6); non-frame budgets consolidated; 4 validation gates pending measurements; 2 new forbidden patterns (unbudgeted_per_frame_ticking, directional_shadow_second_cascade); 1 new api_decision (performance_budget_enforcement)
+- **SAI Recommended Follow-up #5** (line 684): ✅ CLOSED by ADR-0008 Slot #2 6.5 ms guard-systems envelope
+- **combat-damage.md L233 cross-system reconciliation flag**: ✅ CLOSED by ADR-0008 Slot #2
+- **Cross-ADR conflicts**: 0 (no new conflicts from ADR-0008; it is a consolidator — every numeric input matches existing claims verbatim)
+- **Engine specialist**: SKIPPED this run — ADR-0008 received its own pre-authoring consultation 2026-04-23 (YELLOW with 3 prose constraints folded in: shadow cascade cap = 1, PostProcessStack cold-boot dominance, D3D12 post-stream 3-frame warm-up; GREEN on Jolt 0.5 ms slot)
+- **All 8 ADRs still Proposed** — 21 verification gates outstanding (+4 from ADR-0008 Gates 1–4: Iris Xe reference scene measurement, RTX 2060 informative, D3D12 post-stream warm-up, autoload boot cold-start)
+- **Priority action list (updated)**: Session A begin ADR verification gate passes (ADR-0001 Gates 1–3, ADR-0002 Gate 1, ADR-0007 Gate 1); Session B author reference scene + configure CI perf-gate (2 separate tooling stories — prerequisite for ADR-0008 Gates 1–4); Session C parallel producer-owned GDD touch-ups (PC rename + Audio LS-Gate-3 + Input takedown split)
+- **`/create-architecture` now eligible** — all 8 ADRs provide stable inputs; recommended after Session A's foundational ADR gates pass
+- **Report**: docs/architecture/architecture-review-2026-04-23.md (overwrites second-run 2026-04-23 snapshot)
+- **Traceability index refreshed**: docs/architecture/requirements-traceability.md (third-run 2026-04-23 history entry; coverage ~94% → ~99%; Known Gaps section: Gap 2 CLOSED; 0 hard ADR gaps)
+- **TR registry**: no edit needed (`last_updated: 2026-04-23` already current; no new TRs, no revisions this run)
+
+## Session Extract — /architecture-review 2026-04-23 (second run, post-ADR-0007 + A3–A6)
+
+- **Verdict**: CONCERNS (scope further reduced — 6 of 7 action items from prior 2026-04-23 run closed)
+- **Requirements**: 158 total TRs — ~148 covered (+1), ~9 partial (−1), ~1 hard gap (unchanged — Combat↔Input `takedown` coord)
+- **New TR-IDs registered**: None (delta run; ADR-0007 closes scattered infra statements rather than introducing requirements)
+- **TRs revised**: None (TR-SB-003 text remains accurate post-ADR-0007; autoload order still "Events=1, EventLogger=2 per project.godot line order" — ADR-0007 codifies the rest of the chain rather than revising TR-SB-003)
+- **GDD revision flags (carried, all unchanged)**: player-character.md (10 sites, CombatSystem→CombatSystemNode rename); audio.md L188–189 §Mission handler table (LS-Gate-3); input.md L90 `use_gadget` → dedicated `takedown` action split
+- **Conflict 1 (autoload collision)**: ✅ CLOSED — ADR-0007 §Canonical Registration Table pins InputContext=4, LevelStreamingService=5; 20+ downstream "load order N" statements collapsed to "per ADR-0007"
+- **Gap 3 (Autoload registration contract)**: ✅ CLOSED — ADR-0007 authored; 2 forbidden patterns registered (unregistered_autoload, autoload_init_cross_reference); Cross-Autoload Reference Safety section codified
+- **A3 (ADR-0003 Gate 3 refinement)**: ✅ CLOSED — explicit Dictionary[StringName, GuardRecord] duplicate_deep isolation sub-gates (a/b/c: outer cloned, inner GuardRecord cloned, StringName keys intentionally NOT cloned per interning)
+- **A4 (ADR-0004 IG2 addendum)**: ✅ CLOSED — InputContextStack/InputContext split rule with discoverability-trap framing; mirrors CombatSystemNode/Combat pattern
+- **A5 (ADR-0005 Gate 5)**: ✅ CLOSED — Shader Baker × material_overlay 4.6 export-build verification, moved Polish → Prototype
+- **A6 (ADR-0006 Risks row)**: ✅ CLOSED — Jolt Area3D.body_entered broadphase tunneling for fast bodies (Combat darts 20 m/s on LAYER_PROJECTILES); MEDIUM × LOW; dovetails with Combat OQ-CD-2
+- **Still open**: Gap 2 (Performance Budget ADR), 3 GDD-coordination items, all 7 ADRs still Proposed (17 verification gates total — now includes ADR-0007 Gate 1 byte-match + ADR-0005 Gate 5 added by A5)
+- **Cross-ADR conflicts**: 0 (was 1 — Conflict 1 resolved)
+- **Engine specialist**: SKIPPED this run — ADR-0007 got its own pre-authoring consultation 2026-04-23 (Claims 1/2/3 GREEN/YELLOW/YELLOW, framing corrections + 3 hazards folded in before write); A3–A6 land verbatim from prior specialist findings
+- **Priority action list (updated)**: Session A `/architecture-decision performance-budget-distribution` (Gap 2, only remaining ADR-level gap); Session B parallel producer-owned GDD touch-ups (PC rename + Audio LS-Gate-3 + Input takedown split); Session C begin ADR verification gate passes in editor
+- **Report**: docs/architecture/architecture-review-2026-04-23.md (overwrites earlier 2026-04-23 snapshot per user Option B)
+- **Traceability index refreshed**: docs/architecture/requirements-traceability.md (second-run 2026-04-23 history entry; Known Gaps section: Gap 3 + A3–A6 marked CLOSED; coverage bumped ~93% → ~94%)
+- **TR registry**: no edit needed (`last_updated: 2026-04-23` already current; no new TRs, no revisions this run)

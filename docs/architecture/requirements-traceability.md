@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Last Updated** | 2026-04-22 |
+| **Last Updated** | 2026-04-23 (third run — post-ADR-0008 Performance Budget Distribution) |
 | **Engine** | Godot 4.6 |
 | **Populated by** | `/architecture-review` (full mode) |
 
@@ -13,11 +13,11 @@
 | | Count | % |
 |---|-------|---|
 | Total TRs registered | **158** | 100% |
-| ✅ Covered (ADR-addressed) | ~145 | ~92% |
-| ⚠️ Partial (ADR coverage exists but scope incomplete or pending amendment) | ~10 | ~6% |
-| ❌ Gap (no ADR addresses) | ~3 | ~2% |
+| ✅ Covered (ADR-addressed) | ~154 | ~99% |
+| ⚠️ Partial (ADR coverage exists but some details live GDD-only by design) | ~3 | ~1% |
+| ❌ Gap (no ADR addresses) | **0** | — |
 
-*The ~ figures reflect that coverage is reported at system-level granularity; individual TR-level coverage may shift slightly when stories are authored. The 3 hard gaps are all inside the pending ADR-0002 amendment bundle.*
+*The ~ figures reflect that coverage is reported at system-level granularity; individual TR-level coverage may shift slightly when stories are authored. The two ⚠️ Partials are intentional GDD-scope decisions (Audio internals, Post-Process Stack internals) — not architectural gaps. The Combat ↔ Input `takedown` coordination item is reclassified correctly as a GDD-coordination item (design-level), not an ADR-level gap.*
 
 ---
 
@@ -30,8 +30,8 @@ System → ADR coverage with per-TR detail. Systems with hard GAPs are expanded;
 | TR-ID | ADR | Status |
 |-------|-----|--------|
 | TR-SB-001 — Signal Bus as sole cross-system dispatch | ADR-0002 | ✅ |
-| TR-SB-002 — 34-signal taxonomy (→ 36 post-amendment) | ADR-0002 | ⚠️ Partial (count update pending amendment) |
-| TR-SB-003 — Autoload ordering Events=1, EventLogger=2 | ADR-0002 | ✅ |
+| TR-SB-002 — 36-signal taxonomy | ADR-0002 | ✅ (amendment landed 2026-04-22; verified 2026-04-23) |
+| TR-SB-003 — Autoload ordering Events=1, EventLogger=2 | ADR-0002, ADR-0007 | ✅ |
 | TR-SB-004 — Events.gd contains only signal declarations | ADR-0002 | ✅ |
 | TR-SB-005 — Subscriber _ready / _exit_tree lifecycle | ADR-0002 | ✅ |
 | TR-SB-006 — is_instance_valid() on Node-typed payloads | ADR-0002 | ✅ |
@@ -67,18 +67,18 @@ System → ADR coverage with per-TR detail. Systems with hard GAPs are expanded;
 | TR-AUD-004 — Two music layers + sting architecture | (GDD-scope) | ⚠️ Not ADR-locked |
 | TR-AUD-005 — Music state grid | (GDD-scope) | ⚠️ Not ADR-locked |
 | TR-AUD-006 — Crossfade-only music transitions | (GDD-scope) | ⚠️ Not ADR-locked |
-| TR-AUD-007 — 16-voice spatial SFX pool | (GDD-scope) | ⚠️ Not ADR-locked |
+| TR-AUD-007 — 16-voice spatial SFX pool | **ADR-0008 Slot #6** (dispatch cost) + GDD-scope (pool size) | ✅ (dispatch-budget line locked; pool size remains GDD-scope) |
 | TR-AUD-008 — Section music preload at section_entered | (GDD-scope) | ⚠️ Not ADR-locked |
 | TR-AUD-009 — Per-section reverb swap | (GDD-scope) | ⚠️ Not ADR-locked |
 | TR-AUD-010 — Dominant-guard dictionary | (GDD-scope) | ⚠️ Not ADR-locked |
 | TR-AUD-011 — Stinger debounce + SCRIPTED suppression | (GDD-scope) | ⚠️ Not ADR-locked |
 | TR-AUD-012 — Takedown SFX routing by takedown_type | ADR-0002 (signature) | ✅ |
 
-**System status**: ⚠️ Partial. Signal-contract side fully covered by ADR-0002. Audio architecture internals (buses, pools, state machine) intentionally left GDD-only. Architecture ADR deferred as marginal — raise only if implementation stories hit ambiguity.
+**System status**: ✅ Signal-contract side fully covered by ADR-0002. Frame-dispatch cost covered by ADR-0008 Slot #6 (0.3 ms). Audio architecture internals (buses, music state machine) intentionally GDD-scope.
 
 ### System 4 — Outline Pipeline (TR-OUT-*)
 
-All 10 TRs: ✅ Covered by ADR-0001 (stencil contract) + ADR-0005 (hands exception). Outline shader algorithm (Sobel vs Laplacian, edge_threshold tuning) deferred to a future ADR — explicitly acknowledged.
+All 10 TRs: ✅ Covered by ADR-0001 (stencil contract) + ADR-0005 (hands exception) + **ADR-0008 Slot #3** (outline ≤2.0 ms aggregate cap, combined with sepia 0.5 ms). Outline shader algorithm (Sobel vs Laplacian, edge_threshold tuning) deferred to a future ADR — explicitly acknowledged.
 
 ### System 5 — Post-Process Stack (TR-PP-*)
 
@@ -90,16 +90,16 @@ All 10 TRs: ✅ Covered by ADR-0001 (stencil contract) + ADR-0005 (hands excepti
 | TR-PP-004 — Glow disabled project-wide | Art Bible 8J / GDD-scope | ⚠️ Not ADR-locked |
 | TR-PP-005 — Forbidden effects (bloom, CA, SSR, etc.) | Pillar 5 / GDD-scope | ✅ (Pillar-level) |
 | TR-PP-006 — Tonemap neutral linear | (GDD-scope) | ⚠️ |
-| TR-PP-007 — PostProcessStack autoload + API | ADR-0004 | ✅ |
+| TR-PP-007 — PostProcessStack autoload + API | ADR-0004, ADR-0007 (line 6) | ✅ |
 | TR-PP-008 — Resolution scale via Viewport.scaling_3d_scale + settings.cfg | ADR-0003 (persistence) + GDD-scope | ⚠️ Partial |
-| TR-PP-009 — Performance budget | (GDD-scope) | ⚠️ Partial (coverage via Perf Budget ADR — Gap 2) |
+| TR-PP-009 — Performance budget (chain ≤2.5 ms Iris Xe) | **ADR-0008 Slot #3** | ✅ |
 | TR-PP-010 — Only Settings writes resolution_scale | (GDD-scope anti-pattern) | ✅ |
 
-**System status**: ⚠️ Partial. API lifecycle is ADR-locked; rendering details are GDD-scope. Acceptable for MVP.
+**System status**: ✅ API lifecycle ADR-locked; autoload position ADR-locked; perf budget ADR-locked. Rendering details remain GDD-scope (intentional).
 
 ### System 6 — Save / Load (TR-SAV-*)
 
-All 15 TRs: ✅ Covered by ADR-0003 (format, atomicity, versioning, metadata, actor_id, duplicate_deep, settings separation) + ADR-0002 (Persistence signals). Specialist §5 recommended Gate 3 scope-refinement to explicitly test `duplicate_deep()` on `Dictionary[StringName, GuardRecord]` — addressed in ADR-0003 amendment list.
+All 15 TRs: ✅ Covered by ADR-0003 (format, atomicity, versioning, metadata, actor_id, duplicate_deep, settings separation) + ADR-0002 (Persistence signals) + ADR-0007 (autoload line 3) + **ADR-0008 non-frame budgets** (save ≤10 ms, load ≤2 ms). Specialist §5 Gate 3 scope-refinement (A3) applied: explicit `Dictionary[StringName, GuardRecord]` duplicate_deep isolation sub-gates.
 
 ### System 7 — Localization Scaffold (TR-LOC-*)
 
@@ -107,38 +107,39 @@ All 10 TRs: ✅ Covered. ADR-0004 mandates `tr()` usage + forbidden pattern; ADR
 
 ### System 8 — Player Character (TR-PC-*)
 
-All 20 TRs: ✅ Covered. Touches 5 ADRs:
+All 20 TRs: ✅ Covered. Touches 6 ADRs:
 - ADR-0001 (all non-hands meshes write stencil tiers)
 - ADR-0002 (player signals: player_damaged, player_died, player_health_changed, player_interacted, player_footstep)
 - ADR-0003 (PlayerState sub-resource schema)
 - ADR-0005 (FPS hands exception — inverted-hull via material_overlay)
 - ADR-0006 (Eve on LAYER_PLAYER; interact raycast on MASK_INTERACT_RAYCAST)
+- **ADR-0008** (Slot #5 Player/FC/Combat non-GF 0.3 ms + Slot #4 Jolt physics 0.5 ms for move_and_slide engine cost)
 
 ### System 8b — FootstepComponent (TR-FC-*)
 
-All 8 TRs: ✅ Covered. ADR-0002 (`player_footstep` signal), ADR-0006 (MASK_FOOTSTEP_SURFACE). Surface metadata authoring contract resolved by Level Streaming CR-10 (cross-GDD handoff).
+All 8 TRs: ✅ Covered. ADR-0002 (`player_footstep` signal), ADR-0006 (MASK_FOOTSTEP_SURFACE), **ADR-0008 Slot #5** (shared aggregate cap with PC + Combat non-GF). Surface metadata authoring contract resolved by Level Streaming CR-10 (cross-GDD handoff).
 
 ### System 9 — Level Streaming (TR-LS-*)
 
 | TR-ID | ADR | Status |
 |-------|-----|--------|
-| TR-LS-001 — Autoload; registration order | ADR-0002 (order convention) | ⚠️ **Partial — load-order collision with InputContext (Conflict 1)** |
+| TR-LS-001 — Autoload; registration order | ADR-0002, ADR-0007 (line 5 canonical) | ✅ |
 | TR-LS-002 — CanvasLayer 127 fade overlay | (GDD-scope) | ✅ |
 | TR-LS-003 — Public API (transition/reload/register_restore_callback) | (GDD-scope) | ✅ |
 | TR-LS-004 — SectionRegistry Resource | (GDD-scope) | ✅ |
 | TR-LS-005 — 13-step fixed-sequence swap | (GDD-scope) | ✅ |
 | TR-LS-006 — Queued-respawn during transition | (GDD-scope) | ✅ |
-| TR-LS-007 — TransitionReason enum param on section_entered/exited | ADR-0002 (PENDING AMENDMENT) | ❌ **GAP — LS-Gate-1** |
+| TR-LS-007 — TransitionReason enum param on section_entered/exited | ADR-0002 (amended 2026-04-22 4th-pass) | ✅ |
 | TR-LS-008 — Section scene authoring contract CR-9 | (GDD-scope) | ✅ |
 | TR-LS-009 — InputContext.LOADING push/pop | ADR-0004 (context enum) | ⚠️ Partial — LOADING value pending Input GDD amendment |
 | TR-LS-010 — CACHE_MODE_REUSE default | (GDD-scope) | ✅ |
-| TR-LS-011 — ≤0.57 s p90 performance budget | (GDD-scope + Perf Budget ADR Gap 2) | ⚠️ Partial |
+| TR-LS-011 — ≤0.57 s p90 performance budget | **ADR-0008 non-frame budgets** | ✅ |
 | TR-LS-012 — Persistent fade overlay parented to autoload | (GDD-scope) | ✅ |
 | TR-LS-013 — Step-9 synchronous registered-callback | (GDD-scope) | ✅ |
 | TR-LS-014 — Same-section no-op + focus-loss handling | (GDD-scope + project.godot setting) | ✅ |
 | TR-LS-015 — Surface metadata contract (resolves OQ-FC-1) | (GDD-scope) | ✅ |
 
-**System status**: ❌ GAP on TR-LS-007 (TransitionReason parameter missing from ADR-0002). Blocks all LS signal subscribers.
+**System status**: ✅ All TRs covered; autoload load-order closed by ADR-0007; transition reason closed by ADR-0002 4th-pass; perf budget closed by ADR-0008 non-frame budgets.
 
 ### System 10 — Stealth AI (TR-SAI-*)
 
@@ -146,7 +147,7 @@ All 8 TRs: ✅ Covered. ADR-0002 (`player_footstep` signal), ADR-0006 (MASK_FOOT
 |-------|-----|--------|
 | TR-SAI-001 — Guard hierarchy | (GDD-scope) | ✅ |
 | TR-SAI-002 — 6-state alert machine | (GDD-scope) | ✅ |
-| TR-SAI-003 — Six SAI signals | ADR-0002 | ❌ **GAP — guard_incapacitated + guard_woke_up missing from Key Interfaces** |
+| TR-SAI-003 — Six SAI signals | ADR-0002 | ✅ (guard_incapacitated + guard_woke_up declared in 4th-pass amendment 2026-04-22; verified 2026-04-23) |
 | TR-SAI-004 — Severity enum | ADR-0002 | ✅ (amended 2026-04-22) |
 | TR-SAI-005 — AlertCause enum | ADR-0002 | ✅ |
 | TR-SAI-006 — TakedownType enum | ADR-0002 | ✅ (amended 2026-04-22) |
@@ -161,46 +162,68 @@ All 8 TRs: ✅ Covered. ADR-0002 (`player_footstep` signal), ADR-0006 (MASK_FOOT
 | TR-SAI-015 — Wake-up clock 45 s | (GDD-scope) | ✅ |
 | TR-SAI-016 — RaycastProvider DI interface | (GDD-scope) | ✅ |
 | TR-SAI-017 — _perception_cache struct | (GDD-scope) | ✅ |
-| TR-SAI-018 — 6 ms performance budget per 12 guards | (GDD-scope + Perf Budget ADR Gap 2) | ⚠️ Partial |
+| TR-SAI-018 — 6 ms performance budget per 12 guards | **ADR-0008 Slot #2** (6.5 ms combined envelope with Combat GuardFireController 0.5 P95) | ✅ |
 
-**System status**: ❌ GAP on TR-SAI-003 (2 of 6 signals pending ADR-0002 amendment).
+**System status**: ✅ All 18 TRs covered. Recommended Follow-up #5 (line 684) CLOSED 2026-04-23 by ADR-0008.
 
 ### System 11 — Combat & Damage (TR-CD-*)
 
-All 22 TRs: ✅ Covered (with one cross-GDD coordination gap). Touches 4 ADRs:
+All 22 TRs: ✅ Covered (with one downstream GDD-coordination item). Touches 5 ADRs:
 - ADR-0001 (guard outline tier MEDIUM, dart outline LIGHT, muzzle-flash stencil)
 - ADR-0002 (4 Combat signals + 4-param amendment consumption)
 - ADR-0003 (ammo + reserve state serialization)
 - ADR-0006 (MASK_PROJECTILES for darts, hitscan masks per-shot from SectionConfig)
+- **ADR-0008** (Slot #2 GuardFireController 0.5 ms P95 + Slot #5 Combat non-GuardFire damage routing / hitscan / dart tick / fist ShapeCast)
 
-Downstream coordination gap: Combat's dedicated `takedown` input action is not yet in Input GDD's 29-action catalog.
+Cross-system reconciliation flag (L233 GuardFireController independence claim) **CLOSED 2026-04-23** by ADR-0008 Slot #2's 6.5 ms combined guard-systems envelope.
+
+Downstream coordination gap (NOT an ADR gap): Combat's dedicated `takedown` input action is not yet in Input GDD's 29-action catalog.
 
 ---
 
 ## Known Gaps (❌ only)
 
-Priority-ordered fix list:
+**None at ADR level.** ADR architecture coverage is complete:
 
 ### Foundation-layer gaps
-*(None — Signal Bus, Save/Load, Collision, UI, Stencil foundations all complete at system level.)*
+*(None — Signal Bus, Save/Load, Collision, UI, Stencil, Autoload foundations all complete at system level.)*
 
 ### Core-layer gaps
-
-1. **TR-LS-007** — `TransitionReason` parameter on `section_entered`/`section_exited`
-   → Fix: ADR-0002 amendment bundle (see review report §Required ADR Amendments)
-
-2. **TR-SAI-003** — `guard_incapacitated` + `guard_woke_up` signals in ADR-0002 Key Interfaces
-   → Fix: same ADR-0002 amendment bundle (atomic commit per Specialist §2)
+*(None.)*
 
 ### Feature / Presentation-layer gaps
-
-*(None beyond the Core-layer amendments above.)*
+*(None.)*
 
 ### Cross-cutting (not system-specific) gaps
 
-3. **Performance Budget Distribution ADR** — recommended to lock cross-system frame-time allocation (SAI pre-impl gate #5). Affects SAI, Combat GuardFireController, Audio, Outline, Post-Process, Save/Load, Level Streaming simultaneously.
+1. ~~**Performance Budget Distribution ADR**~~ — **CLOSED 2026-04-23** by ADR-0008. 9-slot allocation totaling 16.6 ms (Rendering 3.8 + Guard systems 6.5 + Post-Process 2.5 + Jolt 0.5 + Player/FC/Combat non-GF 0.3 + Audio dispatch 0.3 + UI 0.3 + Pooled residual 0.8 + Reserve 1.6). Non-frame budgets consolidated (save ≤10 ms, load ≤2 ms, LS transition ≤570 ms p90, shader bake 0–500 ms one-time, autoload boot ≤50 ms cold-start, D3D12 post-stream warm-up 3 frames). Two new forbidden patterns (`unbudgeted_per_frame_ticking`, `directional_shadow_second_cascade`) fence the contract.
 
-4. **Autoload registration contract** — either dedicated ADR or surgical amendments to resolve InputContext vs LevelStreamingService load-order collision.
+2. ~~**Autoload registration contract**~~ — **CLOSED 2026-04-23** by ADR-0007 (Autoload Load Order Registry). 6 autoloads now have a single canonical line order (Events=1, EventLogger=2, SaveLoad=3, InputContext=4, LevelStreamingService=5, PostProcessStack=6), two forbidden patterns fence ad-hoc registration, and Cross-Autoload Reference Safety is codified. Conflict 1 (InputContext vs LevelStreamingService line-4 collision) also CLOSED by same ADR.
+
+### Cross-GDD coordination gaps — unchanged (producer-tracked, non-blocking at ADR level)
+
+3. **`design/gdd/player-character.md`** still references `CombatSystem.DamageType` / `CombatSystem.DeathCause` at ~10 sites (producer-sequenced rename pass).
+
+4. **`design/gdd/audio.md`** §Mission handler table L188–189 still 1-param `section_entered(section_id)` / `section_exited(section_id)` — needs `reason:` 2nd param + branching table per LS GDD CR-8 (LS-Gate-3).
+
+5. **`design/gdd/input.md`** L90 `use_gadget` action still "context-resolves to takedown" — Combat GDD CR-3 specifies a dedicated `takedown` action (kbd F / gamepad Y).
+
+### Specialist-recommended ADR amendments — ALL CLOSED 2026-04-23
+
+6. ~~**A3**~~ — **CLOSED**. ADR-0003 Gate 3 refined in-place with explicit `Dictionary[StringName, GuardRecord]` duplicate_deep isolation sub-gates (outer cloned, inner GuardRecord cloned, StringName keys intentionally NOT cloned per interning).
+7. ~~**A4**~~ — **CLOSED**. ADR-0004 Implementation Guideline 2 grew addendum mandating `InputContext.*` call-site usage and forbidding `InputContextStack.*` (mirrors `CombatSystemNode`/`Combat` split).
+8. ~~**A5**~~ — **CLOSED**. ADR-0005 Gate 5 added and moved Polish → Prototype (Shader Baker × `material_overlay` export-build compat verification).
+9. ~~**A6**~~ — **CLOSED**. ADR-0006 Risks row added for Jolt `Area3D.body_entered` broadphase tunneling of fast bodies (Combat darts at 20 m/s on `LAYER_PROJECTILES`); mitigation folded into Combat OQ-CD-2 Jolt prototype scope.
+
+---
+
+## Execution-Phase Items (not architectural gaps)
+
+These are story-level and production-level concerns that do not block `/architecture-review`'s PASS verdict:
+
+- **21 verification gates outstanding** across 8 Proposed ADRs. These move ADRs Proposed → Accepted and are the normal Technical Setup / Prototype phase work.
+- **Reference scene authoring** (`tests/reference_scenes/restaurant_dense_interior.tscn`) — prerequisite for ADR-0008 Gates 1–3; scoped to a separate tooling story.
+- **CI `perf-gate` job** — prerequisite for ADR-0008 Gate 1 CI enforcement; scoped to a separate devops-engineer story.
 
 ---
 
@@ -215,6 +238,9 @@ Priority-ordered fix list:
 | Date | Total TRs | Full Chain % (ADR-covered) | Notes |
 |------|-----------|-----------------------------|-------|
 | 2026-04-22 | 158 | ~92% | Initial registry population. System-level granularity. 2 hard gaps on pending ADR-0002 amendment; 1 coordination gap on Input GDD takedown action. |
+| 2026-04-23 | 158 | ~93% | Delta verification. ADR-0002 4th-pass amendment verified in-place (36 signals, section_entered/exited 2-param, guard_incapacitated + guard_woke_up declared, atomic-commit Risks row). TR-LS-007 + TR-SAI-003 moved ❌ → ✅; Conflicts 2 + 3 closed. Conflict 1 (autoload collision), Gaps 2 + 3, and specialist-recommended amendments A3–A6 unchanged. Verdict: CONCERNS (same as 2026-04-22, scope reduced). |
+| 2026-04-23 (post-ADR-0007) | 158 | ~94% | Second delta verification after ADR-0007 (Autoload Load Order Registry) was authored and A3–A6 amendments applied in-place. **Conflict 1 + Gap 3 + A3 + A4 + A5 + A6 all CLOSED.** Only Gap 2 (Performance Budget Distribution ADR) + three GDD-coordination items remain. ADR count 6 → **7** (ADR-0007 added; all 7 still Proposed; 17 verification gates outstanding). Verdict: CONCERNS (scope further reduced — 6 of 7 action items from prior run closed). |
+| 2026-04-23 (post-ADR-0008) | 158 | **~99%** | **Third delta verification after ADR-0008 (Performance Budget Distribution) landed same day.** Gap 2 **CLOSED**: 9-slot 16.6 ms allocation + non-frame budgets + verification contract + 2 new forbidden patterns + 1 new api_decision. TR-SAI-018, TR-PP-009, TR-LS-011, TR-AUD-007 (dispatch), combat-damage.md L233 all moved ⚠️ Partial → ✅. **SAI Recommended Follow-up #5 CLOSED.** ADR count 7 → **8** (all 8 still Proposed; 21 verification gates outstanding including ADR-0008's 4 new gates). Verdict: **PASS** (upgraded from CONCERNS — zero remaining ADR-level architectural gaps). 3 GDD-coordination items remain producer-tracked and non-blocking at ADR level. |
 
 ---
 
@@ -228,7 +254,9 @@ TR-IDs are stable across review runs. When a GDD requirement's text is reworded 
 
 ## Related
 
-- `docs/architecture/architecture-review-2026-04-22.md` — full review report with verdict, conflicts, and engine specialist findings
+- `docs/architecture/architecture-review-2026-04-23.md` — latest review (third 2026-04-23 delta pass, post-ADR-0008 closure); closes Gap 2; verdict PASS
+- `docs/architecture/architecture-review-2026-04-22.md` — prior review (full matrix + engine specialist findings)
 - `docs/architecture/tr-registry.yaml` — authoritative TR-ID source
-- `docs/architecture/adr-0001-*.md` through `adr-0006-*.md` — architectural decisions
+- `docs/architecture/adr-0001-*.md` through `adr-0008-*.md` — architectural decisions (ADR-0008 added 2026-04-23)
+- `docs/registry/architecture.yaml` — performance_budgets / api_decisions / forbidden_patterns registry (last_updated 2026-04-23)
 - `design/gdd/systems-index.md` — system enumeration + status

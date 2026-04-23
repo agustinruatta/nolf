@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-19
+2026-04-23 (Amendment A6: Risks table gained a row for Jolt `Area3D.body_entered` broadphase tunneling of fast-moving bodies — e.g., Combat darts at 20 m/s on `LAYER_PROJECTILES` — per godot-specialist 2026-04-22 §7; mitigation folded into Combat GDD OQ-CD-2 Jolt prototype scope)
 
 ## Decision Makers
 
@@ -302,6 +302,7 @@ func _guard_can_see_player(perception_point: Vector3) -> bool:
 | Adding Layer 6 without updating composite masks (e.g., new "Hazards" layer but `MASK_AI_VISION_OCCLUDERS` not updated to include it if relevant) | LOW | MEDIUM | Implementation Guideline 4 lists the steps; ADR update is one of them. If a new layer is purely non-interacting with existing composites, no change to composites is needed — but reviewer must verify the analysis. |
 | Two layers with "the same purpose" get added later (e.g., "AI" and "Guards" as distinct layers) | LOW | MEDIUM | ADR review requirement — adding a new layer requires updating this ADR, which triggers a design review of whether the new layer is actually distinct from existing ones. |
 | Godot 4.7 or beyond changes the collision-layer API | LOW | MEDIUM | Re-verify against `engine-reference/godot/VERSION.md` at each engine upgrade. Breaking changes doc reviewed per project-wide policy. |
+| Jolt `Area3D.body_entered` may occasionally miss fast-moving bodies (e.g., Combat darts at 20 m/s on `LAYER_PROJECTILES`) due to broadphase tunneling (added 2026-04-23 per godot-specialist 2026-04-22 §7) | MEDIUM | LOW | Fast projectiles fire trigger signals via their own `move_and_collide` hit-response rather than relying on `Area3D` overlap detection. Dovetails with Combat GDD OQ-CD-2 Jolt prototype scope — the Combat dart's `body_entered` + `area_entered` handler design should treat `Area3D` overlap as a backup channel, not the primary dispatch. Impact is LOW for this project: only darts (20 m/s) and potentially Bullet projectiles if they are migrated from hitscan are fast enough to tunnel; every other physics body (Eve at ≤5.5 m/s, guards at patrol speeds, civilians) is well below the tunneling threshold. |
 
 ## Performance Implications
 

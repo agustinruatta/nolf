@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-19
+2026-04-23 (Amendment A4: Implementation Guideline 2 grew addendum mandating call sites use autoload key `InputContext.*`, never `InputContextStack.*`, per godot-specialist 2026-04-22 additional-finding; also supersedes "load order 4" statements with "per ADR-0007" references)
 
 ## Decision Makers
 
@@ -87,7 +87,7 @@ Project is in pre-production. No source code exists. No prior UI implementation 
 **Three contracts:**
 
 1. **Theme inheritance**: single `res://src/core/ui_framework/project_theme.tres` as base; per-surface child Themes set `base_theme = preload(project_theme.tres)` and override only the differences. Surface root Control nodes assign their surface Theme; descendants inherit automatically.
-2. **`InputContext` autoload** (load order 4, after `SaveLoad`): push/pop stack of input contexts. Surfaces call `InputContext.push(Context.DOCUMENT_OVERLAY)` on open and `InputContext.pop()` on close. Each surface checks `InputContext.current()` in `_unhandled_input()` before consuming input. **Emits no signals of its own** — if any cross-system reaction is needed, add a `ui_context_changed` signal to ADR-0002's `Events` taxonomy.
+2. **`InputContext` autoload** (line order per ADR-0007 — Autoload Load Order Registry): push/pop stack of input contexts. Surfaces call `InputContext.push(Context.DOCUMENT_OVERLAY)` on open and `InputContext.pop()` on close. Each surface checks `InputContext.current()` in `_unhandled_input()` before consuming input. **Emits no signals of its own** — if any cross-system reaction is needed, add a `ui_context_changed` signal to ADR-0002's `Events` taxonomy.
 3. **`FontRegistry` static class** (NOT an autoload — see Risks): typed getters return preloaded `Font` resources; encapsulates the Futura → DIN size-floor substitution. Static methods, no node lifecycle, no service-locator concern.
 
 **Plus three locked rules:**
@@ -129,7 +129,7 @@ Project is in pre-production. No source code exists. No prior UI implementation 
        └──────────────────────┘          │
 
        ┌──────────────────────────────────────────┐
-       │  InputContext autoload (load order 4)    │
+       │  InputContext autoload (per ADR-0007)    │
        │  ────────────────────────────────────────│
        │  enum Context { GAMEPLAY, MENU,          │
        │                 DOCUMENT_OVERLAY,        │
@@ -181,7 +181,7 @@ static func menu_title() -> Font:       return _FUTURA_EXBOLD
 
 ```gdscript
 # res://src/core/ui_framework/input_context.gd
-# Autoload: "InputContext" (load order 4 — after Events=1, EventLogger=2, SaveLoad=3)
+# Autoload: "InputContext" — line order per ADR-0007 (Autoload Load Order Registry)
 class_name InputContextStack extends Node
 
 enum Context {
@@ -238,7 +238,7 @@ func close() -> void:
 ### Implementation Guidelines
 
 1. **`FontRegistry` is a static class, NOT an autoload.** Reasoning: avoids the autoload-singleton-coupling boundary entirely. Static class with `preload` constants is testable in isolation, has no node lifecycle, and is not reachable via `get_tree()`. If hot-reloading fonts during development becomes useful later, add a thin dev-only autoload wrapper — do NOT change `FontRegistry`'s API.
-2. **`InputContext` IS an autoload, but tightly fenced.** Same principled distinction as `SaveLoadService` (ADR-0003): it owns the input-routing domain, not a service-locator. It holds NO node references, calls NO methods on UI surfaces, emits NO signals (cross-system reactions must go through `Events`). Stack manipulation only.
+2. **`InputContext` IS an autoload, but tightly fenced.** Same principled distinction as `SaveLoadService` (ADR-0003): it owns the input-routing domain, not a service-locator. It holds NO node references, calls NO methods on UI surfaces, emits NO signals (cross-system reactions must go through `Events`). Stack manipulation only. **Class-name/autoload-key split (added 2026-04-23 per godot-specialist 2026-04-22 additional-finding)**: the script declares `class_name InputContextStack extends Node`; it is registered as autoload key `InputContext` (per ADR-0007). This is an intentional split, mirroring ADR-0002's `CombatSystemNode` class / `Combat` autoload-key pattern. **Call sites MUST use the autoload key** (`InputContext.push(...)`, `InputContext.current()`); they **MUST NOT use the class name** (`InputContextStack.push(...)` would be a discoverability trap — `class_name` exists for type annotation in method signatures and test-double construction only). Identical enforcement rule to the `CombatSystemNode`/`Combat` split codified in ADR-0002 Implementation Guideline 2.
 3. **Modal dismiss NEVER uses focused Buttons.** `_unhandled_input()` + `ui_cancel` action handles all modal close events. This sidesteps Godot 4.6's dual-focus split — dismiss does not depend on which control has keyboard or mouse focus.
 4. **Document Overlay sepia dim is a lifecycle call to `PostProcessStack`** (system 5). Document Overlay calls `PostProcessStack.enable_sepia_dim()` on open and `disable_sepia_dim()` on close. The shader implementation belongs to Post-Process Stack — when its GDD is authored, it MUST expose this exact API surface.
 5. **Subtitle collision rule (resolves Art Bible 7E)**: when `InputContext.is_active(DOCUMENT_OVERLAY)`, the Subtitle system suppresses ambient VO subtitles. Subtitle system subscribes to `Events.document_opened` / `Events.document_closed` to manage suppression. Mission-critical scripted dialogue subtitles tied to the document reveal itself may still play (case-by-case, scripted in Mission & Level Scripting).
@@ -362,7 +362,7 @@ This is the project's fourth and final required ADR. No existing UI to migrate. 
 2. Create `res://src/core/ui_framework/` directory tree.
 3. Author `project_theme.tres` with fonts (paths only, FontRegistry resolves at runtime), colors (per Art Bible 4.4), and styles (per Art Bible 3.3 / 7).
 4. Implement `FontRegistry` static class.
-5. Implement `InputContext` autoload; register in `project.godot` load order 4.
+5. Implement `InputContext` autoload; register in `project.godot` at the line position declared by ADR-0007.
 6. Author 4 surface themes (`hud_theme.tres`, `document_overlay_theme.tres`, `menu_theme.tres`, `settings_theme.tres`) — each sets `base_theme` to `project_theme.tres` and overrides only what's specific.
 7. Configure InputMap actions: `ui_cancel` (Esc + B/Circle), `interact` (E + A/Cross), and any others surfaces need.
 8. Smoke test: stub HUD scene that displays a Label, listens to `Events.player_health_changed`, and updates correctly. Stub Document Overlay that opens on a key press, pushes InputContext, calls PostProcessStack stub, dismisses on `ui_cancel`.
@@ -378,7 +378,7 @@ This is the project's fourth and final required ADR. No existing UI to migrate. 
 - [ ] **Gate 3**: Smoke test — modal open → KB/M dismiss + gamepad dismiss both succeed.
 - [ ] `project_theme.tres` registers all colors from Art Bible 4 and base font sizes.
 - [ ] `FontRegistry` static class implements all 5 typed getters with the size-floor substitution working at 17 vs 18 px.
-- [ ] `InputContext` autoload registered at load order 4; `assert` in `pop()` prevents stack underflow.
+- [ ] `InputContext` autoload registered at the line position declared by ADR-0007; `assert` in `pop()` prevents stack underflow.
 - [ ] InputMap configured: `ui_cancel` = Esc + B/Circle; `interact` = E + A/Cross.
 - [ ] Smoke test HUD scene receives `Events.player_health_changed` and updates Label color from Parchment to Alarm Orange below 25%.
 - [ ] Smoke test Document Overlay opens, pushes context, calls PostProcessStack stub, dismisses on `ui_cancel`, pops context, calls disable.

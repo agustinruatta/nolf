@@ -30,7 +30,7 @@
 #   Superseded entries:     Grep pattern="status: superseded"
 
 version: 1
-last_updated: "2026-04-22"
+last_updated: "2026-04-23"  # ADR-0008 performance budget distribution: 9 slots + 2 forbidden patterns + 1 api_decision
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -243,10 +243,114 @@ performance_budgets:
     status: active
     budget_ms: 2.0
     adr: docs/architecture/adr-0001-stencil-id-contract.md
-    notes: "Full-screen outline CompositorEffect. Target 0.8–1.5 ms on RTX 2060 at 1080p; up to 2.0 ms allowed on Iris Xe with 75% resolution scale (default-on for integrated graphics)."
+    notes: "Full-screen outline CompositorEffect. Target 0.8–1.5 ms on RTX 2060 at 1080p; up to 2.0 ms allowed on Iris Xe with 75% resolution scale (default-on for integrated graphics). Consumed as an input to ADR-0008 Slot #3 (Post-Process chain 2.5 ms = outline 2.0 + sepia 0.5)."
     referenced_by:
       - docs/architecture/adr-0001-stencil-id-contract.md
+      - docs/architecture/adr-0008-performance-budget-distribution.md
     added: 2026-04-19
+    revised: 2026-04-23  # referenced_by expanded to include ADR-0008
+
+  # ─── ADR-0008 Per-Frame Allocation (Iris Xe min-spec, normative cap) ─────
+  # 9 slots sum to exactly 16.6 ms. Each slot is a P95 cap at the Restaurant
+  # dense-interior reference scene, NOT a target. CI /perf-profile gate fails
+  # builds that bust any slot even if total frame time is below 16.6 ms.
+  # Verification: tests/reference_scenes/restaurant_dense_interior.tscn (pending).
+  # Reference: docs/architecture/adr-0008-performance-budget-distribution.md
+
+  - system: rendering-pipeline
+    status: active
+    budget_ms: 3.8
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #1. Godot Forward+ Mobile: opaque + directional shadows (1 cascade only — specialist-flagged bust risk if raised) + cull + transparent at 810p effective on Iris Xe Gen 12. 1500 draw call cap per technical-preferences.md. FPS hands SubViewport (ADR-0005) absorbed here. RTX 2060 target: ~2.5 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: guard-systems
+    status: active
+    budget_ms: 6.5
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #2. Combined envelope: Stealth AI 6.0 ms mean per 12 guards (perception 3.0 + nav 2.0 + signals 1.0 per TR-SAI-018) + Combat GuardFireController 0.5 ms P95 at 3-guard-COMBAT density (combat-damage.md L233). Consolidation resolves SAI Recommended Follow-up #5 + combat-damage.md cross-system reconciliation flag. RTX 2060 target: ~4.5 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+      - design/gdd/stealth-ai.md
+      - design/gdd/combat-damage.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: post-process-chain
+    status: active
+    budget_ms: 2.5
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #3. Outline CompositorEffect (2.0 ms input from ADR-0001 / TR-OUT-006) + sepia dim (0.5 ms per TR-PP-009) + resolution-scale composite on Iris Xe at 0.75 scale. Per-pass breakdown is authoritative in ADR-0001 and post-process-stack.md; this slot is the aggregate cap. RTX 2060 target: ~1.5 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+      - docs/architecture/adr-0001-stencil-id-contract.md
+      - design/gdd/post-process-stack.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: jolt-physics-step
+    status: active
+    budget_ms: 0.5
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #4. Godot 4.6 Jolt default: player + 12 guard CharacterBody3D move_and_slide + dart RigidBody3D projectiles on LAYER_PROJECTILES + static world bodies. Includes first-contact allocation margin. godot-specialist GREEN 2026-04-23 (0.2–0.35 ms typical, 0.5 ms conservative). RTX 2060 target: ~0.3 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: player-fc-combat-nonGF
+    status: active
+    budget_ms: 0.3
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #5. Aggregate event-driven + light-tick cost for Player Character (CharacterBody3D logic layer, state machine), FootstepComponent (~3.5 Hz Sprint emit), Combat non-GuardFire (damage routing, hitscan on fire input, dart tick, fist ShapeCast swing). No single system exceeds ~0.1 ms; aggregate cap 0.3 ms. RTX 2060 target: ~0.2 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: audio-dispatch
+    status: active
+    budget_ms: 0.3
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #6. AudioServer mix + 16-voice spatial pool (TR-AUD-007) + subscriber handlers on Events signals (30 subscriptions per TR-AUD-001). AudioEffectReverb swap on section_entered is a transient CPU stall (0.3–0.8 ms, specialist 2026-04-23) absorbed by reserve, not by this slot. RTX 2060 target: ~0.2 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+      - design/gdd/audio.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: ui-refresh
+    status: active
+    budget_ms: 0.3
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #7. HUD Core signal-driven refresh + active modal surface Control.process. ADR-0004 forbids polling (ui_surface_polls_game_state forbidden pattern), so cost is tied to signal emission frequency, not per-frame work. RTX 2060 target: ~0.2 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+      - docs/architecture/adr-0004-ui-framework.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: pooled-residual
+    status: active
+    budget_ms: 0.8
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #8. Shared envelope for not-yet-designed systems: Civilian AI, Mission & Level Scripting, Document Collection, Dialogue & Subtitles, Failure & Respawn, Signal Bus dispatch overhead not absorbed by emitters. Each GDD claims its sub-slot at design time from this pool. If insufficient, ADR-0008 amendment required before GDD is Approved. RTX 2060 target: ~0.5 ms."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
+    revised: ""
+
+  - system: reserve-unallocated
+    status: active
+    budget_ms: 1.6
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    notes: "ADR-0008 Slot #9. 10% margin for OS jitter, Jolt first-contact spikes, D3D12 descriptor heap pressure, AudioServer reverb-swap CPU stalls, shader variant compilation jitter, and genuinely unknown spikes. Not owned by any system. On Windows/D3D12, an additional 3-frame post-stream warm-up allowance applies (see ADR-0008 non-frame budgets table + Validation Gate 3)."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
     revised: ""
 
 # Example:
@@ -321,6 +425,34 @@ api_decisions:
     referenced_by:
       - docs/architecture/adr-0004-ui-framework.md
     added: 2026-04-19
+    revised: ""
+
+  - purpose: autoload_registration_order
+    status: active
+    api: "Single canonical [autoload] block line order declared in ADR-0007 §Key Interfaces: Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6). All entries use the `*res://` path-prefix-star scene-mode syntax (Node added to root at startup; _ready() fires; tree lifecycle active). project.godot [autoload] block is generated from ADR-0007 verbatim. Downstream ADRs and GDDs reference ADR-0007 for order; they MUST NOT restate specific line numbers. Cross-autoload reference safety rule: an autoload's _ready() may reference any earlier autoload by name (N-1..1 are all in the tree by the time N._ready() fires); it MUST NOT reference a later autoload; no autoload's _init() may reference any other autoload (not yet in tree at construction)."
+    not: "Scattered 'load order N' statements across ADRs/GDDs; non-deterministic registration via @tool scripts calling add_autoload_singleton() / ProjectSettings.set_setting(); runtime Engine.register_singleton() from game code; cross-autoload references in _init(); references to later-listed autoloads from earlier autoloads' _ready(); script-mode autoloads (no `*` prefix) for Node-subclass autoloads."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    reason: "The engine only honours line order within the project.godot [autoload] block; 'load order N' labels anywhere else are team-documentation and drift-prone. A dedicated registry ADR prevents recurrence of the 2026-04-22 InputContext vs LevelStreamingService load-order-4 collision and pins PostProcessStack's previously unstated position. Cross-autoload reference safety was previously implicit developer knowledge; ADR-0007 makes it authoritative. godot-specialist validation 2026-04-22 §1 + 2026-04-23 Claims 1/2/3 GREEN/YELLOW/YELLOW (framing corrections for Claim 2 incorporated; all three hazards from Claim 3 fenced by forbidden patterns below)."
+    referenced_by:
+      - docs/architecture/adr-0007-autoload-load-order-registry.md
+      - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+      - docs/architecture/adr-0003-save-format-contract.md
+      - docs/architecture/adr-0004-ui-framework.md
+      - design/gdd/signal-bus.md
+      - design/gdd/level-streaming.md
+      - design/gdd/post-process-stack.md
+    added: 2026-04-23
+    revised: ""
+
+  - purpose: performance_budget_enforcement
+    status: active
+    api: "Per-slot caps enforced at CI time against a single reference scene (`tests/reference_scenes/restaurant_dense_interior.tscn`) via the `/perf-profile` skill. GitHub Actions `perf-gate` job fails build on (a) total p99 > 16.6 ms, (b) any slot exceeds its Iris Xe cap at p95, or (c) post-stream warm-up exceeds 3 frames on Windows/D3D12. Per-story gates: each ticking-system story embeds its ADR-0008 slot reference in Acceptance Criteria."
+    not: "Runtime BudgetRegistry autoload (would be instrumentation drift + new autoload requiring ADR-0007 amendment); per-system ad-hoc benchmarks (duplicated effort + no cross-system sum verification); dynamic resolution scaling / LOD degradation (Iris Xe at 0.75 scale is fixed at startup per ADR-0001 / TR-PP-008); runtime FPS dashboard visible to player (period authenticity pillar forbids modern UX conveniences)."
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    reason: "Single reference scene + single command + single pass/fail threshold makes enforcement testable on every PR. Per-story embedding lets /create-stories + /story-done check budget conformance at story authoring and completion time. Iris Xe numbers are the binding cap; RTX 2060 measurements are informative only. No runtime instrumentation means zero runtime cost for the enforcement mechanism itself."
+    referenced_by:
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
     revised: ""
 
 # Example:
@@ -445,6 +577,34 @@ forbidden_patterns:
     why: "Polling couples UI to specific system implementations and creates per-frame work even when state has not changed. Direct system references re-introduce the autoload-singleton-coupling anti-pattern. The Events bus exists precisely to decouple UI from game systems; using it is mandatory."
     adr: docs/architecture/adr-0004-ui-framework.md
     added: 2026-04-19
+
+  - pattern: unregistered_autoload
+    status: active
+    description: "A new autoload MUST NOT be added to project.godot without a paired amendment to ADR-0007 (Autoload Load Order Registry) in the same PR. The amendment MUST document: (a) justification that the new system cannot be satisfied as a static class, scene Node, or RefCounted; (b) a new row in the §Canonical Registration Table; (c) the updated line position for every downstream autoload if inserted above them. Editor plugins and @tool scripts MUST NOT call ProjectSettings.set_setting() or add_autoload_singleton() on autoload paths without the same ADR-0007 amendment. Removing an autoload follows the same bar. Changing the order of existing autoloads follows the same bar."
+    why: "Ad-hoc autoload registration drift was the root cause of the 2026-04-22 InputContext-vs-LevelStreamingService load-order-4 collision. A future editor plugin or @tool script that silently inserts itself via add_autoload_singleton() can shift the block order without any developer noticing until runtime behaviour breaks. The amendment bar forces the conversation (is this really needed? can it be a static class instead?) and preserves the invariant that ADR-0007 and project.godot stay in sync by construction. Per godot-specialist 2026-04-23 Claim 3 (YELLOW)."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    added: 2026-04-23
+
+  - pattern: autoload_init_cross_reference
+    status: active
+    description: "An autoload's _init() MUST NOT reference any other autoload by name (e.g., no `Events.signal_name.connect(...)` in _init()). Cross-autoload wiring belongs in _ready() only. Even in _ready(), an autoload MUST NOT reference another autoload that is listed LATER in the project.godot [autoload] block — the later autoload is not yet in the tree when the earlier one's _ready() fires."
+    why: "_init() fires during object construction, before the node is added to the scene tree. Other autoloads are unreachable via the tree from _init(); a reference resolves to null and silently fails (or crashes on dereference). _ready() fires after the autoload is added to the tree — at which point every autoload listed EARLIER in the [autoload] block is guaranteed to be in the tree (though its own _ready() may not yet have completed). References to LATER-listed autoloads from an earlier autoload's _ready() resolve to null for the same reason. Per godot-specialist 2026-04-23 Claim 2 (YELLOW, framing corrected). ADR-0007 §Cross-Autoload Reference Safety is authoritative."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    added: 2026-04-23
+
+  - pattern: unbudgeted_per_frame_ticking
+    status: active
+    description: "A system MUST NOT add per-frame ticking work (`_process`, `_physics_process`, high-frequency Timer, or Tween running continuously) without a registered ADR-0008 slot assignment. If the system is listed in ADR-0008 with a named slot (Slots #1–#7), it consumes from that slot's cap. If it is a not-yet-designed system, it consumes from Slot #8 (pooled residual 0.8 ms) and MUST claim its sub-slot in its GDD's Tuning Knobs or Dependencies section before any story referencing it can pass /story-readiness. A story that implements per-frame ticking work without this claim is blocked at /code-review."
+    why: "Per-frame work accumulates invisibly. Without per-system accountability, ten systems adding 0.3 ms each silently compounds to a 3 ms shortfall at the Restaurant reference scene, and the CI perf-gate blames the last PR to merge rather than the systemic cause. Requiring an ADR-0008 slot claim before authoring forces the conversation (is this cost real? does the pooled residual still have room?) at design time, not at gate-fail time. The pooled residual 0.8 ms is shared by design across 6 undesigned systems — ~0.13 ms each average — so a system that genuinely needs more must escalate to an ADR-0008 amendment with a re-allocation pass before story creation begins."
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
+
+  - pattern: directional_shadow_second_cascade
+    status: active
+    description: "WorldEnvironment and DirectionalLight3D configuration MUST keep directional shadow cascade count at 1. Adding a second cascade (PSSM 2-split or 4-split) is forbidden. Applies to: (a) main 3D viewport, (b) FPS hands SubViewport (ADR-0005), (c) any scripted cinematic camera spawn. Scene authoring + WorldEnvironment resource authoring must conform; section scene validator (LS CR-10 tool plugin family) should include a shadow-cascade check."
+    why: "ADR-0008 Slot #1 (Rendering 3.8 ms on Iris Xe Gen 12 @ 810p) is specialist-validated as achievable only with one cascade. A second cascade adds 0.8–1.2 ms at 810p on Iris Xe — enough to bust the rendering slot immediately (per godot-specialist 2026-04-23 validation of ADR-0008). Stylized flat shading + no dynamic lights (Art Bible 8J) means shadow quality is already minimal-complexity; a second cascade provides negligible visual improvement for the stylized look while breaking the frame budget. Any art-side proposal to raise cascade count requires an ADR-0008 amendment with a full re-allocation pass across all 9 slots."
+    adr: docs/architecture/adr-0008-performance-budget-distribution.md
+    added: 2026-04-23
 
 # Example:
 #

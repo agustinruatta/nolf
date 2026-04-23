@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-19
+2026-04-23 (Amendment A3: Gate 3 scope refined to explicitly exercise `Dictionary[StringName, GuardRecord]` duplicate_deep isolation per godot-specialist 2026-04-22 §5; also supersedes "load order 3" statements with "per ADR-0007" references)
 
 ## Decision Makers
 
@@ -96,7 +96,7 @@ Project is in pre-production. No source code exists. No prior save system to mig
                                          │ SaveLoad.save_to_slot(N, save_game)
                                          ▼
         ┌─────────────────────────────────────────────────────────────┐
-        │  SaveLoadService autoload (load order 3, after Events)      │
+        │  SaveLoadService autoload (line order per ADR-0007)         │
         │  ────────────────────────────────────────────────────────── │
         │  Owns persistence domain. Writes/reads files only.          │
         │  Holds NO scene-system references. NEVER assembles SaveGame.│
@@ -153,7 +153,7 @@ const FORMAT_VERSION: int = 1   # increment on any schema change
 
 ```gdscript
 # res://src/core/save_load/save_load_service.gd
-# Autoload: "SaveLoad", load order 3 (after Events at order 1, EventLogger at order 2)
+# Autoload: "SaveLoad" — line order per ADR-0007 (Autoload Load Order Registry)
 class_name SaveLoadService extends Node
 
 enum FailureReason {
@@ -344,8 +344,8 @@ This is the project's third ADR. No existing code or saves to migrate. Implement
 
 - [ ] **Gate 1**: `ResourceSaver.save(test_save, "user://test.res", ResourceSaver.FLAG_COMPRESS)` returns `OK` in Godot 4.6 editor.
 - [ ] **Gate 2**: `DirAccess.rename(tmp, final)` renames atomically on Linux and Windows.
-- [ ] **Gate 3**: `SaveGame.duplicate_deep()` on an instance with nested typed `*_State` Resources produces a fully isolated copy (mutations to copy don't affect original).
-- [ ] `SaveLoadService` autoload registered in `project.godot`, load order 3.
+- [ ] **Gate 3**: `SaveGame.duplicate_deep()` on an instance with nested typed `*_State` Resources produces a fully isolated copy. MUST explicitly exercise `StealthAIState.guards: Dictionary[StringName, GuardRecord]`: (a) the outer `Dictionary` is cloned (new instance identity); (b) each inner `GuardRecord` Resource is cloned (mutating a field on a loaded copy's `GuardRecord` does not leak to the original); (c) `StringName` keys are intentionally NOT cloned (interned; identity preservation is correct behaviour per godot-specialist 2026-04-22 §5 — test asserts `original_save.guards[&"guard_0"]` identity-differs from `copy.guards[&"guard_0"]` but the StringName keys themselves are identical across both dicts). This extended scope per godot-specialist 2026-04-22 §5 covers the Dictionary-of-Resource pattern that the SAI GDD 4th-pass made load-bearing.
+- [ ] `SaveLoadService` autoload registered in `project.godot` at the line position declared by ADR-0007 (Autoload Load Order Registry).
 - [ ] Smoke test: round-trip save → load → confirm SaveGame equality.
 - [ ] Power-loss simulation: kill process mid-write; reload; confirm previous good save intact.
 - [ ] All system GDDs that contribute saved state include a "Save State" subsection specifying their `*_State` Resource shape.

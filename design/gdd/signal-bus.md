@@ -41,7 +41,7 @@ These are invisible wins. Players will never praise Signal Bus by name. They wil
 
 ### States and Transitions
 
-**Stateless infrastructure.** Signal Bus has no states of its own. The `Events.gd` autoload is registered at game start (load order 1) and lives until application exit. The optional `EventLogger.gd` debug autoload (load order 2) self-removes in non-debug builds via `OS.is_debug_build()` check. No transitions, no per-frame lifecycle to track.
+**Stateless infrastructure.** Signal Bus has no states of its own. The `Events.gd` autoload is registered at game start (line order per ADR-0007) and lives until application exit. The optional `EventLogger.gd` debug autoload (line order per ADR-0007) self-removes in non-debug builds via `OS.is_debug_build()` check. No transitions, no per-frame lifecycle to track.
 
 ### Interactions with Other Systems
 
@@ -103,7 +103,7 @@ Future signals added to the bus may introduce formulas in their owning system's 
 - **If a subscriber's handler raises an error** → Godot prints the error and continues dispatching to remaining subscribers. **Resolution**: intended Godot behaviour. Subscribers MUST handle their own errors (try/except equivalent or defensive coding). A crashing subscriber MUST NOT block other subscribers from receiving the same event.
 - **If a new signal is added to `Events.gd` but no subscriber has connected yet** → emitting the signal succeeds with zero dispatches. No error. **Resolution**: intended. Publishers fire-and-forget; lack of subscribers is normal during incremental development.
 - **If a subscriber attempts to connect to a signal that doesn't exist on `Events.gd`** → Godot raises a parse-time error (typed signals are checked at parse). **Resolution**: intended. The contract is enforced at parse, not runtime. A subscriber referring to a renamed/removed signal will fail to load — visible immediately, not in production.
-- **If `Events.gd` autoload registration order changes** → if `EventLogger` (load order 2) loads before `Events` (load order 1), `EventLogger`'s connect calls fail. **Resolution**: load order is locked in `project.godot` per ADR-0002. Changing autoload order requires an ADR amendment.
+- **If `Events.gd` autoload registration order changes** → if `EventLogger` loads before `Events`, `EventLogger`'s connect calls fail. **Resolution**: `[autoload]` block line order is locked in `project.godot` per **ADR-0007 (Autoload Load Order Registry)**. Changing autoload order requires an ADR-0007 amendment with a paired `project.godot` edit in the same PR.
 
 ## Dependencies
 
@@ -146,7 +146,7 @@ Signal Bus has **no balance/tuning values** — all design decisions are binary 
 | Parameter | Current Value | Safe Range | Effect of Increase | Effect of Decrease |
 |---|---|---|---|---|
 | `EventLogger` enabled | `true` in debug builds, `false` in release (per `OS.is_debug_build()`) | Boolean | Logs every signal emit to the Godot output console — useful for debugging signal flow; verbose in production. | Silences all signal logging; production default. |
-| Autoload load order | `Events` = 1, `EventLogger` = 2 | Locked — change requires ADR amendment | Higher numbers load later. Changing breaks `EventLogger`'s ability to subscribe to `Events` signals (it must load AFTER `Events`). | Lower numbers load earlier. If `Events` loads later than systems that subscribe in their own `_ready`, those subscriptions fail at startup. |
+| Autoload `[autoload]` block line order | Per ADR-0007 — `Events` precedes `EventLogger` | Locked — change requires ADR-0007 amendment with paired `project.godot` edit in same PR | Reordering breaks `EventLogger`'s ability to subscribe to `Events` signals (it must load AFTER `Events` per ADR-0007 §Cross-Autoload Reference Safety). | Same — if `Events` loads later than systems that subscribe in their own `_ready()`, those subscriptions fail at startup. |
 
 Future signals added to the bus may introduce tuning knobs in their owning system's GDD (e.g., a `weapon_fire_rate_hz` value would tune how often `weapon_fired` emits). Those knobs live in the publishing system's GDD, not here.
 
@@ -174,7 +174,7 @@ Future signals added to the bus may introduce tuning knobs in their owning syste
 
 ### Autoload + structural
 
-1. **GIVEN** the project is launched, **WHEN** the autoload list is inspected via `get_tree().root.get_children()`, **THEN** `Events` (load order 1) is present, and `EventLogger` (load order 2) is present in debug builds and absent in release builds.
+1. **GIVEN** the project is launched, **WHEN** the autoload list is inspected via `get_tree().root.get_children()`, **THEN** `Events` and `EventLogger` are present in the order declared by ADR-0007 (Autoload Load Order Registry) — `Events` precedes `EventLogger`. `EventLogger` is present in debug builds and absent in release builds.
 2. **GIVEN** `Events.gd` source file, **WHEN** linted/grepped for `func `, `var `, or `const ` declarations (excluding the `class_name` and `extends` header), **THEN** zero matches (per ADR-0002 forbidden_pattern `events_with_state_or_methods`).
 3. **GIVEN** the 36 signals defined in ADR-0002, **WHEN** `Events.gd` is parsed, **THEN** every signal in ADR-0002's Key Interfaces is declared with the exact signature (name, parameter types, parameter order). The Player domain (`player_interacted`, `player_footstep`) is included in this count per the 2026-04-19 ADR-0002 amendment; the 2 AI/Stealth additions (`guard_incapacitated`, `guard_woke_up`) are included per the 2026-04-22 4th-pass amendment; `section_entered` / `section_exited` signatures MUST include the `reason: LevelStreamingService.TransitionReason` 2nd param.
 

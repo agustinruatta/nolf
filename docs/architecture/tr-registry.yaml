@@ -29,7 +29,7 @@
 # STATUS VALUES: active | deprecated | superseded-by: TR-[system]-NNN
 
 version: 2
-last_updated: "2026-04-22"
+last_updated: "2026-04-23"
 
 requirements:
   # ─── Signal Bus (SB) ──────────────────────────────────────────────────────
@@ -43,9 +43,9 @@ requirements:
   - id: TR-SB-002
     system: signal-bus
     gdd: design/gdd/signal-bus.md
-    requirement: "34 typed signals across 9 gameplay domains + Persistence + Settings (taxonomy locked in ADR-0002; grows to 36 per pending SAI 4th-pass + LS amendment)."
+    requirement: "36 typed signals across 9 gameplay domains + Persistence + Settings (taxonomy locked in ADR-0002; 4th-pass LS + SAI amendment landed 2026-04-22 grew count 34 → 36)."
     created: 2026-04-22
-    revised: ""
+    revised: 2026-04-23
     status: active
   - id: TR-SB-003
     system: signal-bus

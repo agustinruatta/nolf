@@ -53,7 +53,7 @@ A companion **Accessor Conventions (SAI → Combat)** subsection (added 2026-04-
   3. **NEW signal `guard_incapacitated(guard: Node)`** added to AI/Stealth domain. Fires from a StealthAI guard node the instant it enters UNCONSCIOUS or DEAD, AFTER perception/navigation cleanup but BEFORE the paired `alert_state_changed(…, UNCONSCIOUS|DEAD, MAJOR)`. Every live guard's VisionCone and dead-body-tracking dictionaries subscribe to explicitly remove the incapacitated body from their tracked-bodies sets. Without this, a dead/unconscious guard lying in another guard's cone (but whose `monitoring = false` prevents natural `body_exited`) would accumulate stale SAW_BODY state indefinitely on reload. Source: stealth-ai.md §Detailed Rules step 5 (UNCONSCIOUS + DEAD terminal entry) + §E.16 (gunfight-kill signal interleaving).
   4. **NEW signal `guard_woke_up(guard: Node)`** added to AI/Stealth domain. Fires once from a StealthAI guard node when the UNCONSCIOUS → SUSPICIOUS wake-up timer expires (`WAKE_UP_SEC = 45 s` default per stealth-ai.md §Detailed Rules UNCONSCIOUS wake-up). Audio subscribes for the wake-sting + ambient-breathing-loop termination; Mission Scripting may subscribe for "Eve killed / woke all guards" objective triggers.
 
-  **Enum-ownership list grows** (Implementation Guideline 2): `LevelStreamingService.TransitionReason { FORWARD, RESPAWN, NEW_GAME, LOAD_FROM_SAVE }` is now owned by the `LevelStreamingService` class (autoload load-order 4, `class_name LevelStreamingService` per level-streaming.md CR-1). Migration Plan step 2 and Validation Criteria items 2 and 3 extended accordingly.
+  **Enum-ownership list grows** (Implementation Guideline 2): `LevelStreamingService.TransitionReason { FORWARD, RESPAWN, NEW_GAME, LOAD_FROM_SAVE }` is now owned by the `LevelStreamingService` class (`class_name LevelStreamingService` per level-streaming.md CR-1; autoload line order per ADR-0007). Migration Plan step 2 and Validation Criteria items 2 and 3 extended accordingly.
 
   **Cadence guarantees** (Implementation Guideline 5): both new signals are one-shot per guard per session. `guard_incapacitated` fires at most once per guard — terminal-effect transitions are irreversible from the bus's perspective; `UNCONSCIOUS → DEAD` does NOT re-emit `guard_incapacitated` (the guard was already removed from tracked-bodies sets on UNCONSCIOUS entry per stealth-ai.md §E.20). `guard_woke_up` fires at most once per guard — only UNCONSCIOUS guards wake, and wake moves them permanently to SUSPICIOUS. Both are trivially within IG5 budget; no per-physics-frame emission.
 
@@ -138,7 +138,7 @@ Project is in pre-production. No source code exists. No existing event-dispatch 
                                         │ Events.signal_name.emit(args)
                                         ▼
         ┌──────────────────────────────────────────────────────────┐
-        │  Events.gd  (autoload, load order 1)                     │
+        │  Events.gd  (autoload; line order per ADR-0007)          │
         │  ─────────────────────────────────────────────────────── │
         │  ONLY contains typed signal declarations.                │
         │  No methods. No state. No node refs. No wrapper emits.   │
@@ -160,7 +160,7 @@ Project is in pre-production. No source code exists. No existing event-dispatch 
                    │  _exit_tree(): if is_connected: disc.  │
                    └────────────────────────────────────────┘
 
-        Optional debug autoload (load order 2):
+        Optional debug autoload (line order per ADR-0007):
         ┌──────────────────────────────────────────────────────────┐
         │  EventLogger.gd  — connects to all signals at startup,   │
         │  prints emit timestamps. Self-removes if not is_debug_build│
@@ -171,7 +171,7 @@ Project is in pre-production. No source code exists. No existing event-dispatch 
 
 ```gdscript
 # res://src/core/signal_bus/events.gd
-# Autoload registered as `Events` (load order 1) in project.godot
+# Autoload registered as `Events` (line order per ADR-0007) in project.godot
 
 class_name SignalBusEvents extends Node
 
@@ -324,10 +324,8 @@ func takedown_prompt_active(attacker: Node) -> bool
 
 ### Implementation Guidelines
 
-1. **Autoload registration in `project.godot`**:
-   - `Events` — load order 1, path `res://src/core/signal_bus/events.gd`
-   - `EventLogger` — load order 2, path `res://src/core/signal_bus/event_logger.gd` (self-removes in non-debug builds via `OS.is_debug_build()`)
-2. **Enum ownership**: every enum used in a signal payload is defined as an inner enum on the system class that owns the concept. The signal declaration uses the qualified name (`StealthAI.AlertState`). Do NOT define enums on `Events.gd`. Do NOT create a shared `Types.gd` autoload. **Current owners** (as of 2026-04-22): `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity` (added 2026-04-22), `StealthAI.TakedownType` (added 2026-04-22), `LevelStreamingService.TransitionReason` (added 2026-04-22 via 4th-pass LS + SAI amendment; class_name `LevelStreamingService`, autoload load order 4 per level-streaming.md CR-1), `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause` (note: class_name `CombatSystemNode`, autoload key `Combat` — intentional split per combat-damage.md §350), `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`.
+1. **Autoload registration in `project.godot`**: `Events` and `EventLogger` are registered per the canonical line order in **ADR-0007 (Autoload Load Order Registry)** — Events at line 1 with path `res://src/core/signal_bus/events.gd`, EventLogger at line 2 with path `res://src/core/signal_bus/event_logger.gd` (self-removes in non-debug builds via `OS.is_debug_build()`). ADR-0007 is authoritative; do not restate line numbers elsewhere.
+2. **Enum ownership**: every enum used in a signal payload is defined as an inner enum on the system class that owns the concept. The signal declaration uses the qualified name (`StealthAI.AlertState`). Do NOT define enums on `Events.gd`. Do NOT create a shared `Types.gd` autoload. **Current owners** (as of 2026-04-22): `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity` (added 2026-04-22), `StealthAI.TakedownType` (added 2026-04-22), `LevelStreamingService.TransitionReason` (added 2026-04-22 via 4th-pass LS + SAI amendment; class_name `LevelStreamingService`; autoload line order per ADR-0007), `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause` (note: class_name `CombatSystemNode`, autoload key `Combat` — intentional split per combat-damage.md §350), `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`.
 3. **Subscriber lifecycle**: every subscriber MUST connect in `_ready` and disconnect in `_exit_tree` with `is_connected` guards. This is non-negotiable for memory-leak prevention and Godot signal hygiene.
 4. **Node payload validity**: any subscriber receiving a `Node`-typed parameter MUST call `is_instance_valid(node)` before dereferencing it. Signals can be queued and the source node may be freed before the subscriber runs.
 5. **High-frequency events**: all 34 events in this taxonomy are safe to route through the bus at their expected frequencies (per godot-gdscript-specialist analysis: weapon_fired at full-auto rate × 4 subscribers ≈ 0.02 ms/frame; `player_footstep` peaks at ~3.5 Hz during Sprint × typical 2–3 subscribers ≈ negligible). No event in this taxonomy is per-physics-frame.
@@ -425,8 +423,8 @@ This is the project's second ADR. No existing code to migrate. Implementation or
 
 1. Create `res://src/core/signal_bus/events.gd` with the 34 typed signal declarations.
 2. Define stub enum classes for the systems that own them (`StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`) so the signal declarations compile. Stubs may be empty enum bodies until the owning system's GDD is authored — they serve as type placeholders. **Post-amendment note (2026-04-22)**: adding a new inner enum to an already-compiled owner class may require an editor reimport cycle for the signal dispatch to resolve correctly (see Risks).
-3. Register `Events` as autoload in `project.godot`, load order 1.
-4. Create `res://src/core/signal_bus/event_logger.gd` with self-removal logic. Register as autoload, load order 2.
+3. Register `Events` as autoload in `project.godot` at the line position declared by ADR-0007.
+4. Create `res://src/core/signal_bus/event_logger.gd` with self-removal logic. Register as autoload at the line position declared by ADR-0007.
 5. Smoke test: emit one signal from a debug script, confirm `EventLogger` prints it, confirm a subscriber receives it.
 6. Set ADR-0002 status Proposed → Accepted.
 7. Begin authoring system GDDs that reference these signals.
@@ -435,11 +433,11 @@ This is the project's second ADR. No existing code to migrate. Implementation or
 
 ## Validation Criteria
 
-- [ ] `Events.gd` autoload registered in `project.godot`, load order 1.
+- [ ] `Events.gd` autoload registered in `project.godot` at the line position declared by ADR-0007 (Autoload Load Order Registry).
 - [ ] All 36 typed signals declared with qualified enum-type parameters (where applicable).
 - [ ] Stub enum classes exist for `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason` — they may be empty enum bodies until the owning system is designed.
 - [ ] `Accessor Conventions (SAI → Combat)` subsection's two accessors are implemented on `StealthAI`: `has_los_to_player() -> bool` (F.1 cache-hit path, 10 Hz stale-safe) and `takedown_prompt_active(attacker: Node) -> bool` (state + rear-arc + range + no-LOS predicate, read-only).
-- [ ] `EventLogger.gd` autoload registered, load order 2; self-removes in non-debug build (verify with a release export).
+- [ ] `EventLogger.gd` autoload registered at the line position declared by ADR-0007; self-removes in non-debug build (verify with a release export).
 - [ ] One smoke test: emit one signal, confirm subscriber receives it AND `EventLogger` prints it.
 - [ ] Subscriber lifecycle pattern documented in `docs/architecture/control-manifest.md` (when that file is authored).
 - [ ] 5 forbidden patterns registered in `docs/registry/architecture.yaml`.
@@ -463,7 +461,7 @@ This is the project's second ADR. No existing code to migrate. Implementation or
 - **ADR-0004** (UI Framework — pending) — will reference `document_opened`, `document_closed`, `setting_changed` signals defined here. Must NOT redefine these.
 - **`docs/registry/architecture.yaml`** — 5 forbidden patterns and 2 interface contracts registered from this ADR: `gameplay_event_dispatch` (event_bus) and `sai_public_accessors` (direct_call, added 2026-04-22).
 - **`design/gdd/stealth-ai.md`** — owner of `AlertState`, `AlertCause`, `Severity`, `TakedownType` enums and the two public accessors this ADR codifies. 3rd-pass revision (2026-04-22) authored the source-of-truth specification for OQ-CD-1. 4th-pass revision (2026-04-22) added the `guard_incapacitated` signal (§Detailed Rules step 5 UNCONSCIOUS/DEAD terminal entry + §E.16) and `guard_woke_up` signal (§Detailed Rules UNCONSCIOUS wake-up; `WAKE_UP_SEC = 45`), both declared in Key Interfaces above.
-- **`design/gdd/level-streaming.md`** — owner of the `TransitionReason` enum on `class_name LevelStreamingService` (autoload load-order 4). LS-Gate-1 (per LS GDD §Pre-Implementation Gates) — amend `section_entered`/`section_exited` with the `reason` 2nd param — is resolved by this 4th-pass amendment. LS-Gate-3 (Audio GDD handler-table amendment for the 2-param form + branching) is producer-tracked and out of ADR scope.
+- **`design/gdd/level-streaming.md`** — owner of the `TransitionReason` enum on `class_name LevelStreamingService` (autoload line order per ADR-0007). LS-Gate-1 (per LS GDD §Pre-Implementation Gates) — amend `section_entered`/`section_exited` with the `reason` 2nd param — is resolved by this 4th-pass amendment. LS-Gate-3 (Audio GDD handler-table amendment for the 2-param form + branching) is producer-tracked and out of ADR scope.
 - **`design/gdd/combat-damage.md`** — owner of `DamageType`, `DeathCause` enums (class_name `CombatSystemNode`, autoload key `Combat`). §C.3 documents the dependency on SAI's public accessors; §317 + §350 document the class_name/autoload split this amendment aligns.
 - **`design/gdd/audio.md`** — consumer of the 4-param `alert_state_changed` and `actor_became_alerted` severity-filter rules + `takedown_performed` dual-SFX routing. Audio GDD already specifies the post-amendment signatures (§61, §143–146); this ADR amendment formalizes them.
 - **`design/gdd/signal-bus.md`** — enum-ownership index mirrors Implementation Guideline 2. Updated in the same 2026-04-22 pass to add `Severity` + `TakedownType` and rename `CombatSystem` → `CombatSystemNode`.

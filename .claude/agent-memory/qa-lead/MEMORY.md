@@ -1,1 +1,2 @@
 - [Player Character GDD AC review](project_player_character_ac_review.md) — adversarial AC review found 9 BLOCKING gaps and 3 structural issues (no test file paths, no story-type labels, false preamble)
+- [Mission & Level Scripting GDD AC review](project_mls_ac_review.md) — adversarial review of 50 ACs; 14 BLOCKING findings including fictional GUT evidence paths for CI greps, 3 uncovered CRs (8, 11, 19), FP-3 false-positive regex, and missing mock injection strategy for Events bus

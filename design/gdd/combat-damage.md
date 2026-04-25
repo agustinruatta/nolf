@@ -115,6 +115,32 @@ Weapon *entity* ownership (Resource, mesh, ammo UI) belongs to Inventory & Gadge
 
 **CR-4 Flat damage model.** Each weapon has one base damage number (final values in §D). No distance falloff. No armor/resistance. **Headshots on guards** deliver 2× base damage (multiplier computed internally; `enemy_damaged.amount` is post-multiplier). **No headshot damage on Eve** — guards always hit body-only.
 
+**CR-4b Public fire-path dispatch method** (NEW 2026-04-24 per Inventory Coord item #8). Combat declares `apply_fire_path(weapon: WeaponResource, position: Vector3, direction: Vector3) -> void` as an explicit public method on `CombatSystemNode` (autoload key `Combat`). Inventory calls `Combat.apply_fire_path(...)` on successful fire-gate pass (Inventory CR-14); Inventory does NOT call `apply_damage_to_actor` directly (Inventory CR-17 grep-forbidden pattern).
+
+```gdscript
+# Public dispatch entry; routes by weapon.damage_type to the correct fire CR.
+# weapon: the authoritative Weapon Resource (Inventory-owned; contains base_damage,
+#   fire_rate_sec, magazine_size, damage_type_int, etc.)
+# position: muzzle world-space origin (from Eve's HandAnchor or camera, per weapon type)
+# direction: normalized aim direction (camera forward with hitscan perturbation
+#   applied inside the method for accuracy CR-5 consumers)
+func apply_fire_path(
+    weapon: WeaponResource,
+    position: Vector3,
+    direction: Vector3
+) -> void:
+```
+
+Internal routing responsibilities (Combat-owned):
+- Pre-fire occlusion check per **E.41** (spawn-point-inside-world-geometry guard for dart) — if fails, emit `Events.weapon_dry_fire_click(weapon.weapon_id)` per ADR-0002 2026-04-24 amendment and return without consuming ammo.
+- Hitscan path (silenced pistol, rifle) per **CR-5** — accuracy cone, Gaussian-perturbation, `intersect_ray` with guard self-exclusion.
+- Projectile path (dart gun) per **CR-6** — spawn `RigidBody3D` on `LAYER_PROJECTILES`, CCD on, `_has_impacted` double-hit guard.
+- Damage application per **F.1** via `apply_damage_to_actor(actor, final_damage, weapon, weapon.damage_type)`.
+- Post-fire signal emission per **CR-2** — `enemy_damaged` (always on hit), `enemy_killed` (if `is_dead == true`).
+- Emit `Events.weapon_fired(weapon, position, direction)` on successful fire (no dry-click path).
+
+Note: fists use **CR-7** (melee contact, `ShapeCast3D` not hitscan) and bypass `apply_fire_path` — Inventory's fire-primary handler branches on `current_weapon_slot == 5` and calls a separate Combat-owned melee path. Blade is takedown-only (**CR-15** via `Takedown` input + `SAI.receive_takedown` delegation), also bypassing `apply_fire_path`.
+
 **CR-5 Hitscan-then-perturb accuracy** (revised 2026-04-22 — guard self-exclusion expanded to cover all owned CollisionObject3D RIDs, not just body). Hitscan uses:
 ```gdscript
 var query := PhysicsRayQueryParameters3D.create(from, to)
@@ -245,7 +271,7 @@ Timers are per-guard `Timer` nodes on the idle tick (not `_physics_process`). Ti
 
 **CR-15 Takedown lethal-damage delegation** (revised 2026-04-22 — Takedown input path). When the player presses the dedicated `Takedown` input (CR-3) while SAI's context prompt is live, SAI's `receive_takedown(STEALTH_BLADE, eve)` handler fires. SAI calls `Combat.apply_damage_to_actor(self, blade_takedown_damage=100, eve, DamageType.MELEE_BLADE)`. `apply_damage_to_actor` invokes `guard.receive_damage(100, ...)` (synchronous), which reduces HP to 0, transitions `current_alert_state = DEAD` (synchronous state mutation before return), and returns `is_dead = true`. Combat then emits `enemy_damaged(guard, 100, eve)` followed by `enemy_killed(guard, eve)` in the same call stack. The silenced pistol is NOT a takedown-delegation target; it is gunfight-only. `receive_takedown(SILENCED_PISTOL, ...)` is removed from the takedown-type enumeration — SAI amendment OQ-CD-1 item 3. **Call-stack synchronicity (2026-04-22 clarification per systems-designer F8)**: SAI's DEAD-state transition inside `receive_damage` must be synchronous (state field mutation, not deferred) so `GuardFireController`'s defensive gate (reading `current_alert_state`) sees DEAD on its next tick. Declared in OQ-CD-1 amendment.
 
-**CR-16 UNCONSCIOUS state consequence (revised 2026-04-22 — Transitional model per user decision; non-lethal DamageTypes routing).** Guards reaching 0 HP via a **non-lethal DamageType** (`DART_TRANQUILISER` OR `MELEE_FIST`) transition to `SAI.AlertState.UNCONSCIOUS` (6th state, SAI GDD amendment OQ-CD-1). Guards reaching 0 HP via any lethal DamageType (`BULLET`, `MELEE_BLADE`, `FALL_OUT_OF_BOUNDS`) transition to `SAI.AlertState.DEAD`. UNCONSCIOUS guards: no perception, no vocal, body remains at final pose, outline tier MEDIUM persists.
+**CR-16 UNCONSCIOUS state consequence (revised 2026-04-22 — Transitional model per user decision; non-lethal DamageTypes routing; MELEE_PARFUM added 2026-04-24).** Guards reaching 0 HP via a **non-lethal DamageType** (`DART_TRANQUILISER`, `MELEE_FIST`, or `MELEE_PARFUM`) transition to `SAI.AlertState.UNCONSCIOUS` (6th state, SAI GDD amendment OQ-CD-1). Guards reaching 0 HP via any lethal DamageType (`BULLET`, `MELEE_BLADE`, `FALL_OUT_OF_BOUNDS`) transition to `SAI.AlertState.DEAD`. UNCONSCIOUS guards: no perception, no vocal, body remains at final pose, outline tier MEDIUM persists.
 
 **Lethality classification (CR-16 extension)**: the `DamageType` enum is accompanied by a lethality-bit helper:
 ```gdscript
@@ -257,7 +283,7 @@ static func is_lethal_damage_type(damage_type: DamageType) -> bool:
         DamageType.TEST,  # conservative: test path mimics lethal for AC-5 compatibility
     ]
 ```
-`DART_TRANQUILISER` and `MELEE_FIST` are non-lethal. SAI's `receive_damage` reads `Combat.is_lethal_damage_type(damage_type)` to decide DEAD vs UNCONSCIOUS. This makes fists a viable deliberate non-lethal KO tool per CR-3 revised role while keeping MELEE_BLADE firmly lethal for stealth kills.
+`DART_TRANQUILISER`, `MELEE_FIST`, and `MELEE_PARFUM` (added 2026-04-24) are non-lethal. SAI's `receive_damage` reads `Combat.is_lethal_damage_type(damage_type)` to decide DEAD vs UNCONSCIOUS. This makes fists a viable deliberate non-lethal KO tool per CR-3 revised role while keeping MELEE_BLADE firmly lethal for stealth kills.
 
 **Signal semantics on UNCONSCIOUS entry**: `receive_damage(150, eve, DART_TRANQUILISER)` sets HP = 0 (or clamped floor), transitions state to UNCONSCIOUS, **returns `is_dead = false`**. Rationale: `is_dead` in the `apply_damage_to_actor` contract means "this damage call produced a death-equivalent state that should fire `enemy_killed`." UNCONSCIOUS is NOT death — Mission Scripting's "no-lethals" objective must distinguish it. Combat's C.5 therefore emits `enemy_damaged` but NOT `enemy_killed` on dart-KO entry. AC-CD-7.1 unchanged in its assertion.
 
@@ -322,6 +348,7 @@ enum DamageType {
     DART_TRANQUILISER,
     MELEE_FIST,
     MELEE_BLADE,         # NEW — takedown blade (stealth 1-shot)
+    MELEE_PARFUM,        # NEW 2026-04-24 — Inventory Parfum gadget, non-lethal, face-to-face sedative aerosol
     FALL_OUT_OF_BOUNDS,
     TEST,
 }
@@ -340,6 +367,7 @@ static func damage_type_to_death_cause(damage_type: DamageType) -> DeathCause:
         DamageType.DART_TRANQUILISER:  return DeathCause.TRANQUILISED
         DamageType.MELEE_FIST:         return DeathCause.MELEE
         DamageType.MELEE_BLADE:        return DeathCause.MELEE
+        DamageType.MELEE_PARFUM:       return DeathCause.TRANQUILISED  # NEW 2026-04-24 — mirrors dart narrative register
         DamageType.FALL_OUT_OF_BOUNDS: return DeathCause.ENVIRONMENTAL
         DamageType.TEST:               return DeathCause.UNKNOWN
         _:
@@ -353,6 +381,7 @@ static func damage_type_to_death_cause(damage_type: DamageType) -> DeathCause:
 - `BULLET` is not split per-weapon. The `source` Node (a weapon Resource reference) carries weapon identity. A split would pollute `damage_type_to_death_cause()` with identical outputs and create a trap for future weapons.
 - `DART_TRANQUILISER` maps to `TRANQUILISED` — preserves narrative distinction for future Failure & Respawn dialogue variants and guard UNCONSCIOUS state routing.
 - `MELEE_BLADE` (NEW) and `MELEE_FIST` both map to `DeathCause.MELEE`. They are separate `DamageType` values to let SAI's `receive_damage` branch on them (blade → DEAD at 1-shot 100 HP; fist → DEAD at cumulative threshold).
+- `MELEE_PARFUM` (NEW 2026-04-24 per Inventory Coord item #8) is **non-lethal** (routes to UNCONSCIOUS via CR-16 like dart/fist), maps to `DeathCause.TRANQUILISED`, and is emitted only by Inventory's Parfum gadget behavior scene via `SAI.receive_damage(guard, 0, eve, DamageType.MELEE_PARFUM)`. Same terminal outcome as dart-KO (guard → UNCONSCIOUS, `WAKE_UP_SEC = 45 s` timer starts); drop-table router distinguishes via the `cause` parameter on `guard_incapacitated` (Inventory CR-7 — Parfum-KO drops nothing, LOCKED anti-farm invariant per OQ-INV-1 Option B resolution 2026-04-24).
 - `FALL_OUT_OF_BOUNDS` covers kill-plane (PC E.kill_plane) and any future environmental-instant-death paths. Fall damage (OQ-2) is a separate future variant.
 - `TEST` preserves PC AC-5's test-stub contract — cannot be removed without a PC GDD revision.
 - `match` block is exhaustive-by-design: adding a `DamageType` value without updating the function surfaces at edit time, not runtime. **Do NOT refactor to a Dictionary** — silent key-miss would hide defects.

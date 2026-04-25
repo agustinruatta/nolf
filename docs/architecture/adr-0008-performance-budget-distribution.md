@@ -23,7 +23,7 @@ Proposed
 
 | Field | Value |
 |-------|-------|
-| **Depends On** | ADR-0001 (outline pipeline budget — 2.0 ms per-frame claim is a fixed input); ADR-0002 (signal dispatch cost — Signal Bus emits allocated to publisher slots, not its own line); ADR-0007 (autoload registration order — 6 autoloads' boot cascade is budgeted here as ≤50 ms cold-start). All three must remain Accepted or Proposed; a revision that changes their cost claims invalidates the allocation. |
+| **Depends On** | ADR-0001 (outline pipeline budget — 2.0 ms per-frame claim is a fixed input); ADR-0002 (signal dispatch cost — Signal Bus emits allocated to publisher slots, not its own line); ADR-0007 (autoload registration order — 7 autoloads' boot cascade per 2026-04-23 amendment is budgeted here as ≤50 ms cold-start). All three must remain Accepted or Proposed; a revision that changes their cost claims invalidates the allocation. |
 | **Enables** | SAI pre-implementation gate #5 (stealth-ai.md Recommended Follow-up line 540); all ticking-system stories (each story can now cite its ADR-0008 slot and be tested against the Restaurant reference scene); Pre-Production phase gate (consolidates the cross-cutting frame-time contract that was previously distributed across 5 GDDs). |
 | **Blocks** | No epic is hard-blocked, but stealth-ai.md and combat-damage.md both name this ADR as the authority that finalises the SAI/Combat GuardFireController reconciliation. Those systems can start implementation without it, but story-level perf gates cannot pass without the reference-scene measurements this ADR defines. |
 | **Ordering Note** | This ADR is a *consolidator*, not a *decider of new behaviour*. Every numeric input comes from a prior ADR or GDD; the novelty is (a) the sum fits 16.6 ms, (b) the residual slice is explicitly pooled for not-yet-designed systems, (c) verification is centralised on a single reference scene. |
@@ -116,7 +116,7 @@ Synchronous operations that do not run every frame but have latency contracts:
 | Load slot I/O (hidden inside LS section load) | ≤2 ms | ADR-0003 / TR-SAV-013 — amortised into the 200–500 ms SWAPPING phase |
 | Level Streaming section transition (p90 Iris Xe) | ≤570 ms | TR-LS-011: 33 ms snap-out + ≤500 ms SWAPPING + 33 ms snap-in |
 | Shader compile (first-run via Shader Baker) | 0–500 ms one-time | `design/gdd/outline-pipeline.md` §BAKING; scoped out of frame budget |
-| Autoload boot (`_ready()` cascade across 6 autoloads per ADR-0007) | ≤50 ms total cold-start | Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6). ADR-0007's own estimate (~6 × <1 ms ≈ <6 ms pure autoload instantiation) plus scene tree setup and compositor pipeline registration. **PostProcessStack is the dominant contributor** (5–15 ms Vulkan, +5–10 ms D3D12 additional for compositor pipeline + descriptor heap setup — specialist note 2026-04-23). If autoload boot is profiled as slow, check PostProcessStack first. |
+| Autoload boot (`_ready()` cascade across 7 autoloads per ADR-0007, 2026-04-23 amendment) | ≤50 ms total cold-start | Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6) → Combat (7). ADR-0007's own estimate (~7 × <1 ms ≈ <7 ms pure autoload instantiation) plus scene tree setup and compositor pipeline registration. **PostProcessStack is the dominant contributor** (5–15 ms Vulkan, +5–10 ms D3D12 additional for compositor pipeline + descriptor heap setup — specialist note 2026-04-23). If autoload boot is profiled as slow, check PostProcessStack first. Combat at line 7 is stateless enum + method definitions (negligible instantiation cost). |
 | **Post-stream warm-up window on Windows/D3D12** | **3 frames (~50 ms)** allowed over-budget immediately after a Level Streaming transition completes before frame-budget SLAs resume | Specialist 2026-04-23: D3D12 descriptor heap reallocation can stall 2–5 ms when new material batches land post-section-swap. 1.6 ms reserve is adequate on Vulkan but thin on D3D12 for these first frames. This is an allowance *on top of* the slot caps, scoped to exactly 3 frames, enforced by CI as a gate-off window — NOT an extended permanent slack. |
 
 **Memory ceiling (4 GB, technical-preferences.md)** is explicitly **out of scope** for this ADR. A future ADR will distribute the memory budget per system once Level Streaming implementation lands (per-section geometry + audio streams + guard NavMeshes + save snapshots dominate).
@@ -178,7 +178,7 @@ Non-frame latencies (sync, not on the 16.6 ms clock):
   Load I/O         ≤2 ms  (amortised into LS SWAPPING)
   LS transition    ≤570 ms p90 (snap-out 33 + SWAPPING ≤500 + snap-in 33)
   Shader bake      0–500 ms one-time (4.5+ Baker)
-  Autoload boot    ≤50 ms cold-start (6 autoloads, PostProcessStack dominant)
+  Autoload boot    ≤50 ms cold-start (7 autoloads per ADR-0007 2026-04-23 amendment, PostProcessStack dominant)
 ```
 
 ### Key Interfaces

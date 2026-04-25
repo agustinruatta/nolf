@@ -30,7 +30,7 @@
 #   Superseded entries:     Grep pattern="status: superseded"
 
 version: 1
-last_updated: "2026-04-23"  # ADR-0008 performance budget distribution: 9 slots + 2 forbidden patterns + 1 api_decision
+last_updated: "2026-04-23"  # ADR-0008 performance budget distribution: 9 slots + 2 forbidden patterns + 1 api_decision. ADR-0007 amendment (same day): autoload_registration_order api_decision row updated from 6 → 7 autoloads (Combat added at line 7 per Phase 5 §6.3 / Path A).
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -121,11 +121,12 @@ interfaces:
       - save-load-system
       - settings-and-accessibility-system
     adr: docs/architecture/adr-0002-signal-bus-event-taxonomy.md
-    signal_signature: "36 typed signals declared on Events.gd autoload (subject_verb_past naming, qualified enum types). 2026-04-22 OQ-CD-1 SAI amendment revised 5 signatures: 3 perception signals (alert_state_changed, actor_became_alerted, actor_lost_target) grew a StealthAI.Severity param; takedown_performed grew from (actor, target) to (actor, attacker, StealthAI.TakedownType); player_died payload type renamed CombatSystem.DeathCause → CombatSystemNode.DeathCause. 2026-04-22 4th-pass LS + SAI amendment added 2 new AI/Stealth signals (guard_incapacitated(guard: Node) fires on UNCONSCIOUS or DEAD entry for cross-guard body-tracking-set unregistration; guard_woke_up(guard: Node) fires once when WAKE_UP_SEC timer expires on an UNCONSCIOUS guard — both one-shot per guard per session) AND grew section_entered + section_exited with a LevelStreamingService.TransitionReason 2nd param (FORWARD / RESPAWN / NEW_GAME / LOAD_FROM_SAVE; LevelStreamingService is the sole emitter). Enum-ownership list gained LevelStreamingService.TransitionReason (class_name LevelStreamingService, autoload load-order 4). See ADR-0002 Key Interfaces for the full taxonomy."
+    signal_signature: "38 typed signals declared on Events.gd autoload (subject_verb_past naming, qualified enum types). 2026-04-22 OQ-CD-1 SAI amendment revised 5 signatures: 3 perception signals (alert_state_changed, actor_became_alerted, actor_lost_target) grew a StealthAI.Severity param; takedown_performed grew from (actor, target) to (actor, attacker, StealthAI.TakedownType); player_died payload type renamed CombatSystem.DeathCause → CombatSystemNode.DeathCause. 2026-04-22 4th-pass LS + SAI amendment added 2 new AI/Stealth signals (guard_incapacitated(guard: Node) fires on UNCONSCIOUS or DEAD entry for cross-guard body-tracking-set unregistration; guard_woke_up(guard: Node) fires once when WAKE_UP_SEC timer expires on an UNCONSCIOUS guard — both one-shot per guard per session) AND grew section_entered + section_exited with a LevelStreamingService.TransitionReason 2nd param (FORWARD / RESPAWN / NEW_GAME / LOAD_FROM_SAVE; LevelStreamingService is the sole emitter). Enum-ownership list gained LevelStreamingService.TransitionReason (class_name LevelStreamingService, autoload load-order 4). 2026-04-24 Inventory & Gadgets amendment added 2 new Inventory-domain signals (gadget_activation_rejected(gadget_id: StringName) — CR-4b gate-fail cue, HUD + haptic subscribe, Audio does NOT subscribe by design for stealth-silence; weapon_dry_fire_click(weapon_id: StringName) — empty-chamber/dry-click routing, distinct from weapon_fired, Audio subscribes for per-weapon SFX variants covering pistol/dart/rifle/blade), extended guard_incapacitated(guard: Node) to guard_incapacitated(guard: Node, cause: int) where cause is a CombatSystemNode.DamageType value (lets Inventory CR-7 drop-router distinguish dart/fist/Parfum KO drops), and added MELEE_PARFUM member to CombatSystemNode.DamageType enum (non-lethal via is_lethal_damage_type()). 36 → 38 signals total. See ADR-0002 Key Interfaces for the full taxonomy."
     referenced_by:
       - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+      - design/gdd/inventory-gadgets.md
     added: 2026-04-19
-    revised: 2026-04-22  # OQ-CD-1 SAI amendment bundle (5 signature revisions); 4th-pass LS + SAI amendment bundle (2 new AI/Stealth signals guard_incapacitated + guard_woke_up; LevelStreamingService.TransitionReason 2nd param on section_entered/exited; 34 → 36 signals total)
+    revised: 2026-04-24  # OQ-CD-1 SAI amendment bundle (5 signature revisions); 4th-pass LS + SAI amendment bundle (2 new AI/Stealth signals guard_incapacitated + guard_woke_up; LevelStreamingService.TransitionReason 2nd param on section_entered/exited; 34 → 36 signals total); 2026-04-24 Inventory & Gadgets amendment (2 new Inventory signals gadget_activation_rejected + weapon_dry_fire_click; guard_incapacitated signature extended with cause: int 2nd param; CombatSystemNode.DamageType gains MELEE_PARFUM member; 36 → 38 signals total)
 
   - contract: sai_public_accessors
     status: active
@@ -429,10 +430,10 @@ api_decisions:
 
   - purpose: autoload_registration_order
     status: active
-    api: "Single canonical [autoload] block line order declared in ADR-0007 §Key Interfaces: Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6). All entries use the `*res://` path-prefix-star scene-mode syntax (Node added to root at startup; _ready() fires; tree lifecycle active). project.godot [autoload] block is generated from ADR-0007 verbatim. Downstream ADRs and GDDs reference ADR-0007 for order; they MUST NOT restate specific line numbers. Cross-autoload reference safety rule: an autoload's _ready() may reference any earlier autoload by name (N-1..1 are all in the tree by the time N._ready() fires); it MUST NOT reference a later autoload; no autoload's _init() may reference any other autoload (not yet in tree at construction)."
+    api: "Single canonical [autoload] block line order declared in ADR-0007 §Key Interfaces (amended 2026-04-23): Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6) → Combat (7). All entries use the `*res://` path-prefix-star scene-mode syntax (Node added to root at startup; _ready() fires; tree lifecycle active). project.godot [autoload] block is generated from ADR-0007 verbatim. Downstream ADRs and GDDs reference ADR-0007 for order; they MUST NOT restate specific line numbers. Cross-autoload reference safety rule: an autoload's _ready() may reference any earlier autoload by name (N-1..1 are all in the tree by the time N._ready() fires); it MUST NOT reference a later autoload; no autoload's _init() may reference any other autoload (not yet in tree at construction)."
     not: "Scattered 'load order N' statements across ADRs/GDDs; non-deterministic registration via @tool scripts calling add_autoload_singleton() / ProjectSettings.set_setting(); runtime Engine.register_singleton() from game code; cross-autoload references in _init(); references to later-listed autoloads from earlier autoloads' _ready(); script-mode autoloads (no `*` prefix) for Node-subclass autoloads."
     adr: docs/architecture/adr-0007-autoload-load-order-registry.md
-    reason: "The engine only honours line order within the project.godot [autoload] block; 'load order N' labels anywhere else are team-documentation and drift-prone. A dedicated registry ADR prevents recurrence of the 2026-04-22 InputContext vs LevelStreamingService load-order-4 collision and pins PostProcessStack's previously unstated position. Cross-autoload reference safety was previously implicit developer knowledge; ADR-0007 makes it authoritative. godot-specialist validation 2026-04-22 §1 + 2026-04-23 Claims 1/2/3 GREEN/YELLOW/YELLOW (framing corrections for Claim 2 incorporated; all three hazards from Claim 3 fenced by forbidden patterns below)."
+    reason: "The engine only honours line order within the project.godot [autoload] block; 'load order N' labels anywhere else are team-documentation and drift-prone. A dedicated registry ADR prevents recurrence of the 2026-04-22 InputContext vs LevelStreamingService load-order-4 collision and pins PostProcessStack's previously unstated position. Cross-autoload reference safety was previously implicit developer knowledge; ADR-0007 makes it authoritative. godot-specialist validation 2026-04-22 §1 + 2026-04-23 Claims 1/2/3 GREEN/YELLOW/YELLOW (framing corrections for Claim 2 incorporated; all three hazards from Claim 3 fenced by forbidden patterns below). Amended 2026-04-23 to add Combat at line 7 (Path A per godot-specialist 2026-04-23) — closes Phase 5 §6.3 cross-session editorial conflict against ADR-0002 OQ-CD-1 bundle + combat-damage.md §350 (TR-CD-022)."
     referenced_by:
       - docs/architecture/adr-0007-autoload-load-order-registry.md
       - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
@@ -441,8 +442,9 @@ api_decisions:
       - design/gdd/signal-bus.md
       - design/gdd/level-streaming.md
       - design/gdd/post-process-stack.md
+      - design/gdd/combat-damage.md
     added: 2026-04-23
-    revised: ""
+    revised: 2026-04-23
 
   - purpose: performance_budget_enforcement
     status: active

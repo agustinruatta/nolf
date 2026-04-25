@@ -52,7 +52,7 @@ Players will never praise the Input system by name. They will praise the game fe
 
 ### Interactions with Other Systems
 
-#### Action catalog (26 gameplay/UI + 3 debug = 29 actions)
+#### Action catalog (27 gameplay/UI + 3 debug = 30 actions)
 
 **Group 1 — Movement** (`[AXIS]` read via `Input.get_vector()`)
 
@@ -87,7 +87,8 @@ Players will never praise the Input system by name. They will praise the game fe
 
 | Action | KB/M Default | Gamepad Default | Type | Consumer |
 |---|---|---|---|---|
-| `use_gadget` | `F` | `JOY_BUTTON_Y` | Press | Inventory & Gadgets — **context-resolves to takedown** when within melee range of an unaware guard; else activates equipped gadget. Priority rules live in Combat & Damage and Inventory GDDs. |
+| `takedown` | `F` | `JOY_BUTTON_Y` | Press | Combat & Damage — dedicated stealth-kill input per Combat CR-3. Live only when `SAI.takedown_prompt_active(attacker)` returns `true`. Distinct from `fire_primary` (eliminates modal ambiguity); distinct from `use_gadget` (mutex: see `use_gadget` row below). |
+| `use_gadget` | `F` | `JOY_BUTTON_Y` | Press | Inventory & Gadgets — activates equipped gadget. Shares binding with `takedown`; **dispatched by Combat's single `_unhandled_input` handler per Inventory CR-4** (Combat is the authoritative lethal-damage router, so Combat owns the input-capture site): if `SAI.takedown_prompt_active()` returns `true`, Combat invokes `_execute_takedown()`; else Combat calls `InventorySystem.try_use_gadget()` as a direct method call. Inventory exposes `try_use_gadget()` as a public method and **does NOT install its own `_unhandled_input` handler** for this action — eliminates same-frame double-fire across independent handlers (godot-specialist Q4, 2026-04-23). |
 | `gadget_next` | `Mouse Button 4` | `JOY_BUTTON_DPAD_UP` | Press | Inventory & Gadgets |
 | `gadget_prev` | `Mouse Button 5` | `JOY_BUTTON_DPAD_DOWN` | Press | Inventory & Gadgets |
 
@@ -124,7 +125,7 @@ Players will never praise the Input system by name. They will praise the game fe
 | System | Uses groups |
 |---|---|
 | Player Character | Movement, Interaction (context resolution owner) |
-| Combat & Damage | Combat, Gadgets (takedown resolution) |
+| Combat & Damage | Combat, Gadgets (`takedown` dedicated action per Combat CR-3) |
 | Inventory & Gadgets | Combat (weapon slots), Gadgets, Interaction (pickup) |
 | Stealth AI | Movement (reads crouch/sprint for noise calc) |
 | Document Collection | Interaction (document pickup) |
@@ -236,7 +237,7 @@ If a future playtest reveals that a sensitivity value belongs project-wide rathe
 
 1. **GIVEN** the project's `InputMap`, **WHEN** the default bindings are loaded at startup, **THEN** every action listed in Section C is registered with the exact default binding (KB/M + gamepad where specified).
 2. **GIVEN** any system source file, **WHEN** grepped for String-literal action references (e.g., `"move_forward"` with double quotes), **THEN** zero matches — all action references MUST use `InputActions.NAME` constants (StringName literals).
-3. **GIVEN** `res://src/core/input/input_actions.gd`, **WHEN** its constants are enumerated, **THEN** it declares exactly one `const` per action in the Section C catalog (26 gameplay/UI + 3 debug = 29 constants).
+3. **GIVEN** `res://src/core/input/input_actions.gd`, **WHEN** its constants are enumerated, **THEN** it declares exactly one `const` per action in the Section C catalog (27 gameplay/UI + 3 debug = 30 constants).
 
 ### Context gating
 

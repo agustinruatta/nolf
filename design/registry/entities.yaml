@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: 2026-04-22   # OQ-CD-1 SAI amendment closure (2026-04-22, this pass): phantom_guard gains UNCONSCIOUS 6th alert_state; new attributes takedown_types, terminal_state_routing, public_accessors (has_los_to_player + takedown_prompt_active), receive_damage_contract (signature + routing + synchronicity), takedown_range_m=1.5. Unblocks Combat AC-CD-7.1, 7.3, 6.1 and LOS-cadence / Takedown-input flows. Previous same-day: /consistency-check stale-registry sweep — S1 damage_formula gains spread_range [2.0, 20.0] sub-attribute (combat-damage.md §F.3 claim now matched); S2 phantom_guard gains head_bone_name="head" canonical asset contract (combat-damage.md §C.3 claim now matched); S3 kill_plane_y.referenced_by drops level-streaming.md (LS GDD CR-12 deleted its dependency). Previous: 2026-04-21 conflict-resolution pass (C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total value 8→16 now TOTAL mag+reserve; C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total value 4→8 now TOTAL).
+last_updated: 2026-04-25   # `/design-system hud-core` Phase 5b registry sweep (2026-04-25): 2 referenced_by updates + 6 NEW entries — (U1) `player_max_health.referenced_by` += hud-core.md (HUD F.2 critical-state ratio); (U2) `player_critical_health_threshold.referenced_by` += hud-core.md + audio.md (Audio §F.4 already references but was never registered as such), unit clarified to `hp_percent` with note documenting the canonical Audio/HUD divide-by-100 pattern; (N1) `hud_damage_flash_cooldown_ms = 333` ms safe [200, 500] — Combat-owned, HUD-enforced WCAG 2.3.1 photosensitivity gate; (N2) `crosshair_dot_size_pct_v = 0.19%` safe [0.15, 0.30] — Combat-owned, HUD F.4 dot radius computation; (N3) `crosshair_halo_style = tri_band` safe {none, parchment_only, tri_band} — Combat-owned, HUD V.6 _draw() composition; (N4) `crosshair_enabled = true` safe {true, false} — Combat-owned default, Settings-persisted opt-out; (N5) `gadget_rejected_desat_duration_s = 0.2` s safe [0.1, 0.5] — HUD-owned (NEW knob); (N6) `HUDCore` cross_system_class — CanvasLayer scene at index 1, NOT autoload, public extension API `get_prompt_label()` for HUD State Signaling (system #19 VS forward-ext). Previous: `/consistency-check` post-MLS sweep (2026-04-24, same day): 2 🔴 CONFLICT fixes applied — (F1) MLS `MissionState.fired_triggers` field renamed to `triggers_fired` to match save-load.md L99 canonical schema (Save/Load L107/L159/L299, level-streaming.md L122/L204/L308, failure-respawn.md L283 all already use `triggers_fired`; MLS was drift-risking schema divergence); (F2) MLS autoload slot #8 → #9 reassignment (F&R claimed slot #8 first via its own pre-impl coord item #1, and load-order dependency requires F&R before MLS since MLS subscribes to F&R's respawn_triggered). Previous: `/design-system mission-level-scripting` Phase 5b registry sweep (2026-04-24, same day): 14 NEW entries — 5 cross-system Resource types (MissionResource / MissionObjective / MissionState / MLSTrigger / MissionScriptingService autoload) + 9 constants (alert_comedy_budget=2 safe [1,5] / SUPERSEDE_CASCADE_MAX=3 safe [2,5] / off_path_min_distance_m=10.0 safe [5.0,20.0] / pistol_per_section_max=3 safe [2,4] / pistol_per_2_section_min=1 safe [1,2] / dart_min_sections_span=2 fixed / medkit_per_section_max=1 safe [1,2] / t_capture_i_budget_ms=1.0 safe [0.5,2.0] / t_assemble_total_ceiling_ms=5.0 safe [3.0,10.0]). No `referenced_by` updates on existing entries (WorldItem, Checkpoint, FailureRespawnState, fr_checkpoint_marker_node_name, phantom_guard all already listed `mission-level-scripting.md`). MLS formulas F.1/F.2/F.5/F.7 are MLS-internal predicates/invariants — not registered per registry README rule "Only register facts that cross system boundaries." F.3 + F.4 numeric tunables captured via their constants above. Previous: `/consistency-check` (2026-04-24, immediately after `/design-system failure-respawn`): 4 fixes — (C1) F&R F.2 timing budget corrected (was citing stale 0.5/0.5 s fade values; LS revised 2026-04-21 to 2-frame hard-cut ~33 ms each) + F&R AC-FR-8.1, AC-FR-10.1, AC-FR-10.2, CR-12 step 7 updated to cite LS's ≤0.57 s budget; (S1) STALE FIX `fade_out_duration` 0.3 → 0.033 s (2-frame snap per LS 2026-04-21 senior-director ruling; registry was not updated at time of LS revision); (S2) STALE FIX `fade_in_duration` 0.5 → 0.033 s (same); (S3) STALE FIX `total_transition_budget_s` 1.3 → 0.57 s (LS 2-frame hard-cut total); (U1) NEW entry `respawn_floor_rifle_total = -1 LOCKED sentinel` (previously referenced by Combat + F&R + Inventory but never registered); referenced_by updates on fade_out_duration + fade_in_duration + load_hold_budget_ms + total_transition_budget_s to include failure-respawn.md per F&R F.2 consumption. LS-Gate-4 (Save/Load GDD §Visual/Audio timing amendment) flagged for producer; not fixed in this sweep (owned by save-load author per level-streaming.md L296). Previous: `/design-system failure-respawn` Phase 5b registry sweep (2026-04-24, same day): (1) UPDATE `kill_plane_y.referenced_by` — add `design/gdd/failure-respawn.md` (F&R receives the kill-plane-routed `player_died(ENVIRONMENTAL)` per CR-3, E.22); (2) NEW entry `Checkpoint` cross-system resource type (owned by F&R; consumed by PC `reset_for_respawn(checkpoint: Checkpoint)` + Mission Scripting section-authoring); (3) NEW entry `FailureRespawnState` cross-system resource type (F&R-owned sub-resource on SaveGame per CR-6 — floor_applied_this_checkpoint bool; consumed by Inventory via F&R's restore callback); (4) NEW constant `fr_checkpoint_marker_node_name = "player_respawn_point"` (F&R CR-11 section-authoring contract — all section scenes must include a Marker3D child with this exact node name). Previous: `/design-review inventory-gadgets.md` in-session revision pass + `/architecture-decision adr-0002-amendment` (2026-04-24): (A) NEW entry `guard_drop_dart_on_parfum_ko = 0 LOCKED` (OQ-INV-1 Option B resolution — anti-farm invariant mirroring guard_drop_dart_on_fist_ko; Parfum-KO drops nothing to prevent unlimited-Parfum dart-farm vector post-acquisition). (B) Forward-referenced touch-up needed: combat-damage.md DamageType enum gains MELEE_PARFUM member; stealth-ai.md guard_incapacitated emit-site grows cause param (both producer-tracked downstream scope from ADR-0002 2026-04-24 amendment). Previous: 2026-04-23 `/design-system inventory-gadgets` Phase 5b registry sweep: (1) STALE FIX — guard_drop_pistol_rounds value 8→3 to match combat-damage.md §F.6 (NOLF1 rebalance 2026-04-22 never propagated to registry); (2) NEW — rifle_max_reserve=12 safe [9,18] (Inventory CR-8 pickup cap for rifle reserve); (3) NEW — medkit_heal_amount=40 HP safe [25,60] (Inventory F.4 medkit apply_heal amount); (4) NEW — 3 gadget entries gadget_compact + gadget_cigarette_case + gadget_parfum (the 3-gadget MVP roster from Inventory §C.2); (5) NEW — WorldItem cross-system entity (spawned by Inventory CR-7/CR-13, authored by Mission Scripting, interacted via PC priority-2 raycast); (6) referenced_by updated for guard_drop_pistol_rounds, guard_drop_dart_on_dart_ko, guard_drop_dart_on_fist_ko, respawn_floor_pistol_total, respawn_floor_dart_total (all now referenced by inventory-gadgets.md). Previous: 2026-04-22 OQ-CD-1 SAI amendment closure (phantom_guard gains UNCONSCIOUS 6th alert_state; new attributes takedown_types, terminal_state_routing, public_accessors (has_los_to_player + takedown_prompt_active), receive_damage_contract (signature + routing + synchronicity), takedown_range_m=1.5. Unblocks Combat AC-CD-7.1, 7.3, 6.1 and LOS-cadence / Takedown-input flows. Previous same-day: /consistency-check stale-registry sweep — S1 damage_formula gains spread_range [2.0, 20.0] sub-attribute (combat-damage.md §F.3 claim now matched); S2 phantom_guard gains head_bone_name="head" canonical asset contract (combat-damage.md §C.3 claim now matched); S3 kill_plane_y.referenced_by drops level-streaming.md (LS GDD CR-12 deleted its dependency). Previous: 2026-04-21 conflict-resolution pass (C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total value 8→16 now TOTAL mag+reserve; C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total value 4→8 now TOTAL).
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -269,21 +269,24 @@ constants:
     referenced_by:
       - design/gdd/player-character.md
       - design/gdd/combat-damage.md
+      - design/gdd/hud-core.md   # F.2 critical-state ratio computation; AC-HUD-2.x assertions
     value: 100
     unit: hp
     added: 2026-04-19
-    revised: 2026-04-21   # combat-damage.md added to referenced_by (computes Eve's TTK at this baseline)
+    revised: 2026-04-25   # hud-core.md added to referenced_by (F.2 critical-state ratio + AC-HUD-2.x)
   - name: player_critical_health_threshold
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
       - design/gdd/combat-damage.md
+      - design/gdd/audio.md         # Audio §Formula 4 — clock-tick start/stop trigger
+      - design/gdd/hud-core.md      # F.2 edge-triggered colour swap; CR-5/CR-6 critical-state transitions
     value: 25
-    unit: hp
-    notes: "Below this, HUD shifts numeric readout to Alarm Orange (Art Bible §4.4). Combat & Damage GDD references this as the threshold below which Audio's clock-tick loop begins (player_health_changed subscriber)."
+    unit: hp_percent   # canonical: percentage / hp value at max_health=100; HUD + Audio both divide by 100 at compute time per their respective Formula
+    notes: "Below this, HUD shifts numeric readout to Alarm Orange (Art Bible §4.4). Audio GDD §Formula 4 uses identical pattern (clock-tick loop). HUD Core §F.2 derives `threshold_ratio = value / 100.0 = 0.25` for ratio comparison `current / max_health < threshold_ratio`. Pattern alignment between Audio §F.4 and HUD §F.2 is the canonical contract."
     added: 2026-04-19
-    revised: 2026-04-21
+    revised: 2026-04-25
 
   # ── Noise radii (read by Stealth AI for AI perception — CRITICAL cross-system contract) ──
   - name: player_noise_walk
@@ -561,18 +564,19 @@ constants:
     added: 2026-04-21
     revised: ""
 
-  # ── Kill plane (PC-only — LS dep removed 2026-04-22 per LS CR-12) ──
+  # ── Kill plane (PC-owned; F&R receives the resulting player_died per CR-3) ──
   - name: kill_plane_y
     status: active
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R CR-3 + E.22: F&R receives kill-plane-routed player_died(ENVIRONMENTAL) identically to combat death
       # design/gdd/level-streaming.md REMOVED 2026-04-22 — per LS GDD CR-12 (§Detailed Design) LS no longer reads kill_plane_y. The prior CR-11 section_bounds validation was deleted as semantically vacuous; geometry-gap detection is level-designer authoring QA discipline, not an LS runtime assertion.
     value: -50.0
     unit: m
     notes: "World Y below which player_died fires. Bug-recovery safety net, not gameplay."
     added: 2026-04-19
-    revised: 2026-04-22   # level-streaming.md removed from referenced_by (LS CR-12 dropped the dependency)
+    revised: 2026-04-24   # F&R added to referenced_by 2026-04-24 per /design-system failure-respawn Phase 5b
 
   # ── Level Streaming (fade timing, transition budget, authoring validation) ──
   - name: fade_out_duration
@@ -580,43 +584,47 @@ constants:
     source: design/gdd/level-streaming.md
     referenced_by:
       - design/gdd/level-streaming.md
-      - design/gdd/save-load.md   # Save/Load §Visual/Audio cites the same value
-    value: 0.3
-    unit: s
-    notes: "Fade-out tween duration on section transition. Save/Load §Visual/Audio and LS §Tuning Knobs agree. Tier 1 playtest may justify cubic ease-in; linear at MVP."
+      - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R F.2 timing-budget sum consumes this value
+      # design/gdd/save-load.md — Save/Load still references 0.3/0.5 s wording (LS-Gate-4 cleanup pending per level-streaming.md L296)
+    value: 0.033
+    unit: s   # was: 0.3 before 2026-04-24 — LS senior-director ruling 2026-04-21 replaced the 0.3/0.5 dissolve with a 2-frame hard-cut snap (~33 ms @ 60 fps); registry was not updated at the time of that revision. Canonical authoritative form: FADE_OUT_FRAMES = 2 @ 60 fps. Caught by /consistency-check 2026-04-24 during F&R Phase 5b sweep.
+    notes: "2-frame hard-cut snap-to-black duration on section transition (≈33 ms @ 60 fps). Authoritative form is FADE_OUT_FRAMES = 2 in LS §Tuning. The prior 0.3 s dissolve spec was superseded 2026-04-21 per CD ruling ('The black hold IS the cut'). Save/Load §Visual/Audio still references the old 0.3/0.5 s values — LS-Gate-4 coord item (level-streaming.md L296) pending Save/Load author touch-up."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # value corrected 0.3 → 0.033 per LS 2-frame hard-cut spec (stale since 2026-04-21 LS revision)
   - name: fade_in_duration
     status: active
     source: design/gdd/level-streaming.md
     referenced_by:
       - design/gdd/level-streaming.md
-      - design/gdd/save-load.md
-    value: 0.5
-    unit: s
-    notes: "Fade-in tween duration on section transition. Asymmetric with fade_out_duration by design (slower arrival reads as confident cut)."
+      - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R F.2 timing-budget sum
+      # design/gdd/save-load.md — LS-Gate-4 cleanup pending
+    value: 0.033
+    unit: s   # was: 0.5 before 2026-04-24 — see fade_out_duration note; same stale-revision situation
+    notes: "2-frame hard-cut snap-reveal duration on section transition. Symmetric with fade_out_duration (both are 2-frame snaps, not the prior asymmetric 0.3/0.5 s dissolve). Authoritative form: FADE_IN_FRAMES = 2 in LS §Tuning."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # value corrected 0.5 → 0.033 per LS 2-frame hard-cut spec
   - name: load_hold_budget_ms
     status: active
     source: design/gdd/level-streaming.md
     referenced_by:
       - design/gdd/level-streaming.md
+      - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R F.2 t_swap consumes this
     value: 500
     unit: ms
     notes: "Soft budget for the SWAPPING state (steps 5–8). If exceeded on min-spec hardware, triggers async ResourceLoader migration per OQ-LS-1."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # referenced_by updated — F&R F.2 added
   - name: total_transition_budget_s
     status: active
     source: design/gdd/level-streaming.md
     referenced_by:
       - design/gdd/level-streaming.md
-    value: 1.3
-    unit: s
-    notes: "Derived: fade_out_duration + load_hold_budget_ms/1000 + fade_in_duration. Ceiling for 'transition_to_section call to player control' per AC-LS-6.1."
+      - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R F.2 "worst single-transition" uses this as its LS-portion budget
+    value: 0.57
+    unit: s   # was: 1.3 before 2026-04-24 — LS 2026-04-21 revision (t_fade_out + t_swap + t_fade_in = 0.033 + 0.5 + 0.033 = 0.566 s ≈ 0.57 s); registry was not updated
+    notes: "Derived: fade_out_duration + load_hold_budget_ms/1000 + fade_in_duration = 0.033 + 0.5 + 0.033 = 0.566 ≈ 0.57 s. Ceiling for 'transition_to_section call to player control' per LS AC-LS-6.1. F&R F.2 consumes this as the LS portion of the total respawn duration budget."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # value corrected 1.3 → 0.57 per LS 2-frame hard-cut spec
   - name: fade_canvas_layer
     status: active
     source: design/gdd/level-streaming.md
@@ -851,11 +859,12 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md
       - design/gdd/stealth-ai.md          # Guards spawn drops on death
-    value: 8
+      - design/gdd/inventory-gadgets.md   # CR-7a drop table + F.6 economy audit
+    value: 3
     unit: rounds
-    notes: "F.6 guard drop amount when killed lethally while carrying silenced pistol. Safe range [4, 12]."
+    notes: "F.6 guard drop amount when killed lethally while carrying silenced pistol. NOLF1-authentic value (revised 2026-04-22 in combat-damage.md from initial 8 to 3; registry lagged — fixed 2026-04-24). Invariant: MUST be < pistol_body_shots_per_kill (3 at default) to keep Aggressive play net-negative under miss+reload overhead (Pillar 2 depletion lever). Safe range [2, 5]; ≥5 makes Aggressive ammo-positive and collapses Pillar 2."
     added: 2026-04-21
-    revised: ""
+    revised: "2026-04-24 — value 8→3 (Inventory §F.6 + /design-system inventory-gadgets Phase 5b stale-registry sweep). Combat-damage.md L742 + L973 had the correct value since 2026-04-22 NOLF1 rebalance; registry entry was never re-synced."
   - name: guard_drop_rifle_rounds
     status: active
     source: design/gdd/combat-damage.md
@@ -884,22 +893,36 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md
       - design/gdd/stealth-ai.md          # Guards spawn drops on non-lethal KO
+      - design/gdd/inventory-gadgets.md   # CR-7a drop table on Events.guard_incapacitated
     value: 1
     unit: darts
-    notes: "**ANTI-FARM INVARIANT: MUST == 1 exactly** (locked range {1}). F.6 dart drop when guard is KO'd via dart. Break-even: KO'ing a guard via dart costs 1 dart and yields 1 dart → net 0. Growing dart reserves requires placed caches (Pillar 2 enforcement). Values > 1 open the dart-farm exploit."
+    notes: "**ANTI-FARM INVARIANT: MUST == 1 exactly** (locked range {1}). F.6 dart drop when guard is KO'd via dart. Break-even: KO'ing a guard via dart costs 1 dart and yields 1 dart → net 0. Growing dart reserves requires placed caches (Pillar 2 enforcement). Values > 1 open the dart-farm exploit. Parfum-KO routes via same SAI DART_TRANQUILISER path — currently drops 1 dart by default (OQ-INV-1 pending user decision on whether Parfum-KO should suppress drop)."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # inventory-gadgets.md added to referenced_by; notes updated with Parfum routing OQ-INV-1
   - name: guard_drop_dart_on_fist_ko
     status: active
     source: design/gdd/combat-damage.md
     referenced_by:
       - design/gdd/combat-damage.md
       - design/gdd/stealth-ai.md
+      - design/gdd/inventory-gadgets.md   # CR-7a drop table — fist-KO row = NO spawn
     value: 0
     unit: darts
     notes: "**ANTI-FARM INVARIANT: MUST == 0 exactly** (locked range {0}). F.6 dart drop when guard is KO'd via fists. Closes the fist-farm loop: fists cost 0 ammo, so any dart drop from fist-KO would be net-positive dart gain. Fixed at 0 per Pillar 2 ammo scarcity (economy-designer + systems-designer finding)."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # inventory-gadgets.md added to referenced_by
+  - name: guard_drop_dart_on_parfum_ko
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md     # CR-7a drop table — MELEE_PARFUM row = NO spawn; §C.2 Parfum SAI interaction; OQ-INV-1 Option B resolution
+      - design/gdd/combat-damage.md         # pending touch-up — Combat DamageType enum gains MELEE_PARFUM (ADR-0002 2026-04-24 amendment downstream scope)
+      - design/gdd/stealth-ai.md            # pending touch-up — guard_incapacitated emit-site grows cause param (ADR-0002 2026-04-24 amendment downstream scope)
+    value: 0
+    unit: darts
+    notes: "**ANTI-FARM INVARIANT: MUST == 0 exactly** (locked range {0}). Added 2026-04-24 per OQ-INV-1 Option B (Parfum-KO drop policy). Dart drop when guard is KO'd via Parfum Bottle's sedative aerosol cone (routed through SAI's receive_damage(guard, 0, attacker, DamageType.MELEE_PARFUM) path → UNCONSCIOUS). Closes the Parfum-farm loop: Parfum is unlimited per CR-5b + front-facing 1.5 m gate is trivially achievable on UNAWARE guards; any dart drop from Parfum-KO would net 15+ free darts over S3–S5 guard counts (post-acquisition) and structurally break the dart economy break-even invariant. Fixed at 0 per Pillar 2 ammo scarcity + Pillar 3 non-lethal viability (game-designer + economy-designer finding, `/design-review inventory-gadgets.md` 2026-04-24). Mirrors guard_drop_dart_on_fist_ko = 0 policy."
+    added: 2026-04-24
+    revised: 2026-04-24
   - name: respawn_ammo_floor_pistol
     status: deprecated
     source: design/gdd/combat-damage.md
@@ -928,21 +951,604 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md
       - design/gdd/failure-respawn.md      # Failure & Respawn applies the floor at restore
+      - design/gdd/inventory-gadgets.md    # CR-11 F.2 restore_weapon_ammo implementation
     value: 16
     unit: rounds
     notes: "F.6 minimum pistol TOTAL ammo (magazine + reserve) on respawn: `restored = max(snapshot_total, floor)` then clamped to [0, pistol_max_reserve]. 1 full magazine (8) + 1 reserve refill (8) = 16 total. Applied ONLY on first death per checkpoint (floor_applied_this_checkpoint flag prevents spend-and-die farm). Prevents softlock without enabling farm. Safe range [8, 32]. Replaces respawn_ammo_floor_pistol (magazine-only ambiguity resolved)."
     added: 2026-04-21
-    revised: ""
+    revised: 2026-04-24   # inventory-gadgets.md added to referenced_by
   - name: respawn_floor_dart_total
     status: active
     source: design/gdd/combat-damage.md
     referenced_by:
       - design/gdd/combat-damage.md
       - design/gdd/failure-respawn.md
+      - design/gdd/inventory-gadgets.md    # CR-11 F.2 restore_weapon_ammo implementation
     value: 8
     unit: darts
     notes: "F.6 minimum dart TOTAL ammo (magazine + reserve) on respawn. 1 full magazine (4) + 1 reserve refill (4) = 8 total. Same anti-farm per-checkpoint gating as pistol floor. Safe range [4, 16]. Replaces respawn_ammo_floor_dart."
     added: 2026-04-21
+    revised: 2026-04-24   # inventory-gadgets.md added to referenced_by
+  - name: respawn_floor_rifle_total
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md         # §F.6 line 699 — sentinel declaration
+      - design/gdd/failure-respawn.md       # CR-5 + E.17 + F.2 tuning-knobs reference + AC-FR-4.3
+      - design/gdd/inventory-gadgets.md     # Inventory.apply_respawn_floor_if_needed handles the sentinel via snapshot-preservation branch
+    value: -1
+    unit: sentinel
+    notes: "SENTINEL value: when respawn_floor_rifle_total == -1, Inventory.apply_respawn_floor_if_needed preserves rifle snapshot total unchanged (no floor applied). Intentional design: rifle is a bonus weapon, not a safety-net weapon; adding a rifle floor would violate Pillar 2 scarcity. Safe range [-1] LOCKED — changing to a positive value would require re-designing the rifle's scarcity role. Caught by /consistency-check 2026-04-24 as previously-unregistered cross-GDD constant (Combat + F&R + Inventory all reference it)."
+    added: 2026-04-24
+    revised: ""
+
+  # ─── Inventory & Gadgets (owned by design/gdd/inventory-gadgets.md) ─────────
+  - name: rifle_max_reserve
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/combat-damage.md          # Pickup cap clamp referenced in Combat §F.6
+      - design/gdd/failure-respawn.md        # F&R restore clamps against this cap
+    value: 12
+    unit: rounds
+    notes: "Inventory CR-8 pickup cap for rifle reserve. 4× magazine ratio (consistent with pistol/dart). Rifle is pickup-only, so cap doubles as Pillar-2 anti-hoard lever — player who collects S3+S4 pickups (6+6=12) hits cap before S5, forcing disciplined use. Safe range [9, 18]: <9 means S4 pickup wasted if S3 still held; >18 makes rifle hoardable daily-driver."
+    added: 2026-04-24
+    revised: ""
+
+  - name: medkit_heal_amount
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/player-character.md       # PC apply_heal caller sources this value
+    value: 40
+    unit: hp
+    notes: "Inventory F.4 medkit heal value passed to player.apply_heal. At default 40 and guard_pistol_damage_vs_eve=18, absorbs ~2.2 guard-shots — meaningful recovery but not full reset from critical (25 HP → 65 HP, above critical but not full). Preserves Pillar-3 tension: permission to continue, not erasure of cost. Safe range [25, 60]: <25 = below meaningful (less than 1.5 pistol-hit absorption); >60 = fully resets from critical, erodes tension."
+    added: 2026-04-24
+    revised: ""
+
+  - name: gadget_compact
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/mission-level-scripting.md   # Authors peek_surface collision-shape tags
+      - design/gdd/hud-core.md                   # HUD gadget indicator reads icon + requisition
+    type: gadget
+    slot_assignment: pre_packed_1
+    gadget_cycle_index: 0
+    pillar_served: 2   # Discovery Rewards Patience
+    contextual_gate: "peek_surface tag within 1.5m of forward raycast"
+    no_cooldown: true
+    no_charges: true
+    sai_interaction: none   # Compact emits no noise, triggers no alert-state transitions
+    activation_duration_sec: 10.0   # Compact viewfinder max; cancels on movement or re-press
+    requisition_number: "KL/031/C"
+    notes: "MVP Gadget 1 (default equipped, pre-packed). Fiber-optic viewfinder — peek through authored peek_surface tags (doors/vents/gapped walls) up to 10 s. Silent. No AI state change. Cover identity: woman's powder compact with BQA-blue enamel inset. Design test: bureaucrat giggle (lipstick-residue requisition charge) + tactician nod (room scouting before entry reduces risk). Forbidden modes: no x-ray through non-tagged walls; no guard-highlighting UI overlay (Pillar 5)."
+    added: 2026-04-24
+    revised: ""
+
+  - name: gadget_cigarette_case
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/mission-level-scripting.md   # Authors placeable_surface collision-shape tags
+      - design/gdd/stealth-ai.md                 # SAI HearingPoller reads noise at P_case
+      - design/gdd/audio.md                      # Audio plays positional clockwork tick loop at P_case
+      - design/gdd/hud-core.md                   # HUD gadget indicator reads icon + requisition + noise glyph
+    type: gadget
+    slot_assignment: pre_packed_2
+    gadget_cycle_index: 1
+    pillar_served: 3   # Stealth is Theatre, Not Punishment
+    contextual_gate: "placeable_surface tag + up-vector>=0.7 within 1.5m AND no case currently placed"
+    no_cooldown: true
+    no_charges: true
+    sai_interaction: "NoiseEvent {type=CURIOSITY_BAIT, radius=8.0m, origin=P_case} emitted per physics tick for 4.0s active_duration"
+    noise_radius_m: 8.0     # matches SAI Sprint-tier audibility
+    active_duration_sec: 4.0
+    placement_range_m: 1.5
+    retrieval_range_m: 0.5
+    max_active: 1           # only one case placed at a time
+    requisition_number: "KL/088/A"
+    notes: "MVP Gadget 2 (pre-packed). Acoustic diversion — place on authored placeable_surface, emits 4 s clockwork ticking at case position (NOT Eve's position). SAI-integrated per F.5: guards within 8m transition to SUSPICIOUS with investigation_target=P_case. CURIOSITY_BAIT suppression in SAI prevents multi-guard propagation. Cover identity: silver cigarette case monogrammed E.S., 6 Sobranie cigarettes inside (dressing only). Forbidden modes: no thrown/ranged placement; no detonation; max 1 active."
+    added: 2026-04-24
+    revised: ""
+
+  - name: gadget_parfum
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md
+      - design/gdd/mission-level-scripting.md    # Authors WorldItem placement in Eiffel restaurant section
+      - design/gdd/stealth-ai.md                  # Parfum routes via SAI receive_damage DART_TRANQUILISER
+      - design/gdd/hud-core.md                    # HUD gadget indicator; special PHANTOM Red tint
+    type: gadget
+    slot_assignment: mission_pickup
+    gadget_cycle_index: 2    # appended to cycle on CR-13 acquisition
+    pillar_served: [3, 4]   # Stealth as Theatre + Iconic Locations (Eiffel restaurant narrative tie-in)
+    contextual_gate: "forward raycast hits guard within 1.5m AND alert_state NOT IN {COMBAT, UNCONSCIOUS, DEAD}"
+    no_cooldown: true
+    no_charges: true
+    sai_interaction: "calls SAI.receive_damage(guard, 0, eve, DamageType.DART_TRANQUILISER) → UNCONSCIOUS"
+    cone_range_m: 1.5
+    cone_angle_deg: 60
+    intake_window_sec: 0.5
+    acquisition_location: "Eiffel Tower restaurant section, private dining room (authored by Mission Scripting)"
+    requisition_number: "FS/PHANTOM/007"
+    hud_icon_tint: phantom_red   # "captured enemy equipment" per art bible §4.2
+    notes: "MVP Gadget 3 (mission-pickup). Front-facing sedative aerosol cone fills mechanical gap no other tool covers: silent, non-lethal, face-to-face (no rear-arc required like blade, no projectile like dart, no multi-swing noise like fists). Routes through SAI DART_TRANQUILISER path for UNCONSCIOUS transition with 45s wake. Cover identity: cobalt glass perfume bottle with gold atomizer, 'Nuit de PHANTOM' branding (the joke — BQA intercepted PHANTOM's own supply, signaled in-world via dead-drop note from Operative Whitmore). Found in the Eiffel restaurant section per Pillar-4 narrative binding. Parfum-KO drop policy: see OQ-INV-1 (currently drops 1 dart via guard_drop_dart_on_dart_ko; pending user decision on suppression to prevent minor farm). Forbidden modes: no spray against COMBAT/UNCONSCIOUS; no AoE multi-target; no lethal mode."
+    added: 2026-04-24
+    revised: ""
+
+  - name: WorldItem
+    status: active
+    source: design/gdd/inventory-gadgets.md
+    referenced_by:
+      - design/gdd/inventory-gadgets.md           # CR-7 spawner + CR-13 mission-gadget variant + CR-6 pocket
+      - design/gdd/combat-damage.md               # Combat spawns ammo drops via enemy_killed subscription
+      - design/gdd/mission-level-scripting.md     # MLS authors cache placements + mission-gadget satchel
+      - design/gdd/player-character.md            # PC interact raycast resolves WorldItem at priority-2
+      - design/gdd/audio.md                       # Audio plays pickup SFX on player_interacted WorldItem target
+    type: cross_system_entity
+    godot_base: StaticBody3D        # NOT RigidBody3D — Jolt cost + ADR-0008 Slot #8 budget
+    collision_layer: MASK_INTERACTABLES
+    interact_priority: 2            # per PlayerCharacter InteractPriority.Kind.PICKUP
+    outline_tier: 1                 # ADR-0001 Tier 1 heaviest (4 px at 1080p)
+    fields:
+      - "item_id: StringName        # &\"pistol_ammo\" / &\"dart_ammo\" / &\"rifle_ammo\" / &\"medkit\" / &\"gadget_mission_pickup\""
+      - "quantity: int              # rounds for ammo; 1 for medkit/gadget (unused beyond count semantics)"
+      - "gadget_resource: GadgetResource    # populated only for gadget_mission_pickup variant"
+    spawn_sources:
+      - "Inventory CR-7 on Events.enemy_killed (lethal drops: pistol_ammo, rifle_ammo per guard.carried_weapon_id)"
+      - "Inventory CR-7 on Events.guard_incapacitated (non-lethal drops: dart_ammo for DART_TRANQUILISER path; NO drop for MELEE_FIST per anti-farm invariant)"
+      - "Mission Scripting authored (pickup caches, medkit caches, mission-gadget satchel placed in restaurant section)"
+    despawn_sources:
+      - "Inventory pocket_item calls queue_free() after state update (CR-6)"
+      - "Section-exit via Level Streaming unload (non-pocketed WorldItems despawn with section)"
+    notes: "Cross-system pickup entity. Implementation is StaticBody3D per godot-gameplay-programmer feasibility 2026-04-23 (Q6): RigidBody3D incurs Jolt island-graph cost + first-contact spikes that may exceed ADR-0008 Slot #8 budget (0.8 ms pooled residual) under mass-drop scenarios. If environmental tumbling is desired post-VS, use one-frame RB→SB conversion via set_deferred('freeze', true) once the body comes to rest. Multi-drop positional offset via F.3 (cos/sin 2.3 rad increment, 0.4 m radius) prevents z-fighting on same-frame spawns."
+    added: 2026-04-24
+    revised: ""
+
+  - name: Checkpoint
+    status: active
+    source: design/gdd/failure-respawn.md
+    referenced_by:
+      - design/gdd/failure-respawn.md               # CR-11 — assembled at section_entered; consumed at step 12
+      - design/gdd/player-character.md              # PC.reset_for_respawn(checkpoint: Checkpoint) signature — PC L166
+      - design/gdd/mission-level-scripting.md       # Mission Scripting authors player_respawn_point Marker3D per section scene (provisional forward-dep)
+    type: cross_system_resource
+    godot_base: Resource                            # per godot-specialist Q5: Resource enables @export + .tres serialization
+    fields:
+      - "section_id: StringName                     # &\"plaza\" / &\"restaurant\" / etc"
+      - "respawn_position: Vector3                  # world-space spawn point (from player_respawn_point Marker3D)"
+      - "respawn_rotation: Vector3                  # Euler angles; matches PC reset_for_respawn contract"
+      - "checkpoint_id: StringName = &\"\"           # RESERVED for mid-section checkpoints (Mission Scripting extension, unused at MVP)"
+    file_path: "src/gameplay/failure_respawn/checkpoint.gd"
+    notes: "F&R-owned resource passed to PC.reset_for_respawn at respawn step 12. Assembled at section_entered(FORWARD|NEW_GAME|LOAD_FROM_SAVE) per F&R CR-11 by reading the section scene's Marker3D node named per fr_checkpoint_marker_node_name. Mid-section checkpoints are a Mission Scripting extension point post-MVP; checkpoint_id reserved for that future path. PC GDD must specify reset_for_respawn(null) fallback behavior per OQ-FR-5 (BLOCKING pre-sprint)."
+    added: 2026-04-24
+    revised: ""
+
+  - name: FailureRespawnState
+    status: active
+    source: design/gdd/failure-respawn.md
+    referenced_by:
+      - design/gdd/failure-respawn.md               # CR-6 — owner; flag read at step-9 restore callback
+      - design/gdd/save-load.md                     # Coord item: SaveGame schema must add this sub-resource + ADR-0003 schema touch-up (non-version-bump if pre-MVP-lock)
+      - design/gdd/inventory-gadgets.md             # Indirect: F&R reads flag, passes should_apply_floor bool to Inventory.apply_respawn_floor_if_needed (CR-5)
+    type: cross_system_resource
+    godot_base: Resource
+    fields:
+      - "floor_applied_this_checkpoint: bool = false   # anti-farm flag — true after first floor application since last non-RESPAWN section_entered (F&R F.1 transition table)"
+    file_path: "src/gameplay/failure_respawn/failure_respawn_state.gd"
+    notes: "F&R-owned SaveGame sub-resource serialized per CR-6 (OQ-FR-A resolution). Preserves anti-farm invariant across quit/reload — a session that quits after first death and reloads does NOT grant a free second floor refill on next death. Flag transitions per F.1: resets to false only on FORWARD/NEW_GAME/LOAD_FROM_SAVE section_entered; preserved on RESPAWN; advances to true on first death of a checkpoint. Coordination item for Save/Load: SaveGame schema must gain this field — Save/Load GDD §Interactions table + ADR-0003 schema touch-up."
+    added: 2026-04-24
+    revised: ""
+
+  - name: fr_checkpoint_marker_node_name
+    status: active
+    source: design/gdd/failure-respawn.md
+    referenced_by:
+      - design/gdd/failure-respawn.md               # CR-11 — F&R searches section scenes for this node name
+      - design/gdd/level-streaming.md               # LS CR-9 section-authoring contract references this as required section-scene child
+      - design/gdd/mission-level-scripting.md       # Mission Scripting section scenes must include a Marker3D child with this exact name (provisional forward-dep)
+    value: "player_respawn_point"
+    unit: node_name
+    notes: "String constant — Marker3D node name F&R expects on every section root scene (per CR-11 + LS CR-9 section authoring contract). Locked as section-authoring canonical name; renaming requires updating every section .tscn + all three owners' GDDs. section-validation CI step should grep for this node's presence on every section scene to catch authoring errors before runtime (F&R E.10 push_error is runtime fallback, not first-line defense)."
+    added: 2026-04-24
+    revised: ""
+
+  # ── Mission & Level Scripting (system #13) — cross-system Resource types + autoload + scripting constants ──
+  - name: MissionResource
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # CR-1 single active mission; CR-18 .tres authoring
+      - design/gdd/cutscenes-mission-cards.md       # VS-tier forward consumer via mission_id payload on Mission-domain signals
+    fields:
+      - "mission_id: StringName = &\"\"               # unique per mission (e.g., &\"eiffel_tower_bomb_disarm\")"
+      - "objectives: Array[MissionObjective]        # declared objective set (1..20 elements at MVP)"
+      - "show_briefing_card: bool = false           # VS-tier — triggers mission_started card render"
+    file_path: "src/gameplay/mission/mission_resource.gd"
+    notes: "MLS-owned Resource declaring the mission. Loaded at section_entered(NEW_GAME | LOAD_FROM_SAVE) per CR-1. Per ADR-0007 slot #9 (pending amendment — F&R claimed slot #8 first), MissionScripting autoload holds one _active_mission at a time. MVP: 1 mission (eiffel_tower_bomb_disarm); Tier 2: 1 additional (rome_vatican). Authored as .tres files in assets/data/missions/<mission_id>/mission.tres."
+    added: 2026-04-24
+    revised: ""
+
+  - name: MissionObjective
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # CR-3, CR-4, CR-18, F.2, F.5
+      - design/gdd/hud-core.md                      # VS-tier consumer via objective_id payload + get_objective_display_name_key
+      - design/gdd/localization-scaffold.md         # display_name_key StringName resolves via Localization
+    fields:
+      - "objective_id: StringName = &\"\"             # unique within mission (e.g., &\"plant_transmitter\")"
+      - "display_name_key: StringName = &\"\"         # Localization key for HUD/card display"
+      - "prereq_objective_ids: Array[StringName]    # must all be COMPLETED before this activates (F.2)"
+      - "completion_signal: StringName = &\"\"        # Events.* name MLS subscribes to for completion"
+      - "completion_filter: Callable                # optional predicate on signal payload"
+      - "supersedes: Array[StringName]              # alt-route chain per CR-3 / F.5 (max depth 3)"
+      - "required_for_completion: bool = true       # contributes to mission-complete gate F.1"
+      - "show_card_on_activate: bool = false        # VS-tier per-objective card render opt-in"
+    file_path: "src/gameplay/mission/mission_objective.gd"
+    notes: "MLS-owned Resource — one per objective. Stored as .tres files in assets/data/missions/<mission_id>/objectives/. Self-supersede (supersedes contains own id) is detected at load time with push_error + entry removed (E.26). Reachability not statically validated at MVP (OQ-MLS-7 deferred)."
+    added: 2026-04-24
+    revised: ""
+
+  - name: MissionState
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # CR-15, CR-16; owned sub-resource
+      - design/gdd/save-load.md                     # SaveGame.mission_state field — schema touch-up pending (coord #2)
+      - design/gdd/failure-respawn.md               # F&R dying-state save must include triggers_fired (OQ-MLS-2 BLOCKING)
+    fields:
+      - "mission_id: StringName = &\"\"                       # matches MissionResource.mission_id"
+      - "objective_states: Dictionary                       # Dictionary[StringName, int (enum: PENDING|ACTIVE|COMPLETED)]"
+      - "fired_beats: Array[StringName] = []                # CR-7 savepoint-persistent beat latch"
+      - "triggers_fired: Array[StringName] = []             # CR-6 / F.7 single-fire MLSTrigger latch"
+    file_path: "src/gameplay/mission/mission_state.gd"
+    notes: "MLS-owned SaveGame sub-resource serialized per ADR-0003 + CR-15. Preserves mission/objective/beat/trigger progression across section loads + saves + respawns. F&R must capture current triggers_fired on player_died (OQ-MLS-2 BLOCKING coord — without this, one-shot beats re-fire on RESPAWN, breaking F.7). Coord item for Save/Load: SaveGame schema must gain MissionState field — Save/Load GDD §Interactions table + ADR-0003 schema touch-up (coord item #2). OQ-MLS-12: triggers_fired type may promote to Dictionary[StringName, Variant] post-MVP for per-trigger metadata."
+    added: 2026-04-24
+    revised: ""
+
+  - name: MLSTrigger
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # CR-6, F.7
+    fields:
+      - "trigger_id: StringName = &\"\"               # unique per section scene"
+      - "one_shot: bool = true                      # CR-6 single-fire latch via set_deferred(\"monitoring\", false)"
+      - "collision_layer: int                       # per ADR-0006 Triggers layer"
+    file_path: "src/gameplay/mission/mls_trigger.gd"
+    notes: "MLS-owned Node class extending Area3D. Scene-authored in section .tscn files by Level Designers. Must subscribe ONLY to body_entered (never body_exited per CR-6 — Jolt 4.6 non-determinism on mid-overlap despawn per F&R E-5 / OQ-FR-9). Must call is_instance_valid(body) before is_in_group(\"player\") per ADR-0002 IG4. OQ-MLS-6 BLOCKING: base class must self-enforce passivity in _ready() (monitoring=false, wait for section_entered before enabling) — not enforced by current CI."
+    added: 2026-04-24
+    revised: ""
+
+  - name: MissionScriptingService
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # CR-17 autoload
+      - docs/architecture/adr-0007-autoload-load-order-registry.md  # slot #9 — amendment pending (bundle with F&R's slot-#8 claim)
+    fields:
+      - "autoload_key: String = \"MissionScripting\"                     # Godot autoload registration name"
+      - "load_order_slot: int = 9                                      # ADR-0007 slot #9 after F&R at slot #8 (amendment pending)"
+      - "public_api: Array[String]                                     # get_active_objectives(), get_objective_display_name_key(id), is_mission_running(), get_mission_id()"
+    file_path: "src/gameplay/mission/mission_scripting_service.gd"
+    notes: "MLS autoload singleton. Registers at ADR-0007 slot #9 after F&R at slot #8 (amendment pending — pre-implementation BLOCKING gate per CR-17). Load-order dependency: MLS subscribes to F&R's respawn_triggered, so F&R must load first. MUST NOT reference other autoloads in _init() per ADR-0007 rule 4 — all cross-autoload setup (Events subscriptions, LSS.register_restore_callback) in _ready(). Owns mission state machine (IDLE→RUNNING→COMPLETED, no FAILED at MVP). Sole SaveGame assembler on section_entered(FORWARD) path per CR-15."
+    added: 2026-04-24
+    revised: ""
+
+  - name: alert_comedy_budget
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.3 T6 Alert-State Comedy rate limit
+    value: 2
+    safe_range: [1, 5]
+    unit: fires_per_severity_per_section
+    notes: "F.3 Alert-Comedy (T6) budget per alert-severity per section-life. Default 2; safe [1,5]; hard-reject >10. SUSPICIOUS and SEARCHING each have independent counters. T6 suppressed entirely at COMBAT (narrative F-5). Counter resets on section_entered(FORWARD | NEW_GAME); does NOT reset on RESPAWN (restored from slot-0 MissionState.fired_beats per CR-7). Tuning knob per §G.1."
+    added: 2026-04-24
+    revised: ""
+
+  - name: SUPERSEDE_CASCADE_MAX
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.5 supersede cascade depth cap
+    value: 3
+    safe_range: [2, 5]
+    unit: chain_depth_levels
+    notes: "F.5 hard cap on supersede cascade chain depth. Default 3; beyond 3, push_error + abort (partial supersede — depths 1-3 stand, no rollback per user decision 2026-04-24). Prevents cascade storms; keeps alt-route trees shallow for designer comprehension. Tuning knob per §G.4."
+    added: 2026-04-24
+    revised: ""
+
+  - name: off_path_min_distance_m
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.6 + §C.5.4 pistol cache distribution
+    value: 10.0
+    safe_range: [5.0, 20.0]
+    unit: meters
+    notes: "F.6 minimum Euclidean distance from main-path centerline for pistol cache placement. Authoring guideline enforced by level-designer judgement + playtest review (NOT CI-derived from NavMesh at MVP — post-MVP tooling deferred). <5 m: caches feel on-path (violates Pillar 2). >20 m: unreachable in tight sections (softlock risk)."
+    added: 2026-04-24
+    revised: ""
+
+  - name: pistol_per_section_max
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.6 + §C.5.4 cache distribution
+    value: 3
+    safe_range: [2, 4]
+    unit: caches_per_section
+    notes: "F.6 cap on pistol caches per section. Combined with 8 mission-total (Inventory-locked) and per-2-section-window ≥1 floor, distribution is always satisfiable across 5-section mission."
+    added: 2026-04-24
+    revised: ""
+
+  - name: pistol_per_2_section_min
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.6 + §C.5.4 cache distribution
+    value: 1
+    safe_range: [1, 2]
+    unit: caches_per_2_section_window
+    notes: "F.6 floor: every consecutive 2-section window across the 5-section mission must contain ≥1 pistol cache. Produces 4 windows (1-2, 2-3, 3-4, 4-5); each requires ≥1."
+    added: 2026-04-24
+    revised: ""
+
+  - name: dart_min_sections_span
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.6 + §C.5.4 cache distribution
+    value: 2
+    safe_range: [2, 2]
+    unit: distinct_sections
+    notes: "F.6 floor: 2 dart caches (Inventory-locked) must span ≥2 distinct sections; cannot both be in same section. Concentration violates Pillar 4 narrative-binding. Not tunable at MVP — fixed."
+    added: 2026-04-24
+    revised: ""
+
+  - name: medkit_per_section_max
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # §C.5.4 + §G.3 medkit placement policy
+    value: 1
+    safe_range: [1, 2]
+    unit: medkits_per_section
+    notes: "§C.5.4 cap: at most 1 medkit per section. Combined with 3 mission-total (Inventory-locked), distributes across 5 sections. Place at section midpoint relative to flow (not entrance, not exit), not in combat-committed zones."
+    added: 2026-04-24
+    revised: ""
+
+  - name: t_capture_i_budget_ms
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.4 per-system capture time cap
+      - docs/architecture/adr-0008-performance-budget-distribution.md  # ADR-0008 residual pool sub-slot claim (coord item #3)
+    value: 1.0
+    safe_range: [0.5, 2.0]
+    unit: milliseconds_per_capture_call
+    notes: "F.4 per-system capture() / serialize_state() time cap. MLS assembles SaveGame synchronously by calling 6 owning systems' capture statics on section_entered(FORWARD). If single capture exceeds 1.0 ms during production profiling, push_error + proceed (don't lose save); CI flags for ADR-0008 amendment follow-up. <0.5 ms: unrealistic for Inventory + SAI at Tier 1. >2.0 ms: violates ADR-0008 residual-pool contract."
+    added: 2026-04-24
+    revised: ""
+
+  - name: t_assemble_total_ceiling_ms
+    status: active
+    source: design/gdd/mission-level-scripting.md
+    referenced_by:
+      - design/gdd/mission-level-scripting.md       # F.4 total SaveGame assembly ceiling
+      - docs/architecture/adr-0008-performance-budget-distribution.md  # sub-slot claim coord
+    value: 5.0
+    safe_range: [3.0, 10.0]
+    unit: milliseconds_total
+    notes: "F.4 total SaveGame assembly wall-time ceiling (sum of 6 capture() calls + orchestration). Fires only on section_entered(FORWARD) — NOT on 60 fps clock. Runs within Level Streaming 33 ms snap-out fade (TR-LS-011); 5.0 ms ceiling leaves LS budget intact. >10 ms eats into LS fade, may produce perceptible save-hitch."
+    added: 2026-04-24
+    revised: ""
+
+  # ── Civilian AI (system #15) — cross-system Resource + enum + group tags + perf claim ──
+  - name: CivilianAI
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # owner — CR-1 entity contract
+      - design/gdd/audio.md                         # subscribes to civilian_panicked + civilian_witnessed_event (Formula 2 + crowd murmur)
+      - design/gdd/stealth-ai.md                    # subscribes to civilian_witnessed_event (VS) — ALERTED_BY_OTHER MINOR; SAI E.14 group filter rejects civilians from vision
+      - design/gdd/combat-damage.md                 # CAI subscribes to weapon_fired + enemy_killed; receive_damage duck-type panic-only no-op
+      - design/gdd/save-load.md                     # CivilianAIState passive contributor (panic flag keyed by actor_id)
+      - design/gdd/mission-level-scripting.md       # MLS T6 Alert-State Comedy banter is independent of CAI panic; civilian placement authored per section
+      - design/gdd/outline-pipeline.md              # Tier 3 LIGHT default; VS BQA contact promotes to Tier 1 HEAVIEST at pickup distance
+      - docs/architecture/adr-0001-stencil-id-contract.md
+      - docs/architecture/adr-0002-signal-bus-event-taxonomy.md
+      - docs/architecture/adr-0003-save-format-contract.md
+      - docs/architecture/adr-0006-collision-layer-contract.md
+      - docs/architecture/adr-0008-performance-budget-distribution.md
+    type: cross_system_resource
+    godot_base: CharacterBody3D
+    file_path: "src/gameplay/ai/civilian_ai.gd"
+    notes: "Per-actor scene pattern (no autoload — mirrors SAI). Each civilian: CharacterBody3D + NavigationAgent3D + CollisionShape3D + MeshInstance3D + AnimationTree, with class_name CivilianAI extends CharacterBody3D, group=civilian, LAYER_AI=3 mask=MASK_WORLD, exports actor_id: StringName + (VS) is_bqa_contact: bool. State machine: 2 states (CALM, PANICKED) — terminal panic at MVP. Phased scope: MVP stub = flee + civilian_panicked emit; VS full = civilian_witnessed_event publication + BQA contact outline-tier promotion. ADR-0008 Slot #8 sub-claim: 0.15 ms p95."
+    added: 2026-04-25
+    revised: ""
+
+  - name: CivilianAIState
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # CR-10 capture/restore contract
+      - design/gdd/save-load.md                     # L104 + L157 — passive contributor; per-civilian panic flag keyed by actor_id
+      - design/gdd/audio.md                         # LOAD_FROM_SAVE: Audio queries get_tree().get_nodes_in_group("civilian") and rebuilds panic_count from CivilianAIState.panicked flags (Formula 2 input)
+      - design/gdd/mission-level-scripting.md       # MLS assembles SaveGame; CivilianAIState is one of the per-system sub-resources
+      - docs/architecture/adr-0003-save-format-contract.md  # SaveGame schema field civilian_ai: CivilianAIState
+    type: cross_system_resource
+    godot_base: Resource
+    fields:
+      - "# Dictionary[StringName, Dictionary] — keyed by actor_id"
+      - "# Per-actor entry: { panicked: bool, cause: Vector3 }"
+      - "# (Stored as a flat Dictionary; not a strongly-typed Resource per actor at MVP — Save/Load schema is dictionary-typed for forward-compat)"
+    file_path: "src/gameplay/ai/civilian_ai_state.gd"
+    notes: "MVP contract: panic flag (terminal at MVP) + cause Vector3 (added 2026-04-24 user-adjudicated for restore-recompute path per CAI CR-10). Save/Load schema touch-up (ADVISORY): save-load.md should add the cause: Vector3 field to its CivilianAIState row; current dictionary-typed schema is forward-compatible without ADR-0003 amendment."
+    added: 2026-04-25
+    revised: ""
+
+  - name: WitnessEventType
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # CR-13 — owner; CR-12 emit; F.5 distance gates
+      - design/gdd/signal-bus.md                    # signal-bus.md L207 — CivilianAI.WitnessEventType in enum-ownership rule
+      - design/gdd/audio.md                         # audio.md L208 — civilian_witnessed_event handler routes by event_type
+      - design/gdd/stealth-ai.md                    # SAI subscribes to civilian_witnessed_event; ALERTED_BY_OTHER MINOR
+      - docs/architecture/adr-0002-signal-bus-event-taxonomy.md  # L279 + L359 — enum stub required for Events.gd compile
+    type: cross_system_enum
+    godot_base: enum
+    fields:
+      - "GUNFIRE_NEARBY      # weapon_fired within WITNESS_GUNFIRE_RADIUS_M (18.0 m)"
+      - "GUARD_KILLED_NEARBY # enemy_killed within WITNESS_BODY_RADIUS_M (12.0 m)"
+      - "EVE_BRANDISHING_WEAPON  # VS-coord — gadget_activated/weapon_drawn_in_public within WITNESS_BRANDISH_RADIUS_M (8.0 m)"
+      - "GUARD_BODY_VISIBLE  # VS post-MVP — ambient body discovery; stub at MVP/VS-1"
+    file_path: "src/gameplay/ai/civilian_ai.gd"
+    notes: "Owned by CivilianAI per ADR-0002 enum-ownership rule. Stub required for Events.gd compile (atomic-commit). All values are VS-only payloads; MVP builds compile out civilian_witnessed_event emission entirely (CR-12 feature flag). EVE_BRANDISHING_WEAPON depends on Inventory coord item (new Events.weapon_drawn_in_public signal or repurposed gadget_activated)."
+    added: 2026-04-25
+    revised: ""
+
+  - name: civilian
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # CR-1 group membership (only allowed group)
+      - design/gdd/stealth-ai.md                    # E.14 + E.16 — SAI vision filter rejects civilians (must NOT be in player/dead_guard/alive_guard groups)
+      - design/gdd/audio.md                         # LOAD_FROM_SAVE: Audio queries get_tree().get_nodes_in_group("civilian") to rebuild panic_count
+    value: "civilian"
+    unit: group_tag
+    notes: "String constant — Godot SceneTree group tag. Civilians MUST be in this group AND only this group (forbidden patterns 5: no add_to_group(\"player\"|\"dead_guard\"|\"alive_guard\")). SAI's E.14 dual-filter (group check + body is PlayerCharacter|GuardBase typed-class check) keeps civilians invisible to guard vision; civilians-in-player-group would bypass the typed-class check by accident. Auto-registered from .tscn group declaration at scene-instantiation per gameplay-programmer 2026-04-25 finding (no defensive add_to_group call needed in code)."
+    added: 2026-04-25
+    revised: ""
+
+  - name: panic_anchor
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # F.4 — flee target selection iterates this group
+      - design/gdd/mission-level-scripting.md       # Section Authoring Contract §C.5 — coord item: 3-6 Marker3D nodes per section in this group
+    value: "panic_anchor"
+    unit: group_tag
+    notes: "String constant — Godot SceneTree group tag for level-designer-authored Marker3D flee destinations. CAI's §C.3 Phase 2 algorithm queries get_tree().get_nodes_in_group(\"panic_anchor\") and selects the closest valid anchor on the opposite side of the cause. Authoring contract: 3-6 anchors per section recommended; section-validation CI warning (not failure) on zero anchors per E.24/E.25 — the Phase 3 fallback (away-direction × 15 m, NavMesh-snapped) handles missing anchors but degrades flee aesthetics. Coord item with MLS §C.5.6 section-validation CI extension (ADVISORY)."
+    added: 2026-04-25
+    revised: ""
+
+  - name: cai_frame_budget_ms_p95
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # CR-9 + F.3 — sub-claim of ADR-0008 Slot #8 pooled residual
+      - docs/architecture/adr-0008-performance-budget-distribution.md  # Slot #8 pool 0.8 ms shared across 6 systems — sub-claim coord
+    value: 0.15
+    safe_range: [0.10, 0.20]
+    unit: milliseconds_p95
+    notes: "F.3 per-frame CAI navigation cost ceiling (Restaurant 6-8 civilians × ~20 µs Nav feed per active civilian). p95 binding; 1-2 frame spike at simultaneous-panic onset (up to 200 µs) is recorded but does NOT count against p95 per ADR-0008 §F.3 acceptance criterion. Increases require ADR-0008 amendment with re-allocation pass against MLS / DC / Dialogue / F&R / Signal Bus dispatch sub-claims. CI gate: /perf-profile against 8-civilian simultaneous-panic Restaurant scenario."
+    added: 2026-04-25
+    revised: ""
+
+  - name: bqa_pickup_distance_m
+    status: active
+    source: design/gdd/civilian-ai.md
+    referenced_by:
+      - design/gdd/civilian-ai.md                   # CR-14 — VS BQA contact outline-tier promotion trigger radius
+      - design/gdd/outline-pipeline.md              # OP L112 — "BQA contact in Plaza: Tier 1 at pickup distance only"
+    value: 3.0
+    safe_range: [1.5, 5.0]
+    unit: meters
+    notes: "VS-only constant — Area3D pickup-distance for BQA contact outline-tier promotion (Tier 3 LIGHT → Tier 1 HEAVIEST). CR-14 forbids any other outline-tier transition on civilians. <1.5 m: contact outline doesn't promote until Eve is touching them (no spotting at distance — Pillar 2 break). >5.0 m: contact highlighted from across the room (Pillar 5 break — period authenticity forbids quest indicators). MVP scope compile-gates this off entirely."
+    added: 2026-04-25
+    revised: ""
+
+  # ── HUD Core (system #16) — UI/Presentation layer constants + cross-system rendering contracts ──
+  - name: hud_damage_flash_cooldown_ms
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md   # §G + E.42 — photosensitivity rate-gate constant; WCAG 2.3.1 ceiling
+      - design/gdd/hud-core.md        # F.1 enforcement; CR-7/CR-7b damage-flash coalescing; AC-HUD-3.x
+    value: 333
+    safe_range: [200, 500]
+    unit: milliseconds
+    notes: "Combat-owned constant; HUD-enforced. Minimum inter-flash interval for damage-flash. Locked at 333 ms (3 Hz WCAG 2.3.1 photosensitivity ceiling). Below 200 ms breaches the 5 Hz photosensitive threshold; above 500 ms degrades responsiveness. HUD Core F.1 implements the gate via a child Timer node + _pending_flash latch; coalesces N rapid hits to ≤2 flashes in any 333 ms window. Audio SFX + camera dip are NOT rate-gated by this — only the HUD's visual numeral flash."
+    added: 2026-04-25
+    revised: ""
+
+  - name: crosshair_dot_size_pct_v
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md   # §G + UI-1 — resolution-independent dot size spec
+      - design/gdd/hud-core.md        # F.4 dot radius computation; CR-11 crosshair widget; AC-HUD-7.1/7.2
+    value: 0.19
+    safe_range: [0.15, 0.30]
+    unit: percent_of_viewport_height
+    notes: "Combat-owned default; Settings & Accessibility (system #23, forward-dep) will own persistence + slider. HUD Core F.4 computes `dot_radius_px = clamp(value × viewport_height_px / 100.0, 3, 12)` resolving to 3 px at 1080p/1440p, 4 px at 4K. Dot radius clamped to [3, 12] physical pixels — below 3 is sub-pixel, above 12 obscures aim point. Resolution-independent."
+    added: 2026-04-25
+    revised: ""
+
+  - name: crosshair_halo_style
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md   # §G + UI-1 — halo composition for ≥3:1 contrast against ANY background
+      - design/gdd/hud-core.md        # V.6 _draw() override; CR-11; AC-HUD-7.5 visual-evidence
+    value: tri_band
+    safe_range: ["none", "parchment_only", "tri_band"]
+    unit: enum
+    notes: "Combat-owned default; Settings & Accessibility (forward-dep) exposes selector. HUD V.6 implements via two concentric draw_arc calls (Parchment outer 1 px + Ink Black #1A1A1A inner 1 px) + draw_circle for dot. tri_band guarantees ≥3:1 contrast against both light backgrounds (Ink Black inner dominates) and dark backgrounds (Parchment outer dominates). parchment_only fails ux-designer BLOCKER-3 contrast test against sepia exterior. none disables halo entirely."
+    added: 2026-04-25
+    revised: ""
+
+  - name: crosshair_enabled
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md   # §UI-6 — opt-out toggle, default-on
+      - design/gdd/hud-core.md        # CR-11 visibility gating; AC-HUD-7.3/7.4
+    value: true
+    safe_range: [true, false]
+    unit: bool
+    notes: "Combat-owned default (true / opt-out by default). Settings & Accessibility (forward-dep) owns persistence + UI placement. Per Combat §UI-6: surfaced via BOTH `Settings → Accessibility → Crosshair` AND `Settings → HUD → Crosshair` (single source of truth, dual discovery paths). HUD Core CR-11 mirrors `_crosshair_enabled_mirror` from `setting_changed('hud', 'crosshair_enabled', value)`; crosshair Control visible iff `(hud_root.visible == true) AND (_crosshair_enabled_mirror == true)`."
+    added: 2026-04-25
+    revised: ""
+
+  - name: gadget_rejected_desat_duration_s
+    status: active
+    source: design/gdd/hud-core.md
+    referenced_by:
+      - design/gdd/hud-core.md           # CR-9 + G.1 + AC-HUD-5.3 — gadget tile rejection desaturation lifetime
+      - design/gdd/inventory-gadgets.md  # CR-4b + UI-9 — paired with `gadget_activation_rejected` signal contract
+    value: 0.2
+    safe_range: [0.1, 0.5]
+    unit: seconds
+    notes: "HUD-owned tuning knob. Duration the gadget tile holds modulate=(0.4,0.4,0.4,1.0) after gadget_activation_rejected fires (Inventory CR-4b gate-fail cue per ADR-0002 amendment 2026-04-24). Below 0.1 s the desat is imperceptible; above 0.5 s it lingers into the next interaction. Implemented via dedicated Timer child (oneshot) per CR-9 — no _process polling. 10+ rapid rejections in one frame restart the timer (CR-9 + AC-HUD-5.6); the 10th rejection owns the 0.2 s window."
+    added: 2026-04-25
+    revised: ""
+
+  - name: HUDCore
+    status: active
+    source: design/gdd/hud-core.md
+    type: cross_system_class
+    referenced_by:
+      - design/gdd/hud-core.md           # owns the class; CanvasLayer scene at index 1; instanced once per main scene
+      - design/gdd/hud-state-signaling.md  # forward-dep (system #19, VS) — extends HUD Core via get_prompt_label() per UI-3
+    class_name: HUDCore
+    base: CanvasLayer
+    autoload: false   # HUD is per-main-scene CanvasLayer instance, NOT autoload (FP-13; ADR-0007 caps autoloads at 7)
+    canvas_layer_index: 1   # within ADR-0004 §7 0..3 reserved range; below sepia dim layer 4
+    public_extension_api:
+      - "get_prompt_label() -> Label  # HUD State Signaling (system #19, VS) writes additional states through this single forward extension point"
+    notes: "HUD Core is the screen-space subscriber surface for 10 ADR-0002 signals (8 frozen + 2 amendment: ui_context_changed + takedown_availability_changed). Emits zero signals. Polls only 2 PC accessors (get_current_interact_target + is_hand_busy). 5 widgets: Health BL / Weapon+Ammo BR / Gadget tile TR / Prompt-strip CB / Crosshair centre. Persists across section_entered without re-subscribing (CR-15). No capture()/restore_callback — rebuilds via signal replay on LOAD_FROM_SAVE (CR-14). HSS forward-extension via get_prompt_label() is the single permitted external API."
+    added: 2026-04-25
     revised: ""
 
 # Example:

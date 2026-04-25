@@ -159,7 +159,7 @@ No double-jump. No air control.
 
 **Health.**
 - Single integer 0–100 (`max_health = 100`). Starts at `max_health` on mission load.
-- `apply_damage(amount: float, source: Node, damage_type: CombatSystem.DamageType) -> void` — only caller permitted to mutate health. See F.6.
+- `apply_damage(amount: float, source: Node, damage_type: CombatSystemNode.DamageType) -> void` — only caller permitted to mutate health. See F.6.
 - `apply_heal(amount: float, source: Node) -> void` — restores HP; called by Inventory & Gadgets medkit pickups (once that GDD lands). See F.7.
 - No regeneration at MVP (OQ-1 closed 2026-04-20 — diegetic medkits only).
 
@@ -197,7 +197,7 @@ Failure & Respawn owns the respawn sequence (fade, camera reposition, AI reset);
 | System | Direction | Interface |
 |---|---|---|
 | **Input** | consumes | 26-action catalog via `Input.get_action_strength()` and `Input.is_action_just_pressed()` (Input GDD). |
-| **Signal Bus** | publishes | `player_damaged(amount: float, source: Node, is_critical: bool)`, `player_died(cause: CombatSystem.DeathCause)`, `player_health_changed(current: float, max_health: float)`, `player_interacted(target: Node3D)`. ADR-0002 taxonomy. |
+| **Signal Bus** | publishes | `player_damaged(amount: float, source: Node, is_critical: bool)`, `player_died(cause: CombatSystemNode.DeathCause)`, `player_health_changed(current: float, max_health: float)`, `player_interacted(target: Node3D)`. ADR-0002 taxonomy. |
 | **Stealth AI** | provides state | `get_noise_level() -> float`, `get_noise_event() -> NoiseEvent` (idempotent-read per F.4), `get_silhouette_height() -> float` (1.7 standing / 1.1 crouched), `global_transform.origin`, `PhysicsLayers.LAYER_PLAYER` membership. Stealth AI owns occlusion + propagation — this GDD publishes source radius only. |
 | **Combat & Damage** | receives | `apply_damage(amount, source, damage_type)` — only caller permitted to mutate health. |
 | **Inventory & Gadgets** | queries + displays + heals | Reads `is_hand_busy()`; attaches held gadget mesh to `HandAnchor`; calls `apply_heal(amount, source)` on medkit pickup. |
@@ -225,7 +225,7 @@ Systems referenced here that do not yet have GDDs. Implementation of the corresp
 | `Settings.get_resolution_scale()` (hands outline) | Settings & Accessibility | AC-9.2 — blocks hands-outline release build on Settings GDD. Test marked skip-if-not-implemented until then. |
 | Mouse/gamepad look sensitivities | Settings & Accessibility | PC ships defaults from `res://src/core/settings_defaults.gd`; runtime-override wiring is placeholder. |
 | `Checkpoint` type for `reset_for_respawn` | Failure & Respawn | PC uses a placeholder `Resource` subclass pre-F&R; signature stable. |
-| `CombatSystem.DamageType` / `damage_type_to_death_cause` | Combat & Damage | `apply_damage` signature gated; AC-5.x tests use a stub `DamageType.TEST` value. |
+| `CombatSystemNode.DamageType` / `damage_type_to_death_cause` | Combat & Damage | `apply_damage` signature gated; AC-5.x tests use a stub `DamageType.TEST` value. |
 | `InteractPriority.Kind` enum | Inventory & Gadgets + Document Collection | `_resolve_interact_target()` gated on the enum; placeholder file `res://src/gameplay/interactables/interact_priority.gd` acceptable pre-Inventory. |
 
 ## Formulas
@@ -423,7 +423,7 @@ func _resolve_interact_target() -> Node3D:
 ### F.6 Damage Application
 
 ```gdscript
-func apply_damage(amount: float, source: Node, damage_type: CombatSystem.DamageType) -> void:
+func apply_damage(amount: float, source: Node, damage_type: CombatSystemNode.DamageType) -> void:
     if current_state == PlayerEnums.MovementState.DEAD:
         return
     if amount <= 0.0:
@@ -454,7 +454,7 @@ func apply_damage(amount: float, source: Node, damage_type: CombatSystem.DamageT
         # Stealth AI from polling a stale spike during the 800 ms death animation before
         # reset_for_respawn() runs.
         _latched_event = null
-        var cause: CombatSystem.DeathCause = CombatSystem.damage_type_to_death_cause(damage_type)
+        var cause: CombatSystemNode.DeathCause = CombatSystemNode.damage_type_to_death_cause(damage_type)
         Events.player_died.emit(cause)
 ```
 
@@ -463,7 +463,7 @@ func apply_damage(amount: float, source: Node, damage_type: CombatSystem.DamageT
 - Post-rounding guard prevents sub-0.5 DoT tick spam (Session F — closes F.6 blocker from 3rd re-review).
 - `is_critical = false` at MVP — Combat & Damage GDD will replace the literal without touching this interface.
 - `source: Node` reference — subscribers MUST call `is_instance_valid(source)` per ADR-0002 Implementation Guideline 4.
-- `CombatSystem.damage_type_to_death_cause()` is a pure helper owned by the Combat & Damage GDD. Default `DeathCause.UNKNOWN` for unmapped types.
+- `CombatSystemNode.damage_type_to_death_cause()` is a pure helper owned by the Combat & Damage GDD. Default `DeathCause.UNKNOWN` for unmapped types.
 
 No damage multipliers, armor, or resistance at MVP.
 
@@ -558,7 +558,7 @@ The reach animation completes, then `player_interacted` fires with `target = nul
 
 ### E.12 Out-of-bounds fall
 
-A kill-plane `Area3D` at world Y = `kill_plane_y` (default -50 m) triggers `apply_damage(999.0, kill_plane_node, CombatSystem.DamageType.OUT_OF_BOUNDS)` on crossing, killing Eve and routing to the respawn system. Bug-recovery path, not a gameplay feature.
+A kill-plane `Area3D` at world Y = `kill_plane_y` (default -50 m) triggers `apply_damage(999.0, kill_plane_node, CombatSystemNode.DamageType.OUT_OF_BOUNDS)` on crossing, killing Eve and routing to the respawn system. Bug-recovery path, not a gameplay feature.
 
 ### E.13 Dead state entered with interact in-flight
 
@@ -759,7 +759,7 @@ Ownership split: **PC provides signals + state queries; HUD Core GDD owns widget
 |---|---|---|
 | `player_health_changed` | `(current: float, max_health: float)` | Numeric readout (NOLF1-style, not segmented). Art Bible §7B. |
 | `player_damaged` | `(amount: float, source: Node, is_critical: bool)` | Optional ~150 ms flash on the number. No damage direction indicator (Pillar 5). `is_critical` always `false` at MVP. |
-| `player_died` | `(cause: CombatSystem.DeathCause)` | Transitions HUD to Failure & Respawn pathway. |
+| `player_died` | `(cause: CombatSystemNode.DeathCause)` | Transitions HUD to Failure & Respawn pathway. |
 | `player_interacted` | `(target: Node3D)` (may be null per E.11) | Clears interact highlight on receipt. |
 
 ### Queries (for HUD polling)
@@ -875,14 +875,14 @@ Each AC is binary (pass/fail), carries a story-type label, names its measurement
 
 ### AC-5 Damage application
 
-- **AC-5.1 [Logic]** `apply_damage(25.0, stub_source, CombatSystem.DamageType.TEST)` from `health=100`: `health == 75` afterwards; emits `player_damaged(25.0, stub_source, false)` THEN `player_health_changed(75.0, 100.0)` in order (verified via signal-order spy). Evidence: `tests/unit/player/player_damage_basic_test.gd`.
+- **AC-5.1 [Logic]** `apply_damage(25.0, stub_source, CombatSystemNode.DamageType.TEST)` from `health=100`: `health == 75` afterwards; emits `player_damaged(25.0, stub_source, false)` THEN `player_health_changed(75.0, 100.0)` in order (verified via signal-order spy). Evidence: `tests/unit/player/player_damage_basic_test.gd`.
 - **AC-5.2 [Logic]** **Rounding boundary — parametrized test over {0.3, 0.49, 0.5, 1.5}** (systems-designer B1 fix, 2026-04-21):
   - `apply_damage(0.3, stub_source, DamageType.TEST)`: `health` unchanged, zero signals emitted.
   - `apply_damage(0.49, stub_source, DamageType.TEST)`: `health` unchanged, zero signals emitted.
   - `apply_damage(0.5, stub_source, DamageType.TEST)`: `health` decreased by exactly 1, `player_damaged(0.5, ...)` and `player_health_changed(99, 100)` both emit.
   - `apply_damage(1.5, stub_source, DamageType.TEST)`: `health` decreased by exactly 2, both signals emit with the raw `1.5` in the damage signal's `amount` payload.
   Locks the round-half-away-from-zero boundary behavior documented in F.6. Evidence: `tests/unit/player/player_damage_rounding_guard_test.gd`.
-- **AC-5.3 [Logic]** `apply_damage(999.0, stub_source, DamageType.TEST)` from full health: `health == 0`, emits `player_died` exactly once with `cause == CombatSystem.damage_type_to_death_cause(DamageType.TEST)`, state transitions to `PlayerEnums.MovementState.DEAD`. Subsequent `apply_damage` calls emit no additional signals. Evidence: `tests/unit/player/player_damage_lethal_test.gd`.
+- **AC-5.3 [Logic]** `apply_damage(999.0, stub_source, DamageType.TEST)` from full health: `health == 0`, emits `player_died` exactly once with `cause == CombatSystemNode.damage_type_to_death_cause(DamageType.TEST)`, state transitions to `PlayerEnums.MovementState.DEAD`. Subsequent `apply_damage` calls emit no additional signals. Evidence: `tests/unit/player/player_damage_lethal_test.gd`.
 
 ### AC-6 Respawn contract
 

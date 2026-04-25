@@ -29,7 +29,7 @@
 # STATUS VALUES: active | deprecated | superseded-by: TR-[system]-NNN
 
 version: 2
-last_updated: "2026-04-23"
+last_updated: "2026-04-24"  # /architecture-review 2026-04-24 fifth run: 15 new TR-INV-001..015 appended (Inventory & Gadgets GDD landed; all covered by existing ADRs + ADR-0002 2026-04-24 amendment). Prior: 2026-04-23 — TR-INP-002 revised (29 → 30 actions; dedicated `takedown` per Combat CR-3); TR-LS-007 revised (requirement text now points to ADR-0007 §Key Interfaces as authoritative source, per 2026-04-23 amendment)
 
 requirements:
   # ─── Signal Bus (SB) ──────────────────────────────────────────────────────
@@ -115,9 +115,9 @@ requirements:
   - id: TR-INP-002
     system: input
     gdd: design/gdd/input.md
-    requirement: "29 InputMap actions (26 gameplay/UI + 3 debug) declared via InputActions static class as `const NAME := &\"name\"` StringName constants."
+    requirement: "30 InputMap actions (27 gameplay/UI + 3 debug) declared via InputActions static class as `const NAME := &\"name\"` StringName constants. 2026-04-23: dedicated `takedown` action added per Combat CR-3 (29 → 30); shares F / JOY_BUTTON_Y binding with `use_gadget` — handlers mutex on SAI.takedown_prompt_active()."
     created: 2026-04-22
-    revised: ""
+    revised: 2026-04-23
     status: active
   - id: TR-INP-003
     system: input
@@ -789,9 +789,9 @@ requirements:
   - id: TR-LS-001
     system: level-streaming
     gdd: design/gdd/level-streaming.md
-    requirement: "LevelStreamingService is a Godot 4.6 autoload; autoload registration order is determined by project.godot line sequence per specialist §1 (current intent: Events→EventLogger→SaveLoad→InputContext→LevelStreamingService)."
+    requirement: "LevelStreamingService is a Godot 4.6 autoload; canonical registration order is declared by ADR-0007 §Key Interfaces (authoritative source as of 2026-04-23 amendment: 7 autoloads with LSS at line 5)."
     created: 2026-04-22
-    revised: ""
+    revised: 2026-04-23
     status: active
   - id: TR-LS-002
     system: level-streaming
@@ -1173,6 +1173,116 @@ requirements:
     gdd: design/gdd/combat-damage.md
     requirement: "Autoload convention: class_name=CombatSystemNode, autoload key=Combat (intentional split mirroring SignalBusEvents/Events); enum paths use class_name, method calls use autoload key."
     created: 2026-04-22
+    revised: ""
+    status: active
+
+  # ─── Inventory & Gadgets (INV) ────────────────────────────────────────────
+  # Added 2026-04-24 by /architecture-review fifth run after /design-system
+  # inventory-gadgets landed GDD at design/gdd/inventory-gadgets.md.
+  # All 15 TRs covered by existing ADRs + ADR-0002 2026-04-24 amendment.
+  - id: TR-INV-001
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "InventorySystem is a Node child of PlayerCharacter (class_name InventorySystem extends Node), NOT an autoload. ADR-0007 registry caps at 7 autoloads with Combat at line 7; Inventory does not claim a slot."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-002
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "4 frozen Inventory-domain signals from ADR-0002: gadget_equipped(StringName), gadget_used(StringName, Vector3), weapon_switched(StringName), ammo_changed(StringName, int, int). Plus the weapon_fired(Resource, Vector3, Vector3) emit-site owned by Inventory."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-003
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "2 new Inventory-domain signals per 2026-04-24 ADR-0002 amendment: gadget_activation_rejected(gadget_id: StringName) — HUD desaturation + haptic cue, audio-silent by design; weapon_dry_fire_click(weapon_id: StringName) — Audio subscribes for per-weapon dry-click SFX variants; HUD does NOT subscribe."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-004
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "guard_incapacitated signature extension per 2026-04-24 ADR-0002 amendment: (guard: Node) → (guard: Node, cause: int) where cause is CombatSystemNode.DamageType value. Required by Inventory CR-7 drop-table subscriber to distinguish dart-KO / fist-KO / Parfum-KO without reading guard._last_damage_type directly."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-005
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "CombatSystemNode.DamageType enum gains MELEE_PARFUM member per 2026-04-24 ADR-0002 amendment. Non-lethal per Combat.is_lethal_damage_type() (returns false). Parfum gadget behavior scene calls SAI.receive_damage(guard, 0, eve, DamageType.MELEE_PARFUM)."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-006
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "InventoryState extends Resource per ADR-0003 with two separate ammo dicts: ammo_magazine: Dictionary (StringName -> int) and ammo_reserve: Dictionary (StringName -> int). Untyped Dictionary (not TypedDictionary) per godot feasibility review — TypedDictionary ResourceSaver stability unverified post-cutoff."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-007
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "Inventory registers save/restore via LevelStreamingService.register_restore_callback(_serialize_inventory) per Inventory CR-11, reusing the pattern LS GDD CR-10 owns. Inventory does NOT call SaveLoad.* directly."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-008
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "Held-weapon and held-gadget meshes render at Tier 1 Heaviest (4 px outline) per ADR-0001 canonical table. WorldItem pickups (ammo drops, medkits, mission gadget Parfum) also render at Tier 1. ADR-0005 FPS-hands exception does NOT extend to held objects — the held weapon/gadget IS outlined at Tier 1."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-009
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "Physics layer contracts per ADR-0006: dart-gun projectiles on LAYER_PROJECTILES (Combat-spawned; Inventory does not spawn colliders). WorldItem pickups on MASK_INTERACTABLES (priority-2 raycast target). Parfum cone get_overlapping_bodies reads MASK_GUARDS. Cigarette Case placement raycast reads MASK_WORLD for placeable_surface tag query."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-010
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "HUD Core consumes Inventory signals (ammo_changed, weapon_switched, gadget_equipped, gadget_activation_rejected) via project_theme.tres + FontRegistry per ADR-0004. Inventory does NOT render UI or touch Control nodes directly; all rendering is HUD Core's responsibility."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-011
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "Inventory is event-driven: NO _process or _physics_process tick. All activity triggered by input events, Events.* signal subscriptions, or animation callbacks. Worst-case one-shot cost estimated < 0.3 ms; falls under ADR-0008 Slot #8 pooled residual (0.8 ms)."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-012
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "Inventory subscribes to Events.enemy_killed(guard, killer), Events.guard_incapacitated(guard, cause), Events.player_interacted(target) via ADR-0002 _ready / _exit_tree lifecycle pattern with is_connected guards. All subscriber payloads guarded by is_instance_valid(node) before dereference per ADR-0002 Implementation Guideline 4."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-013
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "Combat autoload (ADR-0007 line 7) _unhandled_input dispatches shared-binding use_gadget / takedown events: if SAI.takedown_prompt_active() returns true, calls Combat's _execute_takedown(); else calls InventorySystem.try_use_gadget() directly (Inventory is a known PC child). Inventory does NOT install its own _unhandled_input handler for use_gadget — it exposes try_use_gadget() as a public method. Engine-verification gate (Inventory Coord #12) needed: verify autoload _unhandled_input tree-order vs scene-node consumption in Godot 4.6."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-014
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "SkeletonModifier3D IK target for rifle held-mesh: HandAnchor (under Camera3D subtree) must reach Marker3D nodes inside the weapon PackedScene. Cross-subtree NodePath resolution with body Skeleton3D is unverified; engine-verification gate (Inventory Coord #11) needed. Fallback options: (a) world-space Transform3D propagation per frame (Slot #5 cost), or (b) scope rifle IK out of MVP."
+    created: 2026-04-24
+    revised: ""
+    status: active
+  - id: TR-INV-015
+    system: inventory-gadgets
+    gdd: design/gdd/inventory-gadgets.md
+    requirement: "InteractPriority.Kind enum owns the priority-2 `interact` raycast slot: PICKUP = 2 (Inventory-owned slot); DOCUMENT = 0 (Document Collection-owned, lower wins on overlap). PC owns the enum declaration at res://src/gameplay/interactables/interact_priority.gd (placeholder file acceptable pre-Inventory implementation). GDD-scope coordination; not ADR-locked."
+    created: 2026-04-24
     revised: ""
     status: active
 

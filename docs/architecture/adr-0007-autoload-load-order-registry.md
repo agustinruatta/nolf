@@ -13,7 +13,7 @@ validates the cross-autoload reference safety discipline).
 
 ## Last Verified
 
-2026-04-23
+2026-04-23 (Amendment — Combat autoload inclusion; Path A per godot-specialist 2026-04-23. See Revision History below.)
 
 ## Decision Makers
 
@@ -22,10 +22,9 @@ pre-authoring Claims 1/2/3) · `/architecture-decision` skill
 
 ## Summary
 
-*The Paris Affair* registers **6 autoloads** in a single canonical order that this
-ADR defines and owns:
+*The Paris Affair* registers **7 autoloads** (6 + 1 via the 2026-04-23 amendment — see Revision History below) in a single canonical order that this ADR defines and owns:
 
-**Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6)**
+**Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6) → Combat (7)**
 
 The engine only honours line order within the `project.godot [autoload]` block —
 "load order N" labels in ADRs and GDDs are team-documentation and drift-prone. This
@@ -34,6 +33,18 @@ to this registry. Adding a new autoload, removing one, or changing the order
 requires an amendment to this ADR in the same PR that edits `project.godot`. A
 forbidden pattern (`unregistered_autoload`) fences against ad-hoc registration via
 editor plugins, `@tool` scripts, or `add_autoload_singleton()` runtime calls.
+
+### Revision History
+
+- **2026-04-23 (Combat autoload inclusion — Phase 5 §6.3 cross-session conflict resolution)**: Canonical autoload count grows **6 → 7**. `Combat` (`class_name CombatSystemNode`, autoload key `Combat`) is added at line 7 after `PostProcessStack`. Trigger: the Combat autoload claim declared by ADR-0002 OQ-CD-1 bundle (2026-04-22) and combat-damage.md §350 (TR-CD-022) was not reflected in this ADR's original 6-autoload canonical registration table — a scope omission surfaced during `/create-architecture` Phase 4 API-Boundaries authoring (2026-04-23) and tracked as architecture.md §6.3 + §7.2.1 + §9.2. **Path A** endorsed by godot-specialist consultation 2026-04-23: amend this ADR rather than downgrade Combat from autoload to scene-tree singleton (Path B, fan-out anti-pattern) or defer (Path C, leaves TR-CD-022 + ADR-0002 in false conflict state). No downstream "load order N" text edits required — ADR-0002 and combat-damage.md already correctly assert the Combat autoload claim; this amendment brings the canonical registry into alignment.
+
+  Changes landing in this amendment: Summary paragraph ("6 autoloads" → "7 autoloads"; chain grows `... → PostProcessStack (6) → Combat (7)`); Canonical Registration Table (row 7 added); Rationale for line order (bullet 7 added); Key Interfaces GDScript block (one line appended); Alternatives Considered (Amendment Alternative Paths subsection added); Consequences → Positive (bullet added); Performance Implications (6→7 node counts); Validation Criteria Gate 1 (6→7 entry count); GDD Requirements Addressed → Direct GDD drivers (combat-damage.md row added); Related (3 entries added).
+
+  **Registry impact**: `docs/registry/architecture.yaml` → `autoload_registration_order` api_decisions row `api:` field updated from 6-autoload enumeration to 7-autoload enumeration; `revised: 2026-04-23`. No new forbidden patterns; the existing `unregistered_autoload` and `autoload_init_cross_reference` fences apply to Combat at line 7 identically.
+
+  **Rules unchanged**: §Cross-Autoload Reference Safety (rules 1–5), §Implementation Guidelines (1–7), §Risks, §Engine Compatibility, and §ADR Dependencies (top-line "Depends On: None — foundational" unchanged; ADR-0002 remains a *referenced but not Acceptance-blocking* dependency, same framing as original).
+
+  **Status unchanged**: this ADR remains **Proposed**. Amendment does not retire Gate 1 (`project.godot [autoload]` byte-match gate) or Gate 2 (ADR-0002 Gate 1 smoke test) — both apply to the updated 7-entry table.
 
 ## Engine Compatibility
 
@@ -106,11 +117,11 @@ registration has been attempted. This ADR is the source of truth from which the
 - "load order N" labels are team-documentation, not engine-enforced (specialist §1).
 - The `[autoload]` block is the single authoritative declaration.
 - No project plugins or `@tool` scripts exist yet; the stability assumption holds for current state but is fenced for future plugin additions.
-- All 6 autoloads use `*res://` "scene-mode" (Node added to root; `_ready()` fires; tree lifecycle active) — confirmed correct syntax by specialist.
+- All 7 autoloads (6 original + Combat added 2026-04-23) use `*res://` "scene-mode" (Node added to root; `_ready()` fires; tree lifecycle active) — confirmed correct syntax by specialist.
 
 ### Requirements
 
-- Single canonical registration order for all 6 project autoloads.
+- Single canonical registration order for all 7 project autoloads (6 original + Combat added 2026-04-23).
 - Order MUST satisfy every forward-dependency edge (a consumer-autoload initialises after every producer-autoload it references in `_ready()`).
 - Fence against ad-hoc registration drift (`@tool` scripts, `add_autoload_singleton()`, editor plugins).
 - Downstream ADRs/GDDs reference this ADR for order; do NOT re-state order numbers.
@@ -134,6 +145,7 @@ ad-hoc registration.
 | 4 | `InputContext` | `*res://src/core/ui/input_context.gd` | ADR-0004 | — (no signals; no autoload references in `_ready()`) |
 | 5 | `LevelStreamingService` | `*res://src/core/level_streaming/level_streaming_service.gd` | LS GDD CR-1 | `InputContext` (pushes `LOADING` at 13-step swap step 1), `Events` (emits `section_entered` / `section_exited`), `SaveLoad` (consumes `SaveGame` via `register_restore_callback` chain at step 9) |
 | 6 | `PostProcessStack` | `*res://src/core/rendering/post_process_stack.gd` | ADR-0004 IG7 + PP GDD §5 | `Events` (subscribes to `setting_changed` for `resolution_scale`) |
+| 7 | `Combat` | `*res://src/gameplay/combat/combat_system.gd` | ADR-0002 OQ-CD-1 bundle 2026-04-22 + `design/gdd/combat-damage.md` §350 (TR-CD-022) | `Events` (emits `enemy_damaged` / `enemy_killed` / `weapon_fired` / `ammo_changed`) |
 
 ### Rationale for line order
 
@@ -142,7 +154,8 @@ ad-hoc registration.
 - **(3) SaveLoad** — foundational persistence. Consumed by LSS at step 9 of the swap contract. No dependency on InputContext / LSS / PostProcessStack.
 - **(4) InputContext** — consumed by LSS (`InputContext.push(LOADING)` at step 1 of the 13-step swap). Must load BEFORE LSS.
 - **(5) LevelStreamingService** — consumer of InputContext + Events + SaveLoad. Position IS load-bearing per specialist Claim 2: LSS's `_ready()` safely references autoloads 1–4 because they are all earlier in the block.
-- **(6) PostProcessStack** — consumes only `Events.setting_changed` (valid at any position ≥ 2). Placed last because nothing else depends on it at `_ready()` time; position 6 minimises the insertion-point for a future "order shuffled by editor plugin" hazard affecting upstream consumers.
+- **(6) PostProcessStack** — consumes only `Events.setting_changed` (valid at any position ≥ 2). Placed before Combat because nothing else depends on it at `_ready()` time.
+- **(7) Combat** — stateless-ish damage-routing hub (`class_name CombatSystemNode`, autoload key `Combat` — intentional split per TR-CD-022, mirroring the `SignalBusEvents`/`Events` pattern on line 1). Invoked from arbitrary scene-tree positions — SAI guard nodes, Player controller, and per-dart projectile nodes — without a common ancestor. Consumes `Events` only for emit-site ownership (`enemy_damaged`, `enemy_killed`, `weapon_fired`, `ammo_changed` per combat-damage.md CR-1/CR-2); no dependency on EventLogger, SaveLoad, InputContext, LSS, or PostProcessStack at `_ready()` time. Position at line 7 (end of block) is safe: per-dart and per-GuardFireController `Events.respawn_triggered` subscriptions (TR-CD-016) happen in scene-node `_ready()` instances that always run after the full autoload chain has initialised — not on `CombatSystemNode` itself, which has no cross-autoload `_init()` or `_ready()` references (godot-specialist 2026-04-23 consultation).
 
 ### Key Interfaces
 
@@ -164,6 +177,7 @@ SaveLoad="*res://src/core/save_load/save_load_service.gd"
 InputContext="*res://src/core/ui/input_context.gd"
 LevelStreamingService="*res://src/core/level_streaming/level_streaming_service.gd"
 PostProcessStack="*res://src/core/rendering/post_process_stack.gd"
+Combat="*res://src/gameplay/combat/combat_system.gd"
 ```
 
 ### Cross-Autoload Reference Safety
@@ -181,7 +195,7 @@ framing corrections folded in.*
 ### Implementation Guidelines
 
 1. **The `project.godot [autoload]` block MUST be generated from §Key Interfaces verbatim.** No reordering by the Godot editor UI, no alphabetisation, no rewrites by `@tool` scripts.
-2. **All 6 entries use `*res://` path-prefix-star syntax.** Script-mode (no `*` prefix) is not supported by this registry — every autoload in the table extends `Node` and requires tree lifecycle.
+2. **All 7 entries use `*res://` path-prefix-star syntax.** Script-mode (no `*` prefix) is not supported by this registry — every autoload in the table extends `Node` and requires tree lifecycle.
 3. **`_init()` MUST NOT reference any other autoload by name.** Registered as forbidden pattern `autoload_init_cross_reference`. Cross-autoload setup belongs in `_ready()`.
 4. **`_ready()` MAY reference autoloads at earlier line numbers only.** Referencing a later autoload from `_ready()` is undefined (the later autoload is not yet in the tree).
 5. **Game code MUST NOT call `Engine.register_singleton()` at runtime.** Registered as optional forbidden pattern `runtime_singleton_registration`. Test doubles that need named-instance registration use dependency injection (per the existing project test pattern), not runtime singleton registration.
@@ -195,7 +209,7 @@ framing corrections folded in.*
 - **Description**: Amend ADR-0004 to confirm `InputContext` at order 4; amend LS GDD CR-1 to move `LevelStreamingService` to order 5; establish the `project.godot [autoload]` block line order directly without a separate ADR.
 - **Pros**: Minimum-viable fix; no new ADR to maintain; fewer documents to update.
 - **Cons**: Does not address `PostProcessStack`'s unstated order. Does not prevent future recurrence — the same collision hazard could re-emerge when Inventory / Civilian AI / Mission Scripting systems propose autoloads. Scattered authority — no single place to see "what autoloads does the project register, and why?".
-- **Rejection reason**: The scale of the current problem (6 autoloads, 1 collision, 1 unstated) and the projected scale as more systems are authored (Inventory, Civilian AI, Mission Scripting may each propose an autoload) justify a dedicated registry. Fence design requires a single authoritative artifact.
+- **Rejection reason**: The scale of the original problem at authoring time (6 autoloads, 1 collision, 1 unstated — subsequently grown to 7 via the 2026-04-23 Combat amendment) and the projected scale as more systems are authored (Inventory, Civilian AI, Mission Scripting may each propose an autoload) justify a dedicated registry. Fence design requires a single authoritative artifact.
 
 ### Alternative 2: Rely on `project.godot` alone as documentation
 
@@ -211,6 +225,31 @@ framing corrections folded in.*
 - **Cons**: No single cross-cutting view; re-introduces the exact problem this ADR solves (multiple sources of truth for order). The `[autoload]` block is inherently global.
 - **Rejection reason**: The block is a single global ordering; splitting documentation across sub-registries defeats the purpose.
 
+### Amendment Alternative Paths (2026-04-23 — Combat autoload inclusion)
+
+Evaluated before this amendment was drafted. Documented here per ADR-0007's own amendment bar: "justification that the new system cannot be a static class / scene Node / RefCounted".
+
+#### Path A — Amend ADR-0007 to register Combat at line 7 (CHOSEN)
+
+- **Description**: This amendment. Canonical registration table grows to 7 entries; `project.godot [autoload]` block grows to 7 lines; no runtime behaviour change (ADR-0002 and combat-damage.md already assert the Combat autoload claim — this aligns the registry).
+- **Pros**: Closes the Phase 5 §6.3 editorial conflict; brings the registry into alignment with the ADR-0002 OQ-CD-1 bundle + combat-damage.md §350 + TR-CD-022; preserves Combat's scene-tree fan-out access pattern which autoloads were designed for; fences Combat under the same `unregistered_autoload` + `autoload_init_cross_reference` patterns as the other 6.
+- **Cons**: Grows the canonical registry from 6 to 7; one more autoload to hold in the code-review mental model.
+- **Selection reason**: godot-specialist consultation 2026-04-23 (architecture.md §6.3): Combat's method-call fan-out from arbitrary scene-tree positions is exactly what Godot's autoload system exists for; line-7 placement is safe because `CombatSystemNode` has no cross-autoload `_init()` or `_ready()` references.
+
+#### Path B — Downgrade Combat from autoload to scene-tree singleton
+
+- **Description**: Remove the Combat autoload. Declare Combat as a regular scene node (e.g., child of a per-section root or a Mission Scripting owner). Callers reach Combat via group lookup (`get_tree().get_first_node_in_group("combat")`) or hardcoded `get_node()` paths from their scene context.
+- **Pros**: Keeps the canonical autoload count at 6; avoids growing ADR-0007.
+- **Cons**: Requires retracting ADR-0002's `class_name CombatSystemNode` / autoload-key `Combat` split (TR-CD-022). Requires editing combat-damage.md §350 + §297 and every caller site (SAI guard nodes, PC damage path, projectile scripts) to replace `Combat.apply_damage_to_actor(...)` with group-lookup or `get_node()` boilerplate. Group lookups are fragile (no compile-time name check; silent failure when the node is renamed or moved); hardcoded `get_node()` paths break the "decoupled from scene structure" invariant. Opens the door to `autoload_singleton_coupling`-adjacent anti-patterns by making Combat reachable via a scene-tree convention that `unregistered_autoload` was designed to prevent.
+- **Rejection reason**: ADR-0007 implicitly forbids this class of scene-tree singleton via the same rationale that justifies `unregistered_autoload`: a service-locator-via-scene-graph is a drift hazard indistinguishable in symptoms from an ad-hoc autoload. Paying that cost to avoid growing the autoload count by 1 is a worse trade.
+
+#### Path C — Defer the decision
+
+- **Description**: Neither amend ADR-0007 nor downgrade Combat. Continue with ADR-0002 and combat-damage.md asserting Combat as an autoload while ADR-0007's canonical table lists only 6.
+- **Pros**: Zero work now.
+- **Cons**: Leaves TR-CD-022 + ADR-0002 OQ-CD-1 bundle in a false conflict state against this ADR's canonical table. The first PR to add Combat to `project.godot` would trip the `unregistered_autoload` code-review fence with no paired amendment available — blocking the Technical Setup phase or inviting a lapsed-fence bypass. Editorial debt with no payoff.
+- **Rejection reason**: The issue is low technical risk but high editorial correctness risk — exactly the drift class this ADR exists to prevent. Deferring would normalise the exception.
+
 ## Consequences
 
 ### Positive
@@ -220,6 +259,7 @@ framing corrections folded in.*
 - Single authoritative source for autoload order; future developers have one document to consult.
 - Fence (`unregistered_autoload` forbidden pattern) prevents the four drift hazards identified by specialist: (a) plugin-added autoloads, (b) `@tool` `add_autoload_singleton()` calls, (c) runtime `Engine.register_singleton()` calls, (d) manual `project.godot` reshuffling without ADR amendment.
 - Cross-autoload reference safety (`_ready()` vs `_init()`) finally specified authoritatively. Previously scattered across ADR-0002, LS GDD, and implicit developer knowledge.
+- Amendment 2026-04-23 closes the Phase 5 §6.3 cross-session editorial conflict (Combat autoload claim in ADR-0002 + combat-damage.md §350 + TR-CD-022 vs. this ADR's original 6-autoload canonical table). The canonical registry now matches the downstream assertions; the `/architecture-review` verdict inherits a clean state.
 
 ### Negative
 
@@ -245,8 +285,8 @@ framing corrections folded in.*
 
 | Metric | Before | Expected After | Budget |
 |---|---|---|---|
-| CPU (autoload instantiation at startup) | N/A (no project.godot yet) | ~6 × <1 ms ≈ <6 ms total startup autoload cost | <50 ms total project startup budget |
-| Memory (static autoload cost) | N/A | 6 nodes in tree, <50 KB combined; SaveLoadService + LevelStreamingService hold the most state via Resources and fade overlay | <1 MB steady-state autoload footprint |
+| CPU (autoload instantiation at startup) | N/A (no project.godot yet) | ~7 × <1 ms ≈ <7 ms total startup autoload cost | <50 ms total project startup budget |
+| Memory (static autoload cost) | N/A | 7 nodes in tree, <60 KB combined; SaveLoadService + LevelStreamingService hold the most state via Resources and fade overlay; CombatSystemNode holds only enum definitions + stateless helper methods (no runtime state on the autoload itself — per-dart and per-GuardFireController state lives on scene-node instances) | <1 MB steady-state autoload footprint |
 | Runtime | N/A | Zero runtime impact — this ADR is a registration/documentation contract | — |
 
 ## Migration Plan
@@ -260,7 +300,7 @@ No existing code. Implementation order:
 
 ## Validation Criteria
 
-- [ ] **Gate 1**: `project.godot [autoload]` block contains exactly 6 entries in the §Key Interfaces order, using `*res://` prefix on every entry, matching the §Key Interfaces block byte-for-byte (modulo whitespace).
+- [ ] **Gate 1**: `project.godot [autoload]` block contains exactly 7 entries in the §Key Interfaces order (as amended 2026-04-23), using `*res://` prefix on every entry, matching the §Key Interfaces block byte-for-byte (modulo whitespace).
 - [ ] **Gate 2**: ADR-0002 Gate 1 smoke test (emit → EventLogger prints → subscriber receives) passes. Incidentally validates Cross-Autoload Reference Safety.
 - [ ] All "load order N" statements in ADR-0002, ADR-0003, ADR-0004, `signal-bus.md`, `level-streaming.md` are replaced with "per ADR-0007" references (see §Downstream sites).
 - [ ] 2 forbidden patterns registered in `docs/registry/architecture.yaml`: `unregistered_autoload`, `autoload_init_cross_reference`. Optional third: `runtime_singleton_registration`.
@@ -277,6 +317,7 @@ No existing code. Implementation order:
 | `design/gdd/level-streaming.md` | CR-1: "`LevelStreamingService` is an autoload. Load order 4 (after Events at 1, EventLogger at 2, SaveLoad at 3)." | **Supersedes** CR-1's "Load order 4" → line 5 (after `InputContext` at 4). LS GDD CR-1 text updated in the paired edit. |
 | `design/gdd/post-process-stack.md` | §5: "The PostProcessStack autoload owns the sepia dim state." | `PostProcessStack` at line 6 (now explicit). |
 | `design/gdd/input.md` | (via ADR-0004) `InputContext` autoload for modal input routing. | `InputContext` at line 4. |
+| `design/gdd/combat-damage.md` | §350 + TR-CD-022: "Autoload convention: class_name=CombatSystemNode, autoload key=Combat (intentional split mirroring SignalBusEvents/Events); enum paths use class_name, method calls use autoload key." | `Combat` at line 7 (autoload key matches combat-damage.md's expectation; script path `*res://src/gameplay/combat/combat_system.gd` matches architecture.md §4 Module Ownership pseudocode). TR-CD-022 is the authoritative rationale for the `class_name` / autoload-key split. |
 
 ### Downstream sites requiring paired text edits
 
@@ -298,3 +339,6 @@ reference "per ADR-0007":
 - **`docs/registry/architecture.yaml`** — 2 forbidden patterns (`unregistered_autoload`, `autoload_init_cross_reference`) and 1 `api_decisions` row (`autoload_registration_order` → `declarative_registry`) registered by this ADR. Optional 3rd forbidden pattern: `runtime_singleton_registration`.
 - **godot-specialist validation** — 2026-04-22 §1 (line-order authority) + 2026-04-23 pre-authoring consultation (Claims 1/2/3 GREEN/YELLOW/YELLOW; framing correction for Claim 2 incorporated into §Cross-Autoload Reference Safety; hazards #1/#2/#3 incorporated into Risks table).
 - **`docs/architecture/architecture-review-2026-04-23.md`** — identifies Gap 3 + Conflict 1 that this ADR resolves; recommends "dedicated registry ADR" over the surgical alternative.
+- **ADR-0002 (Signal Bus + Event Taxonomy) — 2026-04-22 OQ-CD-1 bundle** — introduced `class_name CombatSystemNode` / autoload key `Combat` split (Revision History entry 2026-04-22). This amendment (2026-04-23) pins Combat's canonical line position at 7; the two documents agree after the amendment lands.
+- **`design/gdd/combat-damage.md` §350 + TR-CD-022** — declares Combat as autoload with the `class_name CombatSystemNode` / autoload-key `Combat` split; this amendment aligns ADR-0007's canonical registration table with that declaration.
+- **`docs/architecture/architecture.md` §6.3 + §7.2.1 + §9.2** — surfaced the Combat-autoload omission during `/create-architecture` Phase 4 API-Boundaries authoring (2026-04-23); tracks Path A follow-up that this amendment delivers.

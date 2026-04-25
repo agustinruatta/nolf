@@ -1,271 +1,408 @@
 # Session State
 
-**Last updated:** 2026-04-23 (ADR-0008 Performance Budget Distribution **WRITTEN** — 9 Iris Xe slots summing 16.6 ms + non-frame budgets + 4 validation gates. Gap 2 from /architecture-review 2026-04-23 CLOSED. SAI Recommended Follow-up #5 CLOSED. combat-damage.md L233 cross-system reconciliation flag CLOSED. Registry gained 9 performance_budgets + 1 api_decision + 2 forbidden_patterns. All priority ADRs now written (0001–0008).)
+**Last updated:** 2026-04-25 (`/design-system hud-core` **COMPLETE** — solo mode, all 11 sections written to `design/gdd/hud-core.md` (1,182 lines). Phase 5 validation done: registry updated (2 referenced_by + 6 new entries), systems-index row 16 + Progress Tracker (Started 14→15, MVP designed 14→15/16) + Last Updated header updated. **2 ADR-0002 amendments now BLOCKING for sprint** (`ui_context_changed`, `takedown_availability_changed`). Next recommended: `/design-review design/gdd/hud-core.md` in a fresh session.)
 
-## Current task (2026-04-23 — ADR-0008 performance budget distribution session)
+## Current Task — `/design-system hud-core` **COMPLETE 2026-04-25**
 
-✅ **ADR-0008 WRITTEN** (Proposed; 4 validation gates pending measurements). godot-specialist validation YELLOW with 3 prose constraints folded in before write: (a) directional shadow cascade cap = 1 named in Constraints + Risk row + forbidden pattern; (b) PostProcessStack cold-boot dominance (5–15 ms Vulkan + 5–10 ms D3D12) documented in non-frame budgets table + Risk row; (c) D3D12 post-stream warm-up 3-frame allowance added to non-frame budgets table + Validation Gate 3.
+- **Task**: `/design-system hud-core` — system #16, UI/Presentation layer, MVP tier, M effort
+- **Review mode**: `solo` (CD-GDD-ALIGN gate at Phase 5a-bis skipped per `.claude/docs/director-gates.md`)
+- **File**: `design/gdd/hud-core.md` (**1,182 lines**, 82 section headers — all 11 sections complete)
+- **Pillar alignment**: Primary 5 (Period Authenticity) + Primary 2 (Discovery — "no waypoints"); Secondary 1 (Comedy — HUD silent) + 3 (Theatre — critical-state cue) + 4 (Locations — modesty)
+- **Status**: **COMPLETE** — all 15 tasks done. Ready for `/design-review` in fresh session.
 
-**Iris Xe allocation (normative, 16.6 ms total):** Rendering 3.8 · Guard systems (SAI+GuardFire) 6.5 · Post-Process chain 2.5 · Jolt physics 0.5 · Player/FC/Combat non-GF 0.3 · Audio dispatch 0.3 · UI refresh 0.3 · Pooled residual 0.8 · Reserve 1.6 = 16.6 ms.
+### Sections written
 
-**Files modified this session:**
-- `docs/architecture/adr-0008-performance-budget-distribution.md` — **NEW** (~390 lines, 13 sections, 9-slot allocation table + non-frame budgets table + verification contract + 4 validation gates + alternatives A/B/C + 7 risks)
-- `design/gdd/combat-damage.md` L233 — cross-system reconciliation flag marked CLOSED by ADR-0008 Slot #2
-- `design/gdd/stealth-ai.md` L684 — Recommended Follow-up #5 marked CLOSED by ADR-0008
-- `docs/registry/architecture.yaml` — **last_updated 2026-04-23** (comment extended); 9 NEW performance_budgets entries (rendering-pipeline 3.8, guard-systems 6.5, post-process-chain 2.5, jolt-physics-step 0.5, player-fc-combat-nonGF 0.3, audio-dispatch 0.3, ui-refresh 0.3, pooled-residual 0.8, reserve-unallocated 1.6); outline-pipeline referenced_by expanded to include ADR-0008 (revised 2026-04-23); 1 NEW api_decisions entry (performance_budget_enforcement — CI-time reference scene gate, not runtime BudgetRegistry); 2 NEW forbidden_patterns (unbudgeted_per_frame_ticking, directional_shadow_second_cascade).
+- §Overview ✅ (1 dense paragraph — both-framing + ADR-0002/0004/0008 cited + boundary statement)
+- §Player Fantasy ✅ (Candidate A "The Glance" — cockpit-dial fantasy + 2 primary + 3 secondary pillars + 5 explicit refusals + fantasy test for future additions)
+- §Detailed Design ✅ (C.1 20 Core Rules + C.2 5-widget grammar/anchor table + C.3 3-state prompt-strip machine + C.4 damage-flash narrative + C.5 16-row Interactions matrix + 4 BLOCKING + 3 ADVISORY coord items + bidirectional check + C.6 14 Forbidden Patterns)
+- §Formulas ✅ (F.1 photosensitivity rate-gate aligned with Audio §F.4 / F.2 critical-state edge-trigger / F.3 viewport scale [0.667, 2.0] / F.4 crosshair radius [3, 12] / F.5 frame-cost composition with 0.259 ms worst-case vs 0.3 ms cap + dry-fire NOT-rate-gated rationale)
+- §Edge Cases ✅ (37 cases across 10 clusters: A same-frame storms / B critical-state boundaries / C flash coalescing / D prompt-strip lifecycle / E InputContext+visibility / F save/load / G settings+localization / H performance / I subscriber lifecycle / J pillar-violation guards)
+- §Dependencies ✅ (8 hard upstream + 2 soft + 3 forward dependents + 8 ADR + 7 forbidden non-deps + 4 BLOCKING + 3 ADVISORY coord items + 9-row bidirectional consistency check)
+- §Tuning Knobs ✅ (G.1 5 HUD-owned + G.2 6 Combat/PC-owned references + G.3 11 Art-Bible-owned visual constants + G.4 4 forward-dep Settings knobs + G.5 ownership matrix)
+- §Visual/Audio ✅ (V.1 StyleBoxFlat specs for 5 widget bgs + key-rect / V.2 5-asset list / V.3 per-widget render trees / V.4 damage-flash composition / V.5 critical-state transition / V.6 crosshair _draw() with full GDScript / V.7 14-item visual-restraint compliance check + Asset Spec Flag; A.1 4 audio contracts (HUD owns ZERO audio) + A.2 mix bus reference)
+- §UI Requirements ✅ (UI-1 flow boundaries / UI-2 10-row accessibility floor Day 1 vs Polish vs forward-dep / UI-3 HSS extension API via `get_prompt_label()` / UI-4 UX Flag for `/ux-design hud-core` Phase 4)
+- §Acceptance Criteria ✅ (73 ACs across 12 groups: H.1 lifecycle 5 / H.2 health 7 / H.3 photosensitivity 6 / H.4 weapon+ammo 6 / H.5 gadget 6 / H.6 prompt-strip 7 / H.7 crosshair 5 / H.8 input-context 4 / H.9 performance 5 / H.10 forbidden-pattern grep gates 13 / H.11 locale+a11y 5 / H.12 save/load 4)
+- §Open Questions ✅ (6 OQs — 2 BLOCKING (OQ-HUD-3 Settings boot order, OQ-HUD-4 LSS restore-callback ordering) + 4 ADVISORY; 10 deliberately-omitted items consciously excluded from MVP)
 
-**Engine specialist validation (Step 4.5):** godot-specialist returned **YELLOW** with 3 specific prose constraints + GREEN on Jolt 0.5 ms slot. Folded all 3 notes into ADR before write. Specialist observations NOT yet applied (logged for code-review phase): AudioServer bus graph rebuild on reverb swap is a 0.3–0.8 ms CPU stall on the game thread in the same frame as the swap — absorbed by reserve but worth reviewer attention when Audio's section_entered handler lands.
+### Specialist consultations (all section-mandatory per skill)
 
-**Technical Director review (Step 4.6):** SKIPPED — solo review mode per `production/review-mode.txt`.
+- **creative-director** (§B): 3 candidate framings — A "The Glance" (cockpit-dial register), B "Numeral Goes Orange" (theatrical cue), C "Furniture Not Theatre" (modest dashboard). User selected **Candidate A** (Pillar 5 + 2 primary; matches Inventory "Crouched Swap" precedent register)
+- **ux-designer** (§C widget grammar + prompt-strip lifecycle + accessibility floor): 5-widget anchor table; 3-state machine resolver with priority TAKEDOWN > INTERACT > HIDDEN; F.4 crosshair clamp; auto-dismiss timer at 2.0s (deferred to HSS via MEMO defer)
+- **game-designer** (§C 20 Core Rules + photosensitivity semantics + state machine): full CR set; F.1 photosensitivity gate algorithm with player_died `_flash_timer.stop()` requirement
+- **godot-specialist** (§C Godot 4.6 feasibility): signal subscription via `Events.signal.connect(handler)`; explicit `_exit_tree()` disconnect with `is_connected()` guard (ADR-0002 §Impl Guideline 3 mandates); CanvasLayer at index 1; tree-order z within layer; `add_theme_color_override` over theme swap; `await get_tree().process_frame` for damage flash; child Timer node (oneshot 333 ms) over SceneTreeTimer; `_draw()` over nested ColorRects for crosshair; flagged ADR-0004 Gate 2 (Theme inheritance prop name) + Gate 1 (accessibility_live prop name) as BLOCKING; recommended ADR-0002 amendment for ui_context_changed
+- **systems-designer** (§D + §E): F.1 validated with `_flash_timer.stop()` correction; F.2 with `max(max_health, 1.0)` divide-by-zero floor; F.5 frame-cost composition; 37 edge cases across 10 clusters with `is_instance_valid` guard requirement on prompt-strip
+- **art-director** (§V): StyleBoxFlat specs for 5 widget backgrounds + key-rect; 5-asset list; per-widget render trees; crosshair `_draw()` with full GDScript; Ink Black `#1A1A1A` confirmed against Art Bible §4.4; 14-item visual-restraint compliance check
+- **qa-lead** (§H): 73 ACs across 12 groups; Logic/Integration BLOCKING + UI/Visual ADVISORY; AC-HUD-pillar-1 + AC-HUD-pillar-2 scene-tree CI scans (kill-confirmed + damage-direction guards)
 
-**Dependencies closed by this ADR:**
-- /architecture-review 2026-04-23 **Coverage Gap 2** (Performance Budget Distribution ADR) — CLOSED (pending validation gates to move Proposed → Accepted)
-- SAI GDD Recommended Follow-up #5 (line 684) — CLOSED
-- combat-damage.md L233 cross-system reconciliation flag — CLOSED
+### User-approved design decisions via AskUserQuestion (4 blockers)
 
-**Downstream still open (producer-tracked, out of this ADR's scope):**
-- 3 GDD-coordination items (unchanged): PC rename `CombatSystem.*` → `CombatSystemNode.*` (~10 sites); Audio GDD L188–189 §Mission handler table (LS-Gate-3); Input GDD L90 `use_gadget` → dedicated `takedown` action.
-- All 8 ADRs (0001–0008) still **Proposed**. Total verification gates outstanding: **21** (prior 17 + 4 new from ADR-0008).
-- ADR-0008 Gates 1–4 require measurement on (a) Iris Xe Gen 12 min-spec, (b) RTX 2060 informative, (c) Windows D3D12 post-stream warm-up, (d) autoload boot cold-start on both platforms. Reference scene `tests/reference_scenes/restaurant_dense_interior.tscn` does not yet exist — scoped to a separate tooling story (prototyper or qa-lead).
-- CI `perf-gate` job configuration — scoped to a separate devops-engineer story.
+1. **HUD visibility on InputContext change** → Add `ui_context_changed(new_ctx, prev_ctx)` signal to ADR-0002 (UI domain) — BLOCKING coord item
+2. **TAKEDOWN_CUE eligibility detection** → Add `takedown_availability_changed(eligible, target)` signal to ADR-0002 (SAI domain) — BLOCKING coord item, bundles with #1
+3. **MEMO_NOTIFICATION scope** → Defer entirely to HUD State Signaling (system #19, VS); HUD Core MVP prompt-strip = HIDDEN/INTERACT_PROMPT/TAKEDOWN_CUE only
+4. **Empty gadget tile rendering** → Render dimmed 40% opacity (geometry stability over hide-when-empty)
 
-**Next action** (user runs in a FRESH session, not here): `/architecture-review` to verify Gap 2 closure and re-assess verdict (expected: CONCERNS → PASS if no new conflicts surface; remaining blockers become verification gate pass on existing ADRs + 3 producer-tracked GDD touch-ups).
+### F.2 unit-mismatch fix (registry conflict caught at Phase 5b self-check)
 
----
+Registry has `player_critical_health_threshold = 25 hp_percent` (canonical at max_health=100). Initial F.2 wrote `(health_ratio < 0.25)` mixing units. Fixed F.2 to `(health_ratio < threshold_ratio)` where `threshold_ratio = player_critical_health_threshold / 100.0`. Pattern aligns with Audio GDD §F.4 clock-tick trigger (identical canonical pattern). Registry note expanded with Audio/HUD divide-by-100 contract.
 
-## Prior task (2026-04-22 — ADR-0002 4th-pass LS + SAI amendment session)
+### Registry Phase 5b (2 referenced_by + 6 NEW entries)
 
-_Preserved below for context. See Session Extracts at end for /architecture-review 2026-04-23 runs and /architecture-decision autoload-load-order-registry 2026-04-23 session._
+- **2 referenced_by updates**: `player_max_health.referenced_by += hud-core.md` (F.2 ratio computation); `player_critical_health_threshold.referenced_by += hud-core.md + audio.md` (Audio §F.4 was never registered as such); unit clarified `hp` → `hp_percent` with note documenting Audio/HUD divide-by-100 canonical pattern
+- **6 NEW entries**:
+  - `hud_damage_flash_cooldown_ms = 333` ms safe [200, 500] — Combat-owned, HUD-enforced WCAG 2.3.1 photosensitivity gate
+  - `crosshair_dot_size_pct_v = 0.19%` safe [0.15, 0.30] — Combat-owned, HUD F.4 dot radius computation
+  - `crosshair_halo_style = tri_band` enum — Combat-owned, HUD V.6 _draw() composition
+  - `crosshair_enabled = true` bool — Combat-owned default, Settings-persisted opt-out
+  - `gadget_rejected_desat_duration_s = 0.2` s safe [0.1, 0.5] — HUD-owned NEW knob
+  - `HUDCore` cross_system_class — CanvasLayer scene at index 1, NOT autoload, public extension API `get_prompt_label()` for HSS forward-extension
 
-## Current task (2026-04-22 — ADR-0002 4th-pass LS + SAI amendment session)
+### Pre-implementation coord items OPEN (4 BLOCKING + 3 ADVISORY)
 
-✅ **ADR-0002 4th-pass amendment COMPLETE.** Bundles: (a) `section_entered(section_id: StringName, reason: LevelStreamingService.TransitionReason)` 2nd param added; (b) `section_exited` same; (c) NEW `signal guard_incapacitated(guard: Node)` AI/Stealth domain; (d) NEW `signal guard_woke_up(guard: Node)` AI/Stealth domain; (e) signal count 34 → 36; (f) enum-ownership list grows by `LevelStreamingService.TransitionReason { FORWARD, RESPAWN, NEW_GAME, LOAD_FROM_SAVE }`; (g) new Risks row: atomic-commit required (GDScript parse failure on project load if Events.gd references qualified enum before owning script declares it).
+**4 BLOCKING for sprint:**
+1. ADR-0002 amendment: add `ui_context_changed(new_ctx: InputContextStack.Context, prev_ctx: InputContextStack.Context)` signal (UI domain)
+2. ADR-0002 amendment: add `takedown_availability_changed(eligible: bool, target: Node3D)` signal (SAI domain) — bundle with #1
+3. ADR-0004 Gate 2: confirm Theme inheritance property name (`base_theme` vs `fallback_theme`) — 5-min editor inspection (godot-specialist flagged unverified against training data which expects `fallback_theme`)
+4. ADR-0004 Gate 1: confirm `accessibility_live` property name on Godot 4.6 Label/Control — deferrable to Polish per ADR-0004 §10, BLOCKING for VS
 
-**Files modified this session:**
-- `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` — 11 edit sites. Last Verified parenthetical; Summary count 34→36 + 4th-pass phrase; NEW Revision History entry (2026-04-22 4th-pass bundle) covering all 4 signal changes + cadence guarantees + atomic-commit Risks + downstream scope flags; Decision intro count + enum list grows; AI/Stealth domain block gains guard_incapacitated + guard_woke_up declarations with comment headers documenting one-shot-per-guard cadence; Mission domain section_entered/exited grow `reason: LevelStreamingService.TransitionReason` 2nd param with branching-subscribers comment; IG2 enum-ownership list inserts `LevelStreamingService.TransitionReason` (class_name + autoload-order-4 annotation); Risks table new row for atomic-commit hazard (godot-specialist wording "GDScript parse failure on project load" — not "autoload chain"; LOW×HIGH + single-PR mitigation + optional CI grep); Migration Plan step 2 stub-enum list grows; Validation Criteria item 2 count 34→36 + item 3 stub-class list grows; Related section gains level-streaming.md entry + stealth-ai.md entry expanded with 4th-pass signal references.
-- `design/gdd/signal-bus.md` — 6 edit sites. §17 Overview count 34→36 + 4th-pass note; §54 AI/Stealth canonical signals list gains guard_incapacitated + guard_woke_up (with dated annotations); §59 Mission domain row notes TransitionReason + LS co-emitter; §117 Stealth AI dep row expanded (publishes guard_incapacitated + guard_woke_up in addition to existing 4 signals); AC-3 count 34→36 with new-signals + section-signal-2-param clauses; AC-13 enum list gains `LevelStreamingService.TransitionReason`.
-- `docs/registry/architecture.yaml` — `gameplay_event_dispatch` signal_signature refreshed inline (36 signals, 4th-pass additions documented: guard_incapacitated + guard_woke_up semantics + section_entered/exited 2nd param + enum ownership gain). `revised: 2026-04-22` comment extended.
+**3 ADVISORY:**
+5. Settings & Accessibility GDD (system #23) when authored — define `crosshair_enabled / crosshair_dot_size_pct_v / crosshair_halo_style` + locale-change `setting_changed` emit-site contract
+6. HUD-scale slider as Settings forward-dep (OQ-HUD-1) — not in HUD Core MVP scope
+7. Combat §UI-6 dual-discovery path requires Settings GDD authoring
 
-**Engine specialist validation (Step 4.5):** godot-specialist returned **YELLOW** pre-write; 2 text corrections folded in before applying: (1) Risks-row wording changed from "autoload chain at startup" to "GDScript parse failure on project load" + removed "or vice versa" symmetry claim (only Events-references-missing-enum direction is dangerous); (2) IG5 cadence note added in Revision History for both new signals (one-shot per guard per session, trivially within budget). Post-correction verdict treated as GREEN. Additional specialist observations NOT applied this session (logged for code-review phase): (a) signal re-entry from within guard_incapacitated handlers is safe via Godot 4.x internal dispatch queuing but warrants reviewer attention when subscribers are implemented; (b) use `Node` (not subtyped) for guard payloads — already matches drafted form.
+### 6 Open Questions captured in §Open Questions
 
-**Technical Director review (Step 4.6):** SKIPPED — solo review mode per `production/review-mode.txt`.
+- **OQ-HUD-1 [ADVISORY]**: HUD scale slider Settings forward-dep
+- **OQ-HUD-2 [ADVISORY]**: `_pending_flash` clear on visibility=false — playtest decision
+- **OQ-HUD-3 [BLOCKING for sprint integration]**: Settings boot ordering vs HUD `_ready()` integration verification
+- **OQ-HUD-4 [BLOCKING for VS]**: LSS restore-callback signal-replay ordering — engine verification gate
+- **OQ-HUD-5 [ADVISORY]**: `C_label` >0.05 ms breach contingency — performance ADR amendment trigger
+- **OQ-HUD-6 [ADVISORY]**: Crosshair default ON vs OFF — playtest decision
 
-**Dependencies closed by this amendment:**
-- /architecture-review 2026-04-22 Coverage Gap 1 (ADR-0002 amendment completion) — CLOSED
-- /architecture-review Conflict 2 (ADR-0002 Key Interfaces vs. LS GDD 2-param signatures) — CLOSED
-- /architecture-review Conflict 3 (ADR-0002 missing SAI 4th-pass signals) — CLOSED
-- LS GDD LS-Gate-1 (ADR-0002 section-signal amendment) — CLOSED
-- SAI GDD pre-impl gate #1(c) + #1(d) (guard_incapacitated + guard_woke_up in ADR-0002) — CLOSED
-- Signal Bus GDD touch-up (SAI enum ownership + new-signal domain-table row per session-state item #3) — CLOSED
+### Files modified this session
 
-**Downstream still open (producer-tracked; out of this amendment's scope):**
-- /architecture-review Coverage Gap 2 — Performance Budget Distribution ADR (cross-cutting 7 systems).
-- /architecture-review Coverage Gap 3 — Autoload registration contract (InputContext + LevelStreamingService load-order-4 collision — editorial hazard per Specialist §1).
-- /architecture-review Conflict 1 — same autoload collision. Resolves via either a dedicated autoload-registry ADR or surgical ADR-0004 + LS GDD amendment.
-- LS-Gate-3 — Audio GDD §Mission-domain handler table (currently 1-param at lines 188–189) must grow `reason: TransitionReason` + branching table per LS GDD CR-8. Audio-owned edit.
-- Producer-tracked `CombatSystem.DeathCause` → `CombatSystemNode.DeathCause` rename in `design/gdd/player-character.md` lines 200, 457, 591 (carried from prior OQ-CD-1 pass).
-- All 6 ADRs still `Proposed` — verification gates outstanding across the chain (16 gates tracked in architecture-review-2026-04-22.md).
+- `design/gdd/hud-core.md` — **NEW** (1,182 lines)
+- `design/registry/entities.yaml` — 2 referenced_by updates + 6 new entries appended; `last_updated` header updated
+- `design/gdd/systems-index.md` — row 16 Status updated to Designed; Progress Tracker counts updated (Started 14→15, MVP designed 14→15/16); Last Updated header updated
+- `production/session-state/active.md` — this file
 
-**Next action** (user runs in a FRESH session, not here): either (a) `/architecture-review` to verify that Coverage Gap 1 + Conflicts 2+3 are closed by this amendment and surface any remaining gaps; (b) `/architecture-decision autoload-load-order-registry` or surgical ADR-0004 + LS GDD amendment for Coverage Gap 3; (c) `/architecture-decision performance-budget-distribution` for Coverage Gap 2.
+### Context locked (Phase 2 summary)
 
----
+- Upstream Approved: PC §UI Requirements (signals + queries + HUD-must-NOT-render list), Combat §UI-1..UI-6 (crosshair widget, photosensitivity rate-gate `hud_damage_flash_cooldown_ms = 333`), Inventory §UI-1..UI-9 (4 frozen signals + `gadget_activation_rejected` 0.2 s desat), Civilian AI Pillar 5 zero-UI absolute, F&R empty UI absolute
+- ADR constraints: ADR-0008 Slot 7 = 0.3 ms HUD per-frame cap (signal-driven only; polling forbidden); ADR-0004 Theme + FontRegistry + `mouse_filter = MOUSE_FILTER_IGNORE`; ADR-0002 HUD subscribes-only (emits zero signals); ADR-0007 HUD is NOT autoload (CanvasLayer scene per main scene)
+- Art Bible §7A-D + §4.4: NOLF1 corner anchors locked (BL health / BR weapon+ammo / TR gadget / center-lower contextual); BQA Blue `#1B3A6B` 85% + Parchment `#F2E8C8` + Alarm Orange `#E85D2A` (<25% HP) + PHANTOM Red `#C8102E` (captured equipment); 1-frame numeral flash on damage, 333 ms cooldown
+- Forbidden (Pillar 5 anti-pillars): objective markers / minimap / kill cams / ping systems / waypoints / alert visual indicators / civilians / death screen / retry / stamina bar / damage direction / hit marker / hold-E ring / damage numbers / floating text / radial weapon wheel
+- Known cross-system facts: `player_max_health = 100`, `player_critical_health_threshold = 25%`, `hud_damage_flash_cooldown_ms = 333` ms WCAG 3 Hz, `crosshair_dot_size_pct_v = 0.19%`, `crosshair_halo_style = tri_band`, `crosshair_enabled = true` default opt-out
 
-## Prior task (2026-04-22 — ADR-0002 OQ-CD-1 amendment session)
+### Next steps
 
-✅ **ADR-0002 amendment COMPLETE.** Bundles: (a) 3 perception signals grow `severity: StealthAI.Severity`; (b) `takedown_performed` → 3-param form with `attacker` + `takedown_type: StealthAI.TakedownType`; (c) `player_died` payload rename `CombatSystem.DeathCause` → `CombatSystemNode.DeathCause`; (d) NEW `Accessor Conventions (SAI → Combat)` subsection declaring `has_los_to_player()` + `takedown_prompt_active(attacker)` as principled `direct_call` carve-out with 4 exemption criteria + no-new-accessors fence; (e) enum-ownership list grows by 2 owners + CombatSystemNode rename propagated; (f) Risks table row added for specialist MINOR note (inner-enum editor reimport).
+- §Overview framing widget (Framing/ADR-ref/Fantasy tabs) → draft → write
+- §Player Fantasy (creative-director MANDATORY) → candidate framings
+- §Detailed Design (ux-designer + art-director + game-designer + ui-programmer specialists per routing table for UI category)
+- §Formulas (systems-designer for photosensitivity coalesce + critical-threshold transition)
+- §Edge Cases (systems-designer for same-frame storm, LOAD_FROM_SAVE replay, sub-frame ammo)
+- §Dependencies + §Tuning Knobs + §Acceptance Criteria (qa-lead) + §Visual/Audio (art-director) + §UI Requirements + §Open Questions
+- Phase 5b registry sweep + systems-index row 16 update
 
-**Files modified this session:**
-- `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` — 9 edit sites; 361 → 430 lines. Summary + Revision History + Decision intro + 4 signal declarations in Key Interfaces + NEW Accessor Conventions subsection + Implementation Guideline 2 enum-list + Risks (2 new rows) + Migration Plan step 2 + Validation Criteria (2 updated items) + Related section expanded (4 new GDD cross-refs) + Last Verified date bumped.
-- `docs/registry/architecture.yaml` — `gameplay_event_dispatch` signal_signature refreshed (34 signals, OQ-CD-1 signature changes documented) with `revised: 2026-04-22`; NEW `sai_public_accessors` interface contract (pattern `direct_call`, producer `stealth-ai-system`, consumer `combat-and-damage-system`); `last_updated: 2026-04-22`.
-- `design/gdd/signal-bus.md` — line 117-118 enum-ownership rows expanded (SAI gets Severity + TakedownType + 2 accessor-method declarations; Combat renamed to CombatSystemNode) + line 207 AC-13 enum-inventory list refreshed.
+## Previous Task — `/design-system civilian-ai` **COMPLETE 2026-04-25**
 
-**Engine specialist validation (Step 4.5):** godot-specialist returned **GREEN** with 1 MINOR note (captured in Risks row).
+(Civilian AI session entry — preserved below)
 
-**Downstream still out of scope (producer to sequence coordinated rename pass):**
-- `design/gdd/player-character.md` — lines 200, 457, 591 reference `CombatSystem.DeathCause` (frozen Approved sig; rename needed).
-- `design/gdd/audio.md` — actually AHEAD of ADR, already uses 4-param + takedown_type routing. No edit needed.
+**Last updated:** 2026-04-25 (`/design-system civilian-ai` **COMPLETE** — solo mode, all 11 sections written to `design/gdd/civilian-ai.md` (749 lines). Phase 5 validation done: registry updated (7 entries — CivilianAI / CivilianAIState / WitnessEventType / civilian + panic_anchor group tags / cai_frame_budget_ms_p95 / bqa_pickup_distance_m), systems-index row 15 + Progress Tracker updated. **Closes SAI OQ-SAI-1 by spec**. Next recommended: `/design-review design/gdd/civilian-ai.md` in a fresh session.)
 
-## Current task
+## Current Task — `/design-system civilian-ai` **COMPLETE 2026-04-25**
 
-✅ `design/gdd/stealth-ai.md` — **/design-system OQ-CD-1 revision COMPLETE (2026-04-22)**. 3rd-pass revision applied inline; file grew from 708 → ~800 lines. All 7 OQ-CD-1 items closed (6 scope items per combat-damage.md §OQ-CD-1 + 1 bundled §V.4 body-drop approach vector). Entity registry updated with 5 new phantom_guard attributes. Pre-implementation Combat gates AC-CD-7.1, 7.3, 6.1 unblocked.
+- **Task**: `/design-system civilian-ai` — system #15, Gameplay layer, MVP tier, S effort
+- **Review mode**: `solo` (CD-GDD-ALIGN gate at Phase 5a-bis skipped per `.claude/docs/director-gates.md`)
+- **File**: `design/gdd/civilian-ai.md` (**749 lines**, all 11 sections written — 8 required + Visual/Audio + UI + Open Questions)
+- **Pillar alignment**: Primary 3 (Stealth is Theatre — audience-as-witnesses) + 1 (Comedy chorus — Audio Formula 2 diegetic-recedes); Secondary 2 (BQA tells at VS) + 4 + 5
+- **Status**: **COMPLETE** — all 11 tasks done. Ready for `/design-review` in fresh session.
 
-**Next action** (user runs in a FRESH session, not here): `/design-review design/gdd/stealth-ai.md` — validate the 3rd-pass revision independently.
+### Sections written
 
-### OQ-CD-1 amendment closure (2026-04-22, this session)
+- §Overview ✅ (1 dense paragraph — phased MVP/VS scope + ADR citations + chorus-not-co-star framing)
+- §Player Fantasy ✅ (Candidate B "Stealth With Witnesses" — schoolteacher anchor moment, audience makes theatre literal)
+- §Detailed Design ✅ (C.1 Core Rules 15 CRs + C.2 State Machine 2-state + C.3 Flee Algorithm 3-phase pseudocode + C.4 Witness Event Trigger Rules VS + C.5 Interactions 11-row table + C.6 Forbidden Patterns 10 grep rules)
+- §Formulas ✅ (F.1 panic-trigger predicate + F.2 flee re-target proximity gate + F.3 ADR-0008 0.15 ms p95 budget envelope + F.4 anchor scoring with dot-product filter + F.5 VS witness emission distance gate)
+- §Edge Cases ✅ (31 cases across 8 clusters: A same-frame storms / B damage / C save-load / D SAI interaction / E Audio interaction / F NavigationAgent3D / G section reload / H VS-tier scope boundary)
+- §Dependencies ✅ (8 upstream + 7 downstream + 6 ADR + 8 forbidden non-deps + 10 coord items + 9-GDD bidirectional consistency)
+- §Tuning Knobs ✅ (G.1 panic radii + G.2 flee behavior + G.3 VS witness radii + G.4 BQA pickup VS + G.5 perf budget binding + G.6 ownership matrix)
+- §Visual/Audio ✅ (5 V + 5 A subsections — 4 archetypes × 2 variants = 8 meshes + 4-state AnimationTree + Tier 3 default + Tier 1 BQA promotion + Pillar 5 forbidden patterns + signal-publisher-only audio handoff + Pillar 1 reading of Audio Formula 2)
+- §UI Requirements ✅ (Pillar 5 zero-UI absolute — civilians never appear in HUD; VS forward-deps only)
+- §Acceptance Criteria ✅ (33 ACs across 10 groups — 28 BLOCKING + 5 ADVISORY incl. 4 VS-only)
+- §Open Questions ✅ (6 OQs — 3 BLOCKING incl. NavigationAgent3D engine-verification gate + VS feature flag + civilian gasp VO sourcing; 3 ADVISORY playtest-resolvable; 7 deliberately-omitted items)
 
-7 amendment items applied via `/design-system stealth-ai` revision mode:
+### Specialist consultations (all section-mandatory per skill)
 
-1. **AlertState.UNCONSCIOUS 6th state** — added to enum, perception-reachability note, severity rule, state diagram, transition table (split into 3 rows), per-state behaviour table, F.4 propagation filter (excludes UNCONSCIOUS like DEAD).
-2. **`receive_damage(...) -> bool is_dead` return contract** — synchronous mutation guarantee (no `call_deferred`); documented on §C.3 Combat & Damage dep row + AC-SAI-1.7 + AC-SAI-1.11.
-3. **Lethality routing via `Combat.is_lethal_damage_type()`** — lethal (BULLET / MELEE_BLADE / FALL_OUT_OF_BOUNDS) → DEAD; non-lethal (DART_TRANQUILISER / MELEE_FIST) → UNCONSCIOUS. Transitional model: UNCONSCIOUS + further lethal → DEAD; UNCONSCIOUS + further non-lethal → idempotent no-op. New edge cases E.19, E.20, E.21.
-4. **TakedownType enum** — `STEALTH_BLADE` present, `SILENCED_PISTOL` already removed (prior /consistency-check pass). Verified.
-5. **Public accessors** — `has_los_to_player() -> bool` (F.1 cache hit, 10 Hz stale-safe) + `takedown_prompt_active(attacker: Node) -> bool` (state ∈ {UNAWARE, SUSPICIOUS} + rear 180° half-cone + ≤1.5 m + no LOS). Documented on §C.3 Combat dep row + AC-SAI-3.9 + AC-SAI-3.10. `TAKEDOWN_RANGE_M = 1.5` registered on phantom_guard.
-6. **Synchronicity guarantee** — `receive_damage` mutates `current_alert_state` before return (no `call_deferred`); AC-SAI-1.11 enforces via spy-proxy test.
-7. **Body-drop approach vector** (bundled from §V.4 Combat) — captured at terminal-entry as `(attacker.origin - self.origin).with_y(0).normalized()` with degenerate-case fallback per E.23. Serialised in save format. §V animation spec updated.
+- **creative-director** (§B): Candidate B "Stealth With Witnesses" framing selected (Pillar 3 primary + Pillar 1 secondary); the audience makes the theatre literal
+- **systems-designer** (§C Core Rules + §D Formulas): 15 CRs + 5 formulas with strict template format
+- **ai-programmer** (§C state machine + §C.3 flee algorithm + §C.4 witness trigger + §C.5 per-frame budget): 2-state model rationale, hybrid flee algorithm with cower phase, VS-coupled witness emission
+- **gameplay-programmer** (§C Godot 4.6 feasibility): NavigationAgent3D.velocity_computed RVO callback pattern, Jolt body_entered reliability at Eve walking speed, set_physics_process gating, OutlineTier.set_tier signature with MeshInstance3D not Node, signal lifecycle, group tags from .tscn auto-registered
+- **art-director** (§V): 4 archetypes × 2 variants = 8 meshes; 4-state AnimationTree; Pillar 5 forbidden patterns; AD-COORD-01 BQA composed-geometry tell
+- **audio-director** (§A): signal-publisher-only handoff; CAI does NOT own AudioStreamPlayer3D / footsteps / death sounds / dialogue / muzzle / radio
+- **qa-lead** (§H): 33 ACs across 10 groups with story-type tags + BLOCKING/ADVISORY tags + evidence paths
 
-### Key design decision (user-approved, 2026-04-22)
+### User-approved design decisions via AskUserQuestion
 
-**MELEE_NONLETHAL (chloroform) takedown → UNCONSCIOUS** (not DEAD). Rationale: chloroform is fictionally non-lethal, symmetric with Combat CR-16's MELEE_FIST non-lethal damage routing. Splits takedown outcomes cleanly: MELEE_NONLETHAL → UNCONSCIOUS, STEALTH_BLADE → DEAD (via Combat CR-15 MELEE_BLADE lethal delegation). Previously both takedown types routed to DEAD; this created fictional inconsistency with CR-16 that the OQ-CD-1 closure resolved.
+1. **CR-4 kill-signal subscription**: `enemy_killed(actor: Node, killer: Node)` (Combat domain per ADR-0002) — derives cause_position via `actor.global_position` with `is_instance_valid()` guard; CAI does NOT subscribe to `guard_incapacitated` (UNCONSCIOUS chloroform takedowns are STEALTH successes — chorus must not ruin them)
+2. **CR-10 LOAD_FROM_SAVE restore behavior**: recompute flee target from saved `_cause_position` (serialize `{ panicked: bool, cause: Vector3 }` per civilian); civilian resumes fleeing on restore (preserves Player Fantasy anchor — schoolteacher resumes walking toward viewing platform); NO `civilian_panicked` re-emit (Audio rebuilds `panic_count` via group query of `get_tree().get_nodes_in_group("civilian")`)
 
-### Files modified in this session
+### Registry Phase 5b (7 NEW entries written to `design/registry/entities.yaml`)
 
-- `design/gdd/stealth-ai.md` — Status header rewrite + Group A (§C structural + state machine + diagram + transition table + accessors + F.4 filter — 11 edit sites) + Group B (E.16 rewrite + new E.19-E.23) + Group C (AC-SAI-1.3 reversibility matrix + AC-SAI-1.4 chloroform routing + AC-SAI-3.4 6×7 severity matrix + AC-SAI-3.5 force forbid UNCONSCIOUS + AC-SAI-4.3 item 3 + 5 new ACs AC-SAI-1.7 through 1.11 + AC-SAI-3.9 + AC-SAI-3.10 + AC-SAI-5.3) + Group D (§V animation approach-vector spec + §F Combat dep row OQ-CD-1 closed). ~25 edit sites total; file grew 708 → ~800 lines.
-- `design/registry/entities.yaml` — `phantom_guard` entry expanded with 5 new attributes (alert_states list updated with UNCONSCIOUS; new takedown_types, terminal_state_routing, public_accessors, receive_damage_contract, takedown_range_m). `last_updated` metadata updated.
-- `design/gdd/systems-index.md` — running changelog updated (D.7 below).
-- `production/session-state/active.md` — this file.
+- **3 cross-system Resource/enum types**: `CivilianAI` (CharacterBody3D entity + class), `CivilianAIState` (save sub-resource — Dictionary[StringName, Dictionary] keyed by actor_id), `WitnessEventType` (cross_system_enum owned by CivilianAI per ADR-0002 enum-ownership rule)
+- **2 group tags**: `civilian` (the only allowed group; SAI E.14 vision filter rejects civilians from this group; Audio queries this for panic_count rebuild), `panic_anchor` (level-designer-authored Marker3D group; CAI flee algorithm queries for §C.3 Phase 2 selection)
+- **2 perf/VS constants**: `cai_frame_budget_ms_p95 = 0.15` (ADR-0008 Slot #8 sub-claim), `bqa_pickup_distance_m = 3.0` (VS-only outline-tier promotion radius)
+- **No existing-entry `referenced_by` updates** — civilians don't carry weapons (Inventory CR-7a) so no WorldItem/Checkpoint/etc. updates needed
 
-### Pre-implementation gates still OPEN (for Combat stories)
+### SAI OQ-SAI-1 CLOSED by CAI sign-off
 
-Not resolved by this session; require their own sessions:
+SAI's deferred OQ-SAI-1 — "Guard-to-civilian propagation bidirectional? (Does a panicking civilian cascade-alert multiple guards?)" — is **closed** by CAI's spec:
+- F.5 + CR-12: at VS, `civilian_witnessed_event` propagates to ALL guards within their own perception radius (SAI handles propagation)
+- CAI emits at most ONCE per civilian per section (one-shot latch `_witnessed_event_already_emitted`)
+- Bidirectional cascade is allowed because the per-civilian latch caps signal traffic regardless of guard count
+- Coord item §F.5#10: SAI OQ-SAI-1 should be updated to "Closed by civilian-ai.md F.5 + CR-12 — 2026-04-25"
 
-1. **ADR-0002 amendment** — signal signatures in `Events.gd` code block MUST be revised to include `severity: StealthAI.Severity` on the 3 perception signals AND `takedown_performed(actor, attacker, takedown_type)` 3-param form. **Additional scope per OQ-CD-1 item 5**: ADR-0002's accessor-convention section must declare `has_los_to_player()` and `takedown_prompt_active(attacker)` as the SAI-owned public accessors consumed by Combat. Owner: `technical-director` via `/architecture-decision adr-0002-amendment` in a separate session.
-2. **Audio GDD re-review** — Audio GDD must pass `/design-review design/gdd/audio.md` with prior gaps closed (trigger-table severity filter + 4-param handler + dual takedown SFX variants + stinger dedupe + dominant-guard idempotence + SCRIPTED-cause handling). Additional 2026-04-22 scope: new `alert_state_changed(_, prev, UNCONSCIOUS, MAJOR)` music cue routing.
-3. **Signal Bus GDD touch-up** — enum ownership list must add `StealthAI.Severity` + `StealthAI.TakedownType` + accessor-method declarations. Minor edit; can land as part of ADR-0002 amendment session.
+### Pre-implementation coord items open (10 items)
 
-## Status
+**4 BLOCKING for MVP sprint:**
+1. ADR-0002 amendment — `CivilianAI.WitnessEventType` enum stub for `Events.gd` compile (atomic-commit per ADR-0002)
+2. ADR-0008 amendment — 0.15 ms Slot #8 sub-claim registration in `docs/registry/architecture.yaml`
+3. OQ-CAI-3 engine-verification gate — Godot 4.6 NavigationAgent3D.is_navigation_finished() lag + LSS register_restore_callback ordering
+4. PC GDD touch-up coord (already noted by F&R) — get_first_node_in_group("player") fallback for VS BQA pickup
 
-- ✅ Engine configured: Godot 4.6, GDScript
-- ✅ Game concept: `design/gdd/game-concept.md` (The Paris Affair)
-- ✅ Art bible complete (9 sections — amendments flagged by Combat GDD, not yet applied)
-- ✅ Systems index: 23 + 1 (FootstepComponent) systems
-- ✅ ADRs: 6 authored (0001–0006), all Proposed
-- ⏳ System GDDs: **10/23 authored** — 5 Approved (PC, FC, SAI [3rd-pass pending re-review], Audio, Level Streaming), 5 Designed/Revised pending review (Signal Bus, Input, Outline, Post-Process, Save/Load, Localization, Combat & Damage 2nd-pass)
-- ⏳ Architecture document: not started
-- 🔶 **Downstream still blocked**: Inventory & Gadgets (12), Mission & Level Scripting (13), Failure & Respawn (14), Civilian AI (15), HUD Core (16), Document Collection (17), Dialogue & Subtitles (18) — some now unblocked by Combat & Damage + SAI OQ-CD-1 closure
+**1 BLOCKING for VS sprint (not MVP):**
+5. ADR-0001 status (Proposed → Accepted) — BQA contact outline promotion enforceable when ADR-0001 lands
+6. Inventory weapon_drawn_in_public signal — F.5 EVE_BRANDISHING_WEAPON event source (or repurpose gadget_activated)
+7. OQ-CAI-4 — VS feature flag mechanism (compile-time gate for CR-12 + CR-14)
 
-## Next steps (fresh session)
+**1 BLOCKING for MVP playtest (not sprint start):**
+8. OQ-CAI-6 — Civilian gasp VO sourcing (carry-forward from Audio L689 coord item)
 
-1. **Primary**: `/clear` — this session is done. OQ-CD-1 amendment bundle closure is ~25 edit sites across §C/§D/§E/§H/§V + Status header + registry + session state + systems index.
-2. **In fresh session**: Run `/design-review design/gdd/stealth-ai.md` to validate the 3rd-pass revision independently. Lean depth probably sufficient (the amendment scope was specifically gated by OQ-CD-1 spec + user-approved Option A for chloroform routing).
-3. **Alternatives** (can happen in parallel with #2 or next):
-   - `/design-review design/gdd/combat-damage.md` — Combat 2nd-pass revision still pending independent review.
-   - `/consistency-check` — verify no new cross-GDD conflicts from the SAI 3rd-pass revision (particularly: Audio GDD UNCONSCIOUS music cue reference, Save/Load guard serialization schema expansion).
-   - `/architecture-decision adr-0002-amendment` — now bundles (a) severity + 4-param takedown_performed; (b) SILENCED_PISTOL → STEALTH_BLADE enum rename; (c) NEW 2026-04-22: has_los_to_player + takedown_prompt_active accessor-convention declaration.
-   - `/design-system inventory-gadgets` (system #12) — Combat + SAI both define interfaces Inventory will consume.
-   - `/gate-check pre-production` — 10/16 MVP GDDs designed; not yet ready for gate (need 16/16 + ADRs Accepted).
+**6 ADVISORY:**
+9. Audio §Concurrency Rule 5 dead-code annotation
+10. Signal Bus L122 handler-table verification post-this-GDD
+11. MLS L679 outline-tier reconciliation (says "Medium tier" — OP L112 says "Tier 3 LIGHT", OP authoritative)
+12. Save/Load CivilianAIState `cause: Vector3` schema touch-up
+13. panic_anchor section-validation CI extension (coord with MLS §C.5.6)
+14. SAI OQ-SAI-1 closure note (should reference this GDD)
 
-## Open design questions (active)
+### 6 Open Questions captured in §Open Questions
 
-SAI 3rd-pass revision introduces no new OQs beyond OQ-CD-1 closure. Combat & Damage's 10 OQs (OQ-CD-1 now CLOSED, OQ-CD-2 through OQ-CD-13 still active) remain tracked in combat-damage.md §Open Questions. Previously-tracked deferred items unchanged:
-- OQ-SAI-1 through OQ-SAI-8 (SAI GDD §Open Questions) — none affected by OQ-CD-1 closure.
-- OQ-2 Fall damage — deferred to VS
-- OQ-3 Lean system — deferred, revisit after Stealth AI + first playtest
-- OQ-4 Mirror full body mesh — deferred to VS
-- OQ-6 Eve verbalizes — deferred, narrative dep
-- OQ-FC-2 Noise level sampling timing — deferred, Audio playtest dep
-- OQ-FC-3 FC execution order vs PC state — deferred, playtest dep
-- OQ-FC-4 Non-player footstep sources — deferred, Stealth AI dep
+- **OQ-CAI-1 [ADVISORY]**: F.5 witness-latch trade-off (closer-event suppression)
+- **OQ-CAI-2 [ADVISORY]**: F.4 anchor scoring weight (Euclidean vs path-distance)
+- **OQ-CAI-3 [BLOCKING]**: Godot 4.6 NavigationAgent3D engine-verification gate
+- **OQ-CAI-4 [BLOCKING for VS]**: VS feature flag mechanism
+- **OQ-CAI-5 [ADVISORY]**: CALM-state animation ownership (CAI vs MLS-T6 vs AnimationTree default)
+- **OQ-CAI-6 [BLOCKING for MVP playtest]**: Civilian gasp VO sourcing
 
-## Session Extract — /architecture-review 2026-04-22
+### Files modified this session
 
-- **Verdict**: CONCERNS
-- **Requirements**: 158 total TRs — ~145 covered, ~10 partial, ~3 hard gaps (all inside pending ADR-0002 amendment scope)
-- **New TR-IDs registered**: 158 (initial registry population across 12 authored GDDs, 12 system-slug namespaces: SB/INP/AUD/OUT/PP/SAV/LOC/PC/FC/LS/SAI/CD)
-- **GDD revision flags**: player-character.md (CombatSystem→CombatSystemNode rename, 3 sites — already producer-tracked)
-- **Top ADR gaps**:
-  1. ADR-0002 amendment completion (TransitionReason on section signals + guard_incapacitated/guard_woke_up + enum-ownership list entry; atomic-commit hazard per Specialist §2)
-  2. Performance Budget Distribution ADR (SAI pre-impl gate #5; affects 7 systems)
-  3. Autoload registration contract (InputContext vs LevelStreamingService load-order-4 collision; editorial hazard per Specialist §1)
-- **Cross-ADR conflicts**: 3 🔴 (Conflict 1 autoload collision; Conflict 2 ADR-0002 section signals outdated; Conflict 3 ADR-0002 missing SAI 4th-pass signals)
-- **Engine specialist**: godot-specialist YELLOW — 7 targeted spot-checks; 4 additional Risks-row recommendations (ADR-0002 atomicity, ADR-0005 Shader Baker × material_overlay gap elevated, ADR-0006 Jolt Area3D tunneling, ADR-0004 InputContextStack/InputContext discoverability trap)
-- **All 6 ADRs still Proposed** — 16 verification gates outstanding across the chain
-- **Report**: docs/architecture/architecture-review-2026-04-22.md
-- **Traceability index**: docs/architecture/requirements-traceability.md
-- **TR registry populated**: docs/architecture/tr-registry.yaml (version 2)
+- `design/gdd/civilian-ai.md` — **NEW** (749 lines)
+- `design/registry/entities.yaml` — 7 new entries appended
+- `design/gdd/systems-index.md` — row 15 Status updated to Designed; Progress Tracker counts updated (Started 13→14, MVP designed 13→14/16); Last Updated header updated
+- `production/session-state/active.md` — this file
 
-## Session Extract — /architecture-decision amendments A3–A6 2026-04-23
+### Previous task — see "Previous Task" sections below
 
-All 4 specialist-recommended amendments from 2026-04-22 applied in-place:
+## Current Task — `/design-system mission-level-scripting` **COMPLETE 2026-04-24**
 
-- **A3 — ADR-0003 Gate 3 refined** (L347): scope extended to explicitly exercise `Dictionary[StringName, GuardRecord]` duplicate_deep isolation — outer Dictionary cloned, inner GuardRecord Resources cloned, StringName keys intentionally NOT cloned (identity-preservation per interning is correct). Last Verified bumped to 2026-04-23.
-- **A4 — ADR-0004 Implementation Guideline 2 grew addendum**: call sites MUST use autoload key `InputContext.*`; MUST NOT use `class_name InputContextStack.*` (discoverability trap). Mirrors ADR-0002 `CombatSystemNode`/`Combat` split pattern. Last Verified bumped to 2026-04-23.
-- **A5 — ADR-0005 Gate 5 added** (after Gate 4): Shader Baker × `material_overlay` compatibility verification in 4.6 export build; moved from Polish to Prototype phase to avoid cascading refactor through every hands-holding weapon pose if baking excludes `material_overlay` slots. Last Verified bumped to 2026-04-23.
-- **A6 — ADR-0006 Risks row added**: Jolt `Area3D.body_entered` broadphase tunneling of fast-moving bodies (Combat darts at 20 m/s on LAYER_PROJECTILES); MEDIUM probability / LOW impact; mitigation folded into Combat GDD OQ-CD-2 Jolt prototype scope. Last Verified bumped to 2026-04-23.
+- **Task**: `/design-system mission-level-scripting` — system #13, Gameplay layer, MVP tier, M effort
+- **Review mode**: `solo` (CD-GDD-ALIGN gate at Phase 5a-bis skipped per `.claude/docs/director-gates.md`)
+- **File**: `design/gdd/mission-level-scripting.md` (**834 lines**, all 11 sections written — 8 required + Visual/Audio + UI + Open Questions)
+- **Pillar alignment**: Primary 1 (Comedy) + 4 (Iconic Locations); Secondary 2 (Discovery) + 3 (Theatre)
+- **Status**: **COMPLETE** — all 12 tasks done. Ready for `/design-review` in fresh session.
 
-**Engine specialist consultation**: no new consultation this pass — all four amendments land verbatim from the 2026-04-22 godot-specialist findings (already GREEN in their original detail). Documented per-amendment references in each Last Verified parenthetical.
+### Sections written
 
-**TD-ADR (step 4.6)**: SKIPPED — Solo mode.
+- §Overview ✅ (1 dense paragraph — MLS 5 responsibilities + pillar binding + ADR citations)
+- §Player Fantasy ✅ (Candidate B "briefing ended before the game began" — BQA Nagra reel, Paris canonical)
+- §Detailed Design ✅ (C.1 Core Rules 20 rules + C.2 Mission State Machine + C.3 Objective State Machine + C.4 Scripted-Moment Taxonomy 7 types + C.5 Section Authoring Contract 6 subsections + C.6 Per-Section Iconic Beats × 5 + C.7 Interactions table + C.8 Forbidden Patterns 8 FPs)
+- §Formulas ✅ (F.1 mission-complete gate + F.2 can-activate + F.3 alert-comedy budget + F.4 SaveGame timing + F.5 supersede-cascade + F.6 cache distribution + F.7 trigger single-fire latch — 7 formulas)
+- §Edge Cases ✅ (36 edge cases across 8 clusters: same-frame storms, RESPAWN, save/load, authoring violations, Jolt, state corruption, cross-GDD, autoload lifecycle)
+- §Dependencies ✅ (11 upstream + 7 downstream + 6 ADR deps + 7 forbidden non-deps + 12 coord items + bidirectional consistency)
+- §Tuning Knobs ✅ (7 subsections — scripted behaviour, SaveGame assembly, cache placement, supersede, Inventory-locked caps, CI constants, Pillar-1 absolutes)
+- §Visual/Audio ✅ (4 visual + 5 audio subsections + asset-spec flag + new Audio coord item)
+- §UI Requirements ✅ (MVP zero-UI absolute + 4 VS-tier forward deps + public API)
+- §Acceptance Criteria ✅ (50 ACs across 13 groups — 42 BLOCKING Logic/Integration + 8 ADVISORY)
+- §Open Questions ✅ (12 OQs — 4 BLOCKING pre-impl, 12 coord items, 9 deferred)
 
-**Remaining downstream from 2026-04-23 architecture-review**:
-- ❌ Gap 2 (Performance Budget Distribution ADR — still open, cross-cutting 7 systems)
-- ❌ Producer-tracked PC GDD `CombatSystem.*` → `CombatSystemNode.*` rename (~10 sites)
-- ❌ Audio GDD L188–189 Mission handler table (LS-Gate-3) — 1-param → 2-param branching
-- ❌ Input GDD L90 `use_gadget` → dedicated `takedown` action (Combat CR-3 coordination)
-- All 6 prior ADRs (0001–0006) and ADR-0007 still Proposed — 17 verification gates outstanding total (now +Gate 5 on ADR-0005)
+### Specialist consultations (all section-mandatory per skill)
 
-**Next action (fresh session)**: `/architecture-review` to verify A3–A6 closure and re-assess verdict (expected move: Gap 3 closed by ADR-0007 today, 4 specialist amendments closed today → only Gap 2 + producer-tracked GDD edits remain before PASS becomes achievable).
+- **creative-director** (§B): Candidate B fantasy framing selected, Paris-canonical rewrite applied
+- **game-designer** (§C.1): 15 CR proposal synthesized into final 20 CRs
+- **level-designer** (§C.5): Section Authoring Contract — 6 subsections structured
+- **systems-designer** (§C.2-C.3 state machines + §C.7 Interactions + §D formulas + §E 36 edge cases)
+- **narrative-director** (§C.4 taxonomy + §C.6 per-section beats + Pillar-1 enforcement)
+- **gameplay-programmer** (§C Godot 4.6 feasibility: autoload vs per-section, Area3D triggers, SaveGame assembly, MissionObjective as Resource, ADR-0008 sub-slot claim)
+- **qa-lead** (§H): 50 ACs authored with story-type tags
 
-## Session Extract — /architecture-decision autoload-load-order-registry 2026-04-23
+### User-approved design decisions via AskUserQuestion
 
-- **ADR written**: `docs/architecture/adr-0007-autoload-load-order-registry.md` (300 lines, Proposed status)
-- **Canonical order**: Events (1) → EventLogger (2) → SaveLoad (3) → InputContext (4) → LevelStreamingService (5) → PostProcessStack (6) — all with `*res://` scene-mode prefix
-- **Resolves**: /architecture-review Conflict 1 (InputContext vs LSS load-order-4 collision) and Gap 3 (autoload registration contract). PostProcessStack previously-unstated position now explicit at line 6.
-- **Specialist validation (step 4.5)**: godot-specialist GREEN/YELLOW/YELLOW across 3 claims. Framing correction for Claim 2 (instantiation vs `_ready()` ordering distinction + `_init()` cross-reference restriction) folded into ADR §Cross-Autoload Reference Safety and §Implementation Guidelines 3–5. Claim 3 hazards (@tool scripts, add_autoload_singleton, Engine.register_singleton) fenced via 2 new forbidden patterns.
-- **TD-ADR (step 4.6)**: SKIPPED — Solo mode per `production/review-mode.txt`.
-- **Bulk downstream edits (same-PR atomicity per fence design)**: 20+ sites updated across
-  - `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` — 10 edit sites (Revision History parenthetical, 2 diagrams, header comment, Impl. Guidelines 1+2, Migration Plan, 2 Validation Criteria rows, Related section)
-  - `docs/architecture/adr-0003-save-format-contract.md` — 3 edit sites (diagram, comment, Validation Criteria)
-  - `docs/architecture/adr-0004-ui-framework.md` — 5 edit sites (Impl. Guideline 2, diagram, comment, Migration Plan, Validation Criteria)
-  - `design/gdd/signal-bus.md` — 4 edit sites (Stateless infra, Edge cases, Tuning Knobs row, AC-1)
-  - `design/gdd/level-streaming.md` — 1 edit site (CR-1 — includes InputContext→4 / LSS→5 order flip + cross-autoload reference safety note)
-- **Registry updates** (`docs/registry/architecture.yaml`): `last_updated: 2026-04-23`; NEW `api_decisions.autoload_registration_order` (pattern: declarative_registry, 7 referenced_by sites); NEW `forbidden_patterns.unregistered_autoload`; NEW `forbidden_patterns.autoload_init_cross_reference`
-- **Gate status**: ADR-0007 Proposed → Accepted once (a) project.godot [autoload] block generated matching §Key Interfaces verbatim, (b) ADR-0002 Gate 1 smoke test passes (incidentally validates cross-autoload reference safety)
-- **Remaining open from 2026-04-23 review**: Gap 2 (Performance Budget Distribution ADR), A3/A4/A5/A6 (specialist-recommended amendments to ADR-0003/0004/0005/0006), all 6 prior ADRs still Proposed, producer-tracked PC rename (~10 sites), Audio LS-Gate-3 (handler table), Input↔Combat takedown coordination
+1. **Scripted-beat re-fire policy**: savepoint-persistent (do NOT re-fire on RESPAWN) — matches NOLF1 + simpler state
+2. **SUPERSEDED objective transition**: implicit (no 5th Mission-domain signal) — keeps ADR-0002 at 4 signals
+3. **WorldItem cache placement ownership**: MLS GDD owns policy + Level Designer executes
+4. **LOAD_FROM_SAVE re-emit**: suppress `objective_started`; HUD rebuilds from snapshot via `get_active_objectives()`
+5. **Q1 F.3 COMBAT T6 suppression**: fully suppressed at COMBAT (no budget tracked)
+6. **Q2 F.4 overflow**: push_error + proceed (don't lose save); ADR-0008 amendment flagged as follow-up
+7. **Q3 F.5 cascade abort**: partial-supersede (depths 1-3 stand; no rollback)
+8. **Q4 F.6 off-path distance**: authoring guideline + playtest (no CI-derived centerline at MVP)
 
-## Session Extract — /architecture-review 2026-04-23
+### Registry Phase 5b (14 NEW entries written to `design/registry/entities.yaml`)
 
-- **Verdict**: CONCERNS (same as 2026-04-22; scope reduced)
-- **Requirements**: 158 total TRs — ~147 covered (+2), ~10 partial, ~1 hard gap (−2: TR-LS-007 + TR-SAI-003 closed by 2026-04-22 4th-pass amendment, verified 2026-04-23)
-- **New TR-IDs registered**: None (delta run; no new GDD authorship since prior review)
-- **TRs revised**: TR-SB-002 text updated (dropped "pending amendment" qualifier — 4th-pass bundle landed; now reads "36 typed signals..."); revised: 2026-04-23
-- **GDD revision flags (carried from 2026-04-22, unchanged)**: player-character.md (CombatSystem→CombatSystemNode rename, 10 sites); audio.md L188–189 §Mission handler table (LS-Gate-3); input.md L90 `use_gadget` split for dedicated takedown action (Combat CR-3)
-- **Coverage Gap 1**: ✅ CLOSED — ADR-0002 4th-pass amendment verified in-place (36 signals, section_entered/exited 2-param TransitionReason, guard_incapacitated + guard_woke_up declared, enum-ownership grew, atomic-commit Risks row added)
-- **Conflict 2**: ✅ CLOSED (ADR-0002 Key Interfaces now match LS GDD)
-- **Conflict 3**: ✅ CLOSED (ADR-0002 Key Interfaces now include SAI 4th-pass signals)
-- **Still open**: Conflict 1 (autoload collision), Gap 2 (Performance Budget ADR), Gap 3 (Autoload registration contract), 4 specialist-recommended amendments A3–A6 (ADR-0003 Gate 3 refinement, ADR-0004 addendum, ADR-0005 Gate 5, ADR-0006 Jolt tunneling Risks row), all 6 ADRs still Proposed
-- **Cross-ADR conflicts**: 1 🔴 (Conflict 1 autoload collision — editorial, unchanged)
-- **Engine specialist**: SKIPPED this run — prior consultation covered the 4th-pass amendment (step 4.5 GREEN post-correction); no new ADRs since. 4 recommendations from 2026-04-22 carry forward unchanged.
-- **Priority action list (unchanged ordering)**: Session A resolve Conflict 1/Gap 3; Session B /architecture-decision performance-budget-distribution (Gap 2); Session C apply A3–A6 amendments
-- **Report**: docs/architecture/architecture-review-2026-04-23.md
-- **Traceability index refreshed**: docs/architecture/requirements-traceability.md (2026-04-23 history entry; TR-LS-007 + TR-SAI-003 + TR-SB-002 status refreshed; Known Gaps section restructured into cross-cutting + coordination + specialist-amendment buckets)
-- **TR registry updated**: docs/architecture/tr-registry.yaml (last_updated 2026-04-23; TR-SB-002 revised)
+- **5 cross-system Resource types**: `MissionResource`, `MissionObjective`, `MissionState`, `MLSTrigger`, `MissionScriptingService` autoload
+- **9 constants**: `alert_comedy_budget` (2), `SUPERSEDE_CASCADE_MAX` (3), `off_path_min_distance_m` (10.0), `pistol_per_section_max` (3), `pistol_per_2_section_min` (1), `dart_min_sections_span` (2 fixed), `medkit_per_section_max` (1), `t_capture_i_budget_ms` (1.0), `t_assemble_total_ceiling_ms` (5.0)
+- MLS formulas F.1/F.2/F.5/F.7 are MLS-internal predicates — NOT registered per registry README rule ("only register facts that cross system boundaries")
+- **No existing-entry `referenced_by` updates needed** (WorldItem, Checkpoint, FailureRespawnState, fr_checkpoint_marker_node_name, phantom_guard all already list MLS)
 
-## Session Extract — /architecture-review 2026-04-23 (third run, post-ADR-0008)
+### F&R BLOCKING coord item #11 CLOSED by MLS sign-off
 
-- **Verdict**: **PASS** (upgraded from CONCERNS — Gap 2 CLOSED; zero remaining ADR-level architectural gaps)
-- **Requirements**: 158 total TRs — ~154 covered (+6), ~3 partial (−6), **0 hard gaps** (−1)
-- **New TR-IDs registered**: None (delta run; ADR-0008 consolidates existing per-system claims rather than introducing requirements)
-- **TRs revised**: None (all per-system numeric claims preserved verbatim by ADR-0008)
-- **GDD revision flags (carried, all unchanged, 4th consecutive review)**: player-character.md (10 sites, CombatSystem→CombatSystemNode rename); audio.md L188–189 §Mission handler table (LS-Gate-3); input.md L90 `use_gadget` → dedicated `takedown` action split
-- **Gap 2 (Performance Budget Distribution ADR)**: ✅ CLOSED — ADR-0008 allocates full 16.6 ms across 9 named slots (Rendering 3.8 · Guard systems 6.5 · Post-Process chain 2.5 · Jolt 0.5 · Player/FC/Combat non-GF 0.3 · Audio dispatch 0.3 · UI 0.3 · Pooled residual 0.8 · Reserve 1.6 = 16.6); non-frame budgets consolidated; 4 validation gates pending measurements; 2 new forbidden patterns (unbudgeted_per_frame_ticking, directional_shadow_second_cascade); 1 new api_decision (performance_budget_enforcement)
-- **SAI Recommended Follow-up #5** (line 684): ✅ CLOSED by ADR-0008 Slot #2 6.5 ms guard-systems envelope
-- **combat-damage.md L233 cross-system reconciliation flag**: ✅ CLOSED by ADR-0008 Slot #2
-- **Cross-ADR conflicts**: 0 (no new conflicts from ADR-0008; it is a consolidator — every numeric input matches existing claims verbatim)
-- **Engine specialist**: SKIPPED this run — ADR-0008 received its own pre-authoring consultation 2026-04-23 (YELLOW with 3 prose constraints folded in: shadow cascade cap = 1, PostProcessStack cold-boot dominance, D3D12 post-stream 3-frame warm-up; GREEN on Jolt 0.5 ms slot)
-- **All 8 ADRs still Proposed** — 21 verification gates outstanding (+4 from ADR-0008 Gates 1–4: Iris Xe reference scene measurement, RTX 2060 informative, D3D12 post-stream warm-up, autoload boot cold-start)
-- **Priority action list (updated)**: Session A begin ADR verification gate passes (ADR-0001 Gates 1–3, ADR-0002 Gate 1, ADR-0007 Gate 1); Session B author reference scene + configure CI perf-gate (2 separate tooling stories — prerequisite for ADR-0008 Gates 1–4); Session C parallel producer-owned GDD touch-ups (PC rename + Audio LS-Gate-3 + Input takedown split)
-- **`/create-architecture` now eligible** — all 8 ADRs provide stable inputs; recommended after Session A's foundational ADR gates pass
-- **Report**: docs/architecture/architecture-review-2026-04-23.md (overwrites second-run 2026-04-23 snapshot)
-- **Traceability index refreshed**: docs/architecture/requirements-traceability.md (third-run 2026-04-23 history entry; coverage ~94% → ~99%; Known Gaps section: Gap 2 CLOSED; 0 hard ADR gaps)
-- **TR registry**: no edit needed (`last_updated: 2026-04-23` already current; no new TRs, no revisions this run)
+F&R's pre-impl gate "Mission Scripting PROVISIONAL — `player_respawn_point: Marker3D` authoring + non-deferred + section-validation CI" is **satisfied** by:
+- CR-9 (mandatory Marker3D per section scene)
+- §C.5.1 (required nodes table)
+- §C.5.6 (CI validation rules — BLOCKING)
 
-## Session Extract — /architecture-review 2026-04-23 (second run, post-ADR-0007 + A3–A6)
+### Pre-implementation coord items open (12)
 
-- **Verdict**: CONCERNS (scope further reduced — 6 of 7 action items from prior 2026-04-23 run closed)
-- **Requirements**: 158 total TRs — ~148 covered (+1), ~9 partial (−1), ~1 hard gap (unchanged — Combat↔Input `takedown` coord)
-- **New TR-IDs registered**: None (delta run; ADR-0007 closes scattered infra statements rather than introducing requirements)
-- **TRs revised**: None (TR-SB-003 text remains accurate post-ADR-0007; autoload order still "Events=1, EventLogger=2 per project.godot line order" — ADR-0007 codifies the rest of the chain rather than revising TR-SB-003)
-- **GDD revision flags (carried, all unchanged)**: player-character.md (10 sites, CombatSystem→CombatSystemNode rename); audio.md L188–189 §Mission handler table (LS-Gate-3); input.md L90 `use_gadget` → dedicated `takedown` action split
-- **Conflict 1 (autoload collision)**: ✅ CLOSED — ADR-0007 §Canonical Registration Table pins InputContext=4, LevelStreamingService=5; 20+ downstream "load order N" statements collapsed to "per ADR-0007"
-- **Gap 3 (Autoload registration contract)**: ✅ CLOSED — ADR-0007 authored; 2 forbidden patterns registered (unregistered_autoload, autoload_init_cross_reference); Cross-Autoload Reference Safety section codified
-- **A3 (ADR-0003 Gate 3 refinement)**: ✅ CLOSED — explicit Dictionary[StringName, GuardRecord] duplicate_deep isolation sub-gates (a/b/c: outer cloned, inner GuardRecord cloned, StringName keys intentionally NOT cloned per interning)
-- **A4 (ADR-0004 IG2 addendum)**: ✅ CLOSED — InputContextStack/InputContext split rule with discoverability-trap framing; mirrors CombatSystemNode/Combat pattern
-- **A5 (ADR-0005 Gate 5)**: ✅ CLOSED — Shader Baker × material_overlay 4.6 export-build verification, moved Polish → Prototype
-- **A6 (ADR-0006 Risks row)**: ✅ CLOSED — Jolt Area3D.body_entered broadphase tunneling for fast bodies (Combat darts 20 m/s on LAYER_PROJECTILES); MEDIUM × LOW; dovetails with Combat OQ-CD-2
-- **Still open**: Gap 2 (Performance Budget ADR), 3 GDD-coordination items, all 7 ADRs still Proposed (17 verification gates total — now includes ADR-0007 Gate 1 byte-match + ADR-0005 Gate 5 added by A5)
-- **Cross-ADR conflicts**: 0 (was 1 — Conflict 1 resolved)
-- **Engine specialist**: SKIPPED this run — ADR-0007 got its own pre-authoring consultation 2026-04-23 (Claims 1/2/3 GREEN/YELLOW/YELLOW, framing corrections + 3 hazards folded in before write); A3–A6 land verbatim from prior specialist findings
-- **Priority action list (updated)**: Session A `/architecture-decision performance-budget-distribution` (Gap 2, only remaining ADR-level gap); Session B parallel producer-owned GDD touch-ups (PC rename + Audio LS-Gate-3 + Input takedown split); Session C begin ADR verification gate passes in editor
-- **Report**: docs/architecture/architecture-review-2026-04-23.md (overwrites earlier 2026-04-23 snapshot per user Option B)
-- **Traceability index refreshed**: docs/architecture/requirements-traceability.md (second-run 2026-04-23 history entry; Known Gaps section: Gap 3 + A3–A6 marked CLOSED; coverage bumped ~93% → ~94%)
-- **TR registry**: no edit needed (`last_updated: 2026-04-23` already current; no new TRs, no revisions this run)
+1. ADR-0007 amendment naming MLS at slot #9 (bundle with F&R's slot-#8 amendment)
+2. ADR-0003 + save-load.md schema for `MissionState` sub-resource (OQ-MLS-2 BLOCKING — F&R `triggers_fired` capture)
+3. ADR-0008 §Pooled Residual sub-slot claim
+4. Signal Bus GDD L122 handler-table touch-up (6 MLS subscriber rows)
+5. Inventory GDD §F bidirectional MLS-owns-placement note
+6. F&R coord item #11 closure (on MLS approval)
+7. LSS GDD §Interactions `register_restore_callback` row
+8. Localization Scaffold review gate
+9. Section-validation CI implementation (Tools Programmer)
+10. MLSTrigger self-passivity contract (OQ-MLS-6)
+11. Cutscenes & Mission Cards (VS) forward API verification
+12. Audio GDD §Mission-domain amendment (LOAD suppression + T4 Fire-Drill Klaxon spec + T6 Alert-Comedy bark bank)
+
+### 12 Open Questions captured in §Open Questions
+
+- **BLOCKING pre-impl (4)**: OQ-MLS-2 (triggers_fired capture), OQ-MLS-3 (_is_section_live guard), OQ-MLS-6 (MLSTrigger self-passivity), OQ-MLS-9 (FP-8 grep vs manual)
+- **Deferred / post-MVP (8)**: OQ-MLS-1 (LD authoring constraint), -4 (SectionBoundsHint CI), -5 (LD guide narrative-critical distinction), -7 (reachability validator), -8 (mission_load_failed signal), -10 (mission-completed handoff), -11 (Restaurant sub-room scope), -12 (triggers_fired Array vs Dict), -ANIM-1 (Biscuit Tin animation budget)
+
+### Files modified this session
+
+- `design/gdd/mission-level-scripting.md` — **NEW** (834 lines)
+- `design/registry/entities.yaml` — 14 new entries appended; `last_updated` comment updated
+- `design/gdd/systems-index.md` — row 13 Status updated to Designed; Progress Tracker counts updated (Started 12→13, Approved 7 unchanged + 1 new Designed-pending-review, MVP designed 12→13/16); Last Updated header updated
+- `production/session-state/active.md` — this file
+
+## Previous Task — `/design-review failure-respawn.md` **COMPLETE 2026-04-24**
+
+### Forward coord items MLS must close (pre-impl gates from prior GDDs)
+
+1. **F&R BLOCKING item #11** — `player_respawn_point: Marker3D` section-authoring contract + non-deferred + section-validation CI
+2. **Inventory forward-hook** — WorldItem cache plan (8 pistol + 2 dart-off-path + medkit-cap 3/mission + rifle-carrier 1/section); mission-gadget satchel (Parfum) in Eiffel restaurant
+3. **ADR-0007 amendment** — MLS autoload registration at slot #9 (after F&R at slot #8; originally reserved for Civilian AI / MLS / Document Collection shared; F&R claimed #8 first)
+4. **ADR-0008 sub-slot claim** — MLS claims share of 0.8 ms residual pool (6 systems)
+5. **Cutscenes & Mission Cards forward API** — define trigger contract MLS will expose (VS tier consumer)
+
+### Locked upstream contracts (non-negotiable)
+
+- **ADR-2 Mission domain signals**: `mission_started/completed`, `objective_started/completed` (MLS-owned emit)
+- **ADR-2 subscriber**: `section_entered(reason: TransitionReason)` — MLS gates autosave on FORWARD only
+- **ADR-3 SaveGame assembler**: MLS builds SaveGame by reading each system's `capture()`; synchronous only
+- **architecture.md L639**: RESPAWN must NOT autosave (would overwrite good state with dead state)
+
+### Specialist consultations planned
+
+- **Section B**: creative-director (mandatory per skill)
+- **Section C**: game-designer + level-designer + systems-designer + narrative-director (scripting = Pillar 1 load-bearing)
+- **Section D**: systems-designer
+- **Section E**: systems-designer + narrative-director
+- **Section H**: qa-lead (mandatory per skill)
+- **Visual/Audio**: art-director + audio-director (mandatory for narrative category)
+
+## Previous Task — `/design-review failure-respawn.md` **COMPLETE 2026-04-24**
+
+- **Task**: `/design-review design/gdd/failure-respawn.md` with 7-specialist + CD full-mode synthesis
+- **File**: `design/gdd/failure-respawn.md` (513 → 553 lines)
+- **Verdict**: MAJOR REVISION NEEDED → inline revision applied in same session → user elected Accept + mark Approved pending coord items (CD recommendation to re-review in fresh session overridden by user)
+- **New file**: `design/gdd/reviews/failure-respawn-review-log.md` (full review log created)
+- **Systems-index**: row 14 Status → "Approved pending Coord items 2026-04-24"; Progress Tracker counts updated (Approved 6 → 7; MVP designed 7 Approved/Approved-pending-coord + 5 pending re-review)
+
+### Specialists consulted
+
+- game-designer (B-1..B-7): Pillar 3 fantasy mismatch with 2.0 s fade; anti-farm vs softlock; missing mission-fail trigger; Restart-from-Checkpoint absence; kill-plane coverage gap
+- systems-designer (S-1..S-8): **FLAG SPLIT-BRAIN (S-4)** — diagnostic finding; F.1 non-exhaustive; F.2 correlated variables; queued-respawn N unbounded; States table contradiction; idempotency window; E.20 mis-labeled; schema forward-compat
+- godot-specialist (E-1..E-9): **E-1 SaveLoad internal await fence needed**; E-5 Jolt non-determinism in AC-FR-2.1; E-6 stale Callable hot-reload crash; E-8 dart body_exited VERIFY; E-9 FailureRespawnState _init() missing
+- gameplay-programmer (G-1..G-8): Independent confirmation of S-4 split-brain; RESTORING contradiction; CR-11 lookup method unspecified; DI hook missing; register_restore_callback survivability; queued-respawn overwrite (G-7); Checkpoint class ownership
+- qa-lead (Q-1..Q-17): **7 BLOCKING AC issues + 10 RECOMMENDED**; missing sole-publisher AC (Q-13)
+- performance-analyst (P-1..P-7): **P-3 ADR-0001 storage tier undeclared — ESCALATED TO TD**; F.2 best-case arithmetic; correlated I/O; N=2 by fiat; 1.62 s post-resume fade
+- audio-director (A-1..A-7): **A-1 sting vs silence policy undefined**; A-3 queued-respawn single-emit unconfirmed; A-5 200 ms below perceptual beat threshold; A-6 permanent-silence failure mode
+- creative-director senior synthesis: MAJOR REVISION NEEDED; 2 structural defects (flag split-brain, States-table contradiction); 5 live cross-GDD contradictions; adjudicated B-1/A-5 (Audio amendment needed) + S-8 (accept flat bool); ruled sting-suppression on respawn path; strongly recommended `/clear` + fresh-session re-review protocol
+
+### User-approved revisions applied (via 4-tab AskUserQuestion adjudication)
+
+- **Q1 Flag split-brain**: live-authoritative (F&R autoload holds `_floor_applied_this_checkpoint: bool` as authoritative; save mirrors live via `FailureRespawnState.capture(live_value)`; reads at step 9 from live only; live advances synchronously after Inventory returns)
+- **Q2 RESTORING rules**: allow dispatch-only; block state-mutating section_entered branches via `_flow_state == IDLE` guard in CR-7
+- **Q3 Cross-GDD scope**: coord items only; edit failure-respawn.md only in this session per CLAUDE.md collaborative principle
+- **Q4 Audio handshake**: full CD ruling — sting suppression + silence retune 0.2→0.4 s + fade retune 2.0→1.2 s as Audio GDD amendment coord items
+
+### Edits applied to failure-respawn.md (15+ edits, 513 → 553 lines)
+
+- CR-5/CR-6 rewritten for live-authoritative + Resource `_init()` constructor + read/write contract + schema forward-compat note
+- CR-7 rewritten with `_flow_state == IDLE` guard (resolves 2 structural defects simultaneously)
+- CR-8 rewritten with sting-suppression + subscriber re-entrancy fence
+- CR-10 rewritten with single-emit guarantee + 2.5 s debug watchdog
+- CR-11 rewritten with `find_child(recursive=true, owned=false)` contract + shared Checkpoint location
+- CR-12 step 9 annotated live-authoritative; step 4 annotated ADR-0003 await-forbid; step 12 reconciled with CR-7 guard
+- States table rewritten with disambiguation note
+- F.1 rewritten (7 transition rows from 4; default arm; hydrate + null-fallback rows)
+- F.2 marked **PROVISIONAL** pending ADR-0001 storage-tier amendment; arithmetic corrected (0.15 → 0.167 s); SSD-cold vs HDD-cold rows separated; correlated-variable caveat; perceived-beat target 1.6 s
+- E.20 rationale flipped to explicit permissive-on-corruption tradeoff
+- 7 blocking ACs rewritten (1.1, 2.1, 3.1, 5.5, 6.2 BLOCKED, 10.1 hardware-pin, 10.2 → Playtest type)
+- 2 new ACs: AC-FR-12.4 sole-publisher CI lint + AC-FR-12.5 re-entrancy CI lint
+- BLOCKING items table grew 5 → 12
+- Bidirectional consistency check expanded to flag 5 cross-GDD contradictions as coord items
+- 9 new OQs (OQ-FR-7 BLOCKING storage-tier + OQ-FR-8 BLOCKING signal-isolation + 7 others)
+- 3 new DGs (DG-FR-5/6/7)
+- AC count 38 → 40
+
+### Pre-implementation gates (OPEN — 12 items, up from 5)
+
+1. ADR-0007 amendment (F&R autoload at line 8) — pre-existing
+2. Inventory GDD coordination — rename `restore_weapon_ammo` → `apply_respawn_floor_if_needed`
+3. Save/Load GDD + ADR-0003 (4 sub-items: schema + L100/L151 stale-text + internal-await forbid + atomic-commit fence)
+4. Input GDD coordination — add `InputContext.LOADING` context (currently missing from input.md)
+5. Signal Bus GDD touch-up — add F&R's section_entered subscription to L122 row
+6. Audio GDD amendment — sting-suppression + retune silence/fade
+7. **ADR-0001 amendment (ESCALATED TO TD)** — declare min-spec storage tier (SSD vs HDD)
+8. LS GDD coordination — document replace-semantics on `register_restore_callback`
+9. godot-specialist engine-verification gate — Godot 4.6 signal-isolation on subscriber unhandled exception
+10. PC GDD null-checkpoint spec (OQ-FR-5) — pre-existing BLOCKING
+11. Mission Scripting (PROVISIONAL) — `player_respawn_point: Marker3D` authoring + non-deferred contract + section-validation CI
+12. Shared `Checkpoint` class location at `src/gameplay/shared/checkpoint.gd`
+
+### Files modified this session
+
+- `design/gdd/failure-respawn.md` — major revision (513 → 553 lines)
+- `design/gdd/reviews/failure-respawn-review-log.md` — **NEW** (review log with full verdict, specialist findings, resolution summary)
+- `design/gdd/systems-index.md` — row 14 Status + Progress Tracker updated
+- `production/session-state/active.md` — **this file**
+
+## Next steps (fresh session recommended)
+
+1. **PRIMARY — `/design-system mission-level-scripting`** (system #13). User requested this as next action but skill was deferred due to context depth. Fresh session recommended because: (a) Mission Scripting is M-effort (2-3 sessions); (b) skill mandates specialist consultations per section; (c) starting from exhausted context risks the same drift CD just flagged on F&R. System #13 depends on Stealth AI ✅, Combat ✅, Level Streaming ✅, Save/Load ✅, Signal Bus ✅ — fully unblocked.
+
+2. **Alternative — `/design-review` on a pending GDD** in fresh session. Six GDDs carry "Designed (pending review)" or "Revised (pending re-review)" status:
+   - `design/gdd/save-load.md` (most F&R-coupled; L100/L151 stale-text contradiction + schema touch-up surface here)
+   - `design/gdd/signal-bus.md`, `design/gdd/input.md`, `design/gdd/outline-pipeline.md`, `design/gdd/post-process-stack.md`, `design/gdd/localization-scaffold.md`
+
+3. **Alternative — close F&R BLOCKING coord items** in a dedicated session. Save/Load + Input + Signal Bus text touch-ups are quick wins; ADR-0001 storage-tier amendment needs TD consultation; Audio GDD amendment needs audio-director consultation.
+
+4. **Alternative — `/architecture-decision adr-0001-amendment`** — declare min-spec storage tier so F.2 + AC-FR-10.x can finalize.
+
+5. **Alternative — `/consistency-check`** — re-run post-F&R-revision to catch new drift (revision added 40 lines, introduced new coord items + schema references).
+
+## Gate-check recommendation
+
+Still not PASS-eligible for `/gate-check pre-production`. Outstanding:
+- [ ] 12 F&R BLOCKING coord items (including TD-escalated ADR-0001)
+- [ ] `/design-review` on 6 pending-review GDDs (or accept-pending-coord as project pattern)
+- [ ] 26 verification gates (ADR Proposed → Accepted)
+- [ ] 11 outstanding MVP GDDs (12/23 designed after F&R landed Approved-pending-coord)
+
+## Preserved — prior task history
+
+Prior session state extracts (F&R `/design-system` authoring 2026-04-24 earlier; Inventory `/design-system` + `/design-review` + `/architecture-review` 5th-run 2026-04-24; ADR-0007 amendment 2026-04-23; `/create-architecture` 2026-04-23; etc.) are recorded in git history of this file and in referenced docs. Architecture review verdict remains PASS (5th-run 2026-04-24).

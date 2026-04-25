@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Last Updated** | 2026-04-23 (third run — post-ADR-0008 Performance Budget Distribution) |
+| **Last Updated** | 2026-04-24 (fifth run — post-`/design-system inventory-gadgets` + ADR-0002 2026-04-24 amendment) |
 | **Engine** | Godot 4.6 |
 | **Populated by** | `/architecture-review` (full mode) |
 
@@ -12,12 +12,12 @@
 
 | | Count | % |
 |---|-------|---|
-| Total TRs registered | **158** | 100% |
-| ✅ Covered (ADR-addressed) | ~154 | ~99% |
-| ⚠️ Partial (ADR coverage exists but some details live GDD-only by design) | ~3 | ~1% |
+| Total TRs registered | **175** | 100% |
+| ✅ Covered (ADR-addressed) | ~171 | ~98% |
+| ⚠️ Partial (ADR coverage exists but some details live GDD-only by design) | ~3 | ~2% |
 | ❌ Gap (no ADR addresses) | **0** | — |
 
-*The ~ figures reflect that coverage is reported at system-level granularity; individual TR-level coverage may shift slightly when stories are authored. The two ⚠️ Partials are intentional GDD-scope decisions (Audio internals, Post-Process Stack internals) — not architectural gaps. The Combat ↔ Input `takedown` coordination item is reclassified correctly as a GDD-coordination item (design-level), not an ADR-level gap.*
+*The ~ figures reflect that coverage is reported at system-level granularity; individual TR-level coverage may shift slightly when stories are authored. The two ⚠️ Partials are intentional GDD-scope decisions (Audio internals, Post-Process Stack internals) — not architectural gaps. **2026-04-24 delta**: +15 Inventory TRs (TR-INV-001..015) all mapped to existing ADRs + ADR-0002 2026-04-24 amendment; 2 new engine-verification gates (Inventory Coord #11 SkeletonModifier3D + #12 autoload `_unhandled_input`) are Tech Setup scope, not architectural gaps.*
 
 ---
 
@@ -177,7 +177,31 @@ All 22 TRs: ✅ Covered (with one downstream GDD-coordination item). Touches 5 A
 
 Cross-system reconciliation flag (L233 GuardFireController independence claim) **CLOSED 2026-04-23** by ADR-0008 Slot #2's 6.5 ms combined guard-systems envelope.
 
-Downstream coordination gap (NOT an ADR gap): Combat's dedicated `takedown` input action is not yet in Input GDD's 29-action catalog.
+Downstream coordination gap (NOT an ADR gap): Combat's dedicated `takedown` input action is not yet in Input GDD's 29-action catalog. **CLOSED 2026-04-23** — Input GDD action catalog grew 29 → 30.
+
+### System 12 — Inventory & Gadgets (TR-INV-*)
+
+**Added 2026-04-24 by fifth `/architecture-review` run after `/design-system inventory-gadgets` landed `design/gdd/inventory-gadgets.md`.**
+
+| TR-ID | ADR | Status |
+|-------|-----|--------|
+| TR-INV-001 — InventorySystem as PC Node child (not autoload) | ADR-0007 + arch.md §3.3 | ✅ |
+| TR-INV-002 — 4 frozen Inventory signals + `weapon_fired` emit-site | ADR-0002 | ✅ |
+| TR-INV-003 — 2 new signals (`gadget_activation_rejected`, `weapon_dry_fire_click`) | ADR-0002 (amended 2026-04-24) | ✅ |
+| TR-INV-004 — `guard_incapacitated(guard, cause: int)` 2-param extension | ADR-0002 (amended 2026-04-24) | ✅ |
+| TR-INV-005 — `CombatSystemNode.DamageType.MELEE_PARFUM` enum member | ADR-0002 (amended 2026-04-24) + Combat GDD downstream-coord | ✅ |
+| TR-INV-006 — `InventoryState extends Resource` two-dict ammo split (untyped Dictionary) | ADR-0003 | ✅ |
+| TR-INV-007 — Save registration via `LevelStreamingService.register_restore_callback` | ADR-0003 + LS CR-10 | ✅ |
+| TR-INV-008 — Tier 1 outline for held weapons + gadgets + WorldItem pickups | ADR-0001 | ✅ |
+| TR-INV-009 — Physics layer contracts (LAYER_PROJECTILES + MASK_INTERACTABLES + MASK_GUARDS + MASK_WORLD) | ADR-0006 | ✅ |
+| TR-INV-010 — HUD Core consumes via `project_theme.tres` + `FontRegistry`; Inventory does NOT render | ADR-0004 | ✅ |
+| TR-INV-011 — Event-driven; < 0.3 ms worst-case in Slot #8 pooled residual | ADR-0008 | ✅ |
+| TR-INV-012 — Subscribes to `enemy_killed`, `guard_incapacitated`, `player_interacted` | ADR-0002 | ✅ |
+| TR-INV-013 — Combat autoload `_unhandled_input` dispatches shared-binding `use_gadget`/`takedown` | ADR-0007 (Combat line 7) | ✅ (engine-verification gate — Coord #12) |
+| TR-INV-014 — `SkeletonModifier3D` IK target cross-subtree (HandAnchor vs body Skeleton3D) | — | ⚠️ Engine-verification gate — Coord #11 (rifle IK optional MVP; fallback: scope-out) |
+| TR-INV-015 — `InteractPriority.Kind.PICKUP = 2` enum slot | PC GDD + Inventory GDD (GDD-scope) | ✅ |
+
+**System status**: ✅ All 15 TRs covered at system level. Two engine-verification gates (Coord #11 rifle IK + #12 autoload `_unhandled_input`) are Tech Setup scope — not ADR gaps. Inventory sprint gated on 4 remaining BLOCKING coord items (Combat GDD `apply_fire_path` declaration, SAI GDD BAIT_SOURCE EVENT_WEIGHT row, Input GDD L91 single-dispatch clarification, save-load.md two-dict InventoryState schema) — all text-alignment edits, not architectural changes.
 
 ---
 
@@ -198,15 +222,15 @@ Downstream coordination gap (NOT an ADR gap): Combat's dedicated `takedown` inpu
 
 1. ~~**Performance Budget Distribution ADR**~~ — **CLOSED 2026-04-23** by ADR-0008. 9-slot allocation totaling 16.6 ms (Rendering 3.8 + Guard systems 6.5 + Post-Process 2.5 + Jolt 0.5 + Player/FC/Combat non-GF 0.3 + Audio dispatch 0.3 + UI 0.3 + Pooled residual 0.8 + Reserve 1.6). Non-frame budgets consolidated (save ≤10 ms, load ≤2 ms, LS transition ≤570 ms p90, shader bake 0–500 ms one-time, autoload boot ≤50 ms cold-start, D3D12 post-stream warm-up 3 frames). Two new forbidden patterns (`unbudgeted_per_frame_ticking`, `directional_shadow_second_cascade`) fence the contract.
 
-2. ~~**Autoload registration contract**~~ — **CLOSED 2026-04-23** by ADR-0007 (Autoload Load Order Registry). 6 autoloads now have a single canonical line order (Events=1, EventLogger=2, SaveLoad=3, InputContext=4, LevelStreamingService=5, PostProcessStack=6), two forbidden patterns fence ad-hoc registration, and Cross-Autoload Reference Safety is codified. Conflict 1 (InputContext vs LevelStreamingService line-4 collision) also CLOSED by same ADR.
+2. ~~**Autoload registration contract**~~ — **CLOSED 2026-04-23** by ADR-0007 (Autoload Load Order Registry), **amended same-day to 7 autoloads** adding Combat at line 7. Canonical line order: Events=1, EventLogger=2, SaveLoad=3, InputContext=4, LevelStreamingService=5, PostProcessStack=6, Combat=7. Two forbidden patterns fence ad-hoc registration, and Cross-Autoload Reference Safety is codified. Conflict 1 (InputContext vs LevelStreamingService line-4 collision) also CLOSED by same ADR.
 
-### Cross-GDD coordination gaps — unchanged (producer-tracked, non-blocking at ADR level)
+### Cross-GDD coordination gaps — all CLOSED 2026-04-23
 
-3. **`design/gdd/player-character.md`** still references `CombatSystem.DamageType` / `CombatSystem.DeathCause` at ~10 sites (producer-sequenced rename pass).
+3. ~~**`design/gdd/player-character.md`** `CombatSystem.*` → `CombatSystemNode.*` rename~~ — **CLOSED 2026-04-23** — all ~10 sites in PC GDD renamed.
 
-4. **`design/gdd/audio.md`** §Mission handler table L188–189 still 1-param `section_entered(section_id)` / `section_exited(section_id)` — needs `reason:` 2nd param + branching table per LS GDD CR-8 (LS-Gate-3).
+4. ~~**`design/gdd/audio.md`** §Mission handler table L188–189 `section_entered` / `section_exited` signatures (LS-Gate-3)~~ — **CLOSED 2026-04-23** — both handlers now 2-param with `reason: LevelStreamingService.TransitionReason` and 4-way branching (FORWARD / RESPAWN / NEW_GAME / LOAD_FROM_SAVE) documented per LS GDD CR-8.
 
-5. **`design/gdd/input.md`** L90 `use_gadget` action still "context-resolves to takedown" — Combat GDD CR-3 specifies a dedicated `takedown` action (kbd F / gamepad Y).
+5. ~~**`design/gdd/input.md`** L90 `use_gadget` context-resolves to takedown~~ — **CLOSED 2026-04-23** — split into dedicated `takedown` action per Combat CR-3 + `use_gadget` with mutex on `SAI.takedown_prompt_active()`; action catalog 29 → 30 (TR-INP-002 revised).
 
 ### Specialist-recommended ADR amendments — ALL CLOSED 2026-04-23
 
@@ -241,6 +265,8 @@ These are story-level and production-level concerns that do not block `/architec
 | 2026-04-23 | 158 | ~93% | Delta verification. ADR-0002 4th-pass amendment verified in-place (36 signals, section_entered/exited 2-param, guard_incapacitated + guard_woke_up declared, atomic-commit Risks row). TR-LS-007 + TR-SAI-003 moved ❌ → ✅; Conflicts 2 + 3 closed. Conflict 1 (autoload collision), Gaps 2 + 3, and specialist-recommended amendments A3–A6 unchanged. Verdict: CONCERNS (same as 2026-04-22, scope reduced). |
 | 2026-04-23 (post-ADR-0007) | 158 | ~94% | Second delta verification after ADR-0007 (Autoload Load Order Registry) was authored and A3–A6 amendments applied in-place. **Conflict 1 + Gap 3 + A3 + A4 + A5 + A6 all CLOSED.** Only Gap 2 (Performance Budget Distribution ADR) + three GDD-coordination items remain. ADR count 6 → **7** (ADR-0007 added; all 7 still Proposed; 17 verification gates outstanding). Verdict: CONCERNS (scope further reduced — 6 of 7 action items from prior run closed). |
 | 2026-04-23 (post-ADR-0008) | 158 | **~99%** | **Third delta verification after ADR-0008 (Performance Budget Distribution) landed same day.** Gap 2 **CLOSED**: 9-slot 16.6 ms allocation + non-frame budgets + verification contract + 2 new forbidden patterns + 1 new api_decision. TR-SAI-018, TR-PP-009, TR-LS-011, TR-AUD-007 (dispatch), combat-damage.md L233 all moved ⚠️ Partial → ✅. **SAI Recommended Follow-up #5 CLOSED.** ADR count 7 → **8** (all 8 still Proposed; 21 verification gates outstanding including ADR-0008's 4 new gates). Verdict: **PASS** (upgraded from CONCERNS — zero remaining ADR-level architectural gaps). 3 GDD-coordination items remain producer-tracked and non-blocking at ADR level. |
+| 2026-04-23 (fourth — post-ADR-0007 Combat amendment + 3 GDD closures) | 160 | ~99% | Fourth delta verification. ADR-0007 amended in-place to add Combat at line 7 (closes TD-ARCHITECTURE Concern 1 from `/create-architecture` session). 3 GDD coordination items all CLOSED in-session: PC `CombatSystem.*` → `CombatSystemNode.*` rename (10 sites); Audio LS-Gate-3 (2-param `section_entered`/`section_exited` with 4-way reason branching); Input takedown split (29 → 30 actions). 13 surgical straggler edits across 5 files bring narrative in sync with amended 7-entry canonical table. Zero cross-ADR conflicts; zero ADR-level gaps. Verdict: **PASS** (re-affirmed; upgrades `/create-architecture` verdict from APPROVED WITH CONCERNS to APPROVED). |
+| 2026-04-24 (fifth — post-Inventory GDD + ADR-0002 amendment) | **175** | **~98%** | **Fifth delta verification after `/design-system inventory-gadgets` + `/architecture-decision adr-0002-amendment` landed 2026-04-24.** 15 new TR-INV-001..015 appended; all map to existing ADRs + ADR-0002 2026-04-24 amendment. ADR-0002 signal count 36 → 38 (`gadget_activation_rejected`, `weapon_dry_fire_click`); `guard_incapacitated` signature extended 1→2 params (`cause: int`); `CombatSystemNode.DamageType` gains `MELEE_PARFUM`. Atomic-commit guard documented in amendment Risks row. Zero cross-ADR conflicts introduced. Registry Phase 5b landed (`guard_drop_pistol_rounds` stale-fix 8→3; 6 new entries + `guard_drop_dart_on_parfum_ko = 0 LOCKED`). Verification gate count 24 → **26** with +2 new godot-specialist engine-verification gates (Coord #11 `SkeletonModifier3D` scene-graph + #12 autoload `_unhandled_input` ordering) — Tech Setup scope, not architectural. 2 producer-tracked GDD coordination items surface as pre-sprint BLOCKING (Input GDD L91 single-dispatch clarification + save-load.md L102 two-dict InventoryState schema) — equivalent scale to 4th-run closures. Verdict: **PASS** (re-affirmed). |
 
 ---
 
@@ -254,9 +280,11 @@ TR-IDs are stable across review runs. When a GDD requirement's text is reworded 
 
 ## Related
 
-- `docs/architecture/architecture-review-2026-04-23.md` — latest review (third 2026-04-23 delta pass, post-ADR-0008 closure); closes Gap 2; verdict PASS
-- `docs/architecture/architecture-review-2026-04-22.md` — prior review (full matrix + engine specialist findings)
-- `docs/architecture/tr-registry.yaml` — authoritative TR-ID source
-- `docs/architecture/adr-0001-*.md` through `adr-0008-*.md` — architectural decisions (ADR-0008 added 2026-04-23)
-- `docs/registry/architecture.yaml` — performance_budgets / api_decisions / forbidden_patterns registry (last_updated 2026-04-23)
-- `design/gdd/systems-index.md` — system enumeration + status
+- `docs/architecture/architecture-review-2026-04-24.md` — **latest** review (fifth run — post-Inventory GDD + ADR-0002 2026-04-24 amendment); verdict PASS
+- `docs/architecture/architecture-review-2026-04-23.md` — prior review (fourth run — post-ADR-0007 Combat amendment + 3 GDD closures); verdict PASS
+- `docs/architecture/architecture-review-2026-04-22.md` — initial full-matrix baseline + engine specialist findings
+- `docs/architecture/tr-registry.yaml` — authoritative TR-ID source (175 entries as of 2026-04-24)
+- `docs/architecture/adr-0001-*.md` through `adr-0008-*.md` — architectural decisions (ADR-0002 amended 2026-04-24; ADR-0007 amended 2026-04-23; ADR-0008 added 2026-04-23)
+- `docs/registry/architecture.yaml` — performance_budgets / api_decisions / forbidden_patterns registry (last_updated 2026-04-24: `gameplay_event_dispatch` 38 signals; `guard_drop_dart_on_parfum_ko = 0 LOCKED` added)
+- `design/gdd/systems-index.md` — system enumeration + status (11/16 MVP designed)
+- `design/gdd/inventory-gadgets.md` — **NEW 2026-04-24** (1608 lines; Approved pending Coord items)

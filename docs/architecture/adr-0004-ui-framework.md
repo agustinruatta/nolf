@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — moves to Accepted after 2 verification gates: (1) confirm Godot 4.6 `Control.accessibility_*` property names for custom nodes; (2) confirm Theme inheritance property name (`base_theme` or equivalent) in 4.6.
+**Proposed** — moves to Accepted after the remaining verification gates close. **Status revised 2026-04-27 evening per /propagate-design-change from `design/gdd/document-overlay-ui.md` revision pass**: Gate 2 (Theme inheritance property name) **CLOSED** — `Theme.fallback_theme` confirmed as the correct Godot 4.x property; `base_theme` does NOT exist on `Theme` in any 4.x release (godot-specialist sign-off via Document Overlay UI design-review 2026-04-27). Gate 4 (`auto_translate_mode` enum names) **CLOSED** — `Node.AUTO_TRANSLATE_MODE_*` verified as exact identifiers in Godot 4.5+. Remaining BLOCKING gates: Gate 1 (`accessibility_*` property names — likely real names `accessibility_description` not `accessibility_name`; `accessibility_role` may not be settable as string), Gate 3 (`_unhandled_input()` modal dismiss on KB/M + gamepad), and **NEW Gate 5** (`RichTextLabel` BBCode → AccessKit plain-text serialization — added per Document Overlay UI accessibility-specialist review 2026-04-27 BLOCKING for SC 1.3.1 conformance on formatted document bodies).
 
 ## Date
 
@@ -10,7 +10,9 @@
 
 ## Last Verified
 
-2026-04-23 (Amendment A4: Implementation Guideline 2 grew addendum mandating call sites use autoload key `InputContext.*`, never `InputContextStack.*`, per godot-specialist 2026-04-22 additional-finding; also supersedes "load order 4" statements with "per ADR-0007" references)
+2026-04-28 (Amendment A6: per `/review-all-gdds` 2026-04-28 — `InputContext.Context` enum extended with `MODAL` and `LOADING` values, closing B4 carryforward (Menu System / F&R / LS / Input GDDs were already using these literals); push/pop authority table added to Implementation Guidelines; bundled atomically with ADR-0002 amendment that introduces `ui_context_changed(new: InputContext.Context, old: InputContext.Context)` to a new UI domain. Architectural decision unchanged; enum surface grew by 2 values + emit-site for `ui_context_changed` codified.)
+
+Prior amendments: 2026-04-27 evening (Amendment A5: per /propagate-design-change from Document Overlay UI design-review revisions — Gate 2 + Gate 4 closed inline with verified property/enum names; new Gate 5 added for BBCode→AccessKit plain-text serialization; `base_theme` corrected to `fallback_theme` in 9 locations throughout this ADR. Architectural decision unchanged; only implementation-guidance wording amended.); 2026-04-23 (Amendment A4: Implementation Guideline 2 grew addendum mandating call sites use autoload key `InputContext.*`, never `InputContextStack.*`, per godot-specialist 2026-04-22 additional-finding; also supersedes "load order 4" statements with "per ADR-0007" references)
 
 ## Decision Makers
 
@@ -29,7 +31,7 @@ The project's UI surfaces (HUD, Document Overlay, Menu, Settings, Cutscenes, Sub
 | **Knowledge Risk** | HIGH — major UI changes in 4.5 (FoldableContainer, Recursive Control disable, AccessKit screen reader, Live translation preview, SDL3 gamepad) and 4.6 (dual-focus split between mouse/touch and keyboard/gamepad). All load-bearing for this contract. |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `modules/ui.md`, `modules/input.md`, Art Bible Sections 3.3, 4.4, 7 |
 | **Post-Cutoff APIs Used** | Godot 4.5 AccessKit screen reader integration (Settings & Accessibility); 4.5 Recursive Control disable (`mouse_filter` propagation); 4.6 dual-focus system handling. None are blocking — the design uses standard 4.0+ patterns and adopts 4.5/4.6 features additively. |
-| **Verification Required** | (1) Confirm Godot 4.6 editor property names for custom Control accessibility (`accessibility_name`, `accessibility_role`, etc.) — needed for Settings & Accessibility Day 1 support. (2) Confirm Theme inheritance property name (`base_theme` vs `fallback_theme` vs other) in Godot 4.6 — `ui.md` confirms inheritance exists but does not enumerate the property. (3) Confirm `_unhandled_input()` correctly handles modal dismiss across both KB/M and gamepad given the 4.6 dual-focus split. |
+| **Verification Required** | (1) **OPEN BLOCKING** — Confirm Godot 4.6 editor property names for custom Control accessibility (likely `accessibility_description` not `accessibility_name`; `accessibility_role` may not be settable as string property — inferred from node type instead; `accessibility_live` semantics + AT-flush timing require verification, potential two-deep deferral pattern) — needed for Settings & Accessibility + Document Overlay UI Day 1 support. (2) **CLOSED 2026-04-27** — Theme inheritance property is `Theme.fallback_theme` (not `base_theme` — confirmed does not exist in any 4.x release). (3) **OPEN BLOCKING** — Confirm `_unhandled_input()` correctly handles modal dismiss across both KB/M and gamepad given the 4.6 dual-focus split. (4) **CLOSED 2026-04-27** — `Node.AUTO_TRANSLATE_MODE_*` enum identifiers verified in Godot 4.5+ (constants ALWAYS / DISABLED / INHERIT). (5) **OPEN BLOCKING NEW 2026-04-27** — Confirm whether `RichTextLabel` with `bbcode_enabled = true` exposes parsed plain text to AccessKit (NOT raw BBCode source). If raw exposed, every formatted document body fails SC 1.3.1; resolution = parallel AT-only plain-text property OR forbid BBCode in body content. Affects Document Overlay UI body rendering specifically. |
 
 > **Note**: HIGH Knowledge Risk. UI is the most-changed domain in 4.5/4.6. This ADR must be re-validated if the project ever upgrades engine versions (especially the dual-focus and AccessKit integration paths).
 
@@ -86,7 +88,7 @@ Project is in pre-production. No source code exists. No prior UI implementation 
 
 **Three contracts:**
 
-1. **Theme inheritance**: single `res://src/core/ui_framework/project_theme.tres` as base; per-surface child Themes set `base_theme = preload(project_theme.tres)` and override only the differences. Surface root Control nodes assign their surface Theme; descendants inherit automatically.
+1. **Theme inheritance**: single `res://src/core/ui_framework/project_theme.tres` as base; per-surface child Themes set `fallback_theme = preload(project_theme.tres)` and override only the differences. Surface root Control nodes assign their surface Theme; descendants inherit automatically. (Property corrected from `base_theme` → `fallback_theme` 2026-04-27 per Gate 2 closure; `base_theme` does NOT exist on Godot's `Theme` in any 4.x release.)
 2. **`InputContext` autoload** (line order per ADR-0007 — Autoload Load Order Registry): push/pop stack of input contexts. Surfaces call `InputContext.push(Context.DOCUMENT_OVERLAY)` on open and `InputContext.pop()` on close. Each surface checks `InputContext.current()` in `_unhandled_input()` before consuming input. **Emits no signals of its own** — if any cross-system reaction is needed, add a `ui_context_changed` signal to ADR-0002's `Events` taxonomy.
 3. **`FontRegistry` static class** (NOT an autoload — see Risks): typed getters return preloaded `Font` resources; encapsulates the Futura → DIN size-floor substitution. Static methods, no node lifecycle, no service-locator concern.
 
@@ -115,7 +117,7 @@ Project is in pre-production. No source code exists. No prior UI implementation 
        │  styles: hard-edged  │  │  doc_header  │  │  setting_changed   │
        │  no rounded corners  │  │  menu_title  │  │  ...               │
        └─────────┬────────────┘  └──────┬───────┘  └────────────────────┘
-                 │ base_theme            │ static getters
+                 │ fallback_theme        │ static getters
                  ▼                       │
        ┌──────────────────────┐          │
        │  themes/             │          │
@@ -133,9 +135,12 @@ Project is in pre-production. No source code exists. No prior UI implementation 
        │  ────────────────────────────────────────│
        │  enum Context { GAMEPLAY, MENU,          │
        │                 DOCUMENT_OVERLAY,        │
-       │                 PAUSE, SETTINGS }        │
+       │                 PAUSE, SETTINGS,         │
+       │                 MODAL, LOADING }         │
        │  push(ctx) / pop() / current() /         │
        │  is_active(ctx)                          │
+       │  emits Events.ui_context_changed         │
+       │   (new_ctx, old_ctx) on every push/pop   │
        │                                          │
        │  Holds NO node references.               │
        │  Emits NO signals (use Events.gd).       │
@@ -190,18 +195,32 @@ enum Context {
     DOCUMENT_OVERLAY,   # reading a document; gameplay paused, subtitles suppressed
     PAUSE,              # pause menu; gameplay paused
     SETTINGS,           # settings panel open (within menu or pause)
+    MODAL,              # added 2026-04-28 — modal dialog (Quit-Confirm, Save-overwrite,
+                        # Resolution-revert countdown banner, Save-failed dialog) active
+                        # over an existing UI surface; pushed by the modal opener (Menu /
+                        # Settings / F&R), popped on confirm/cancel; gameplay input
+                        # swallowed during MODAL exactly as during MENU/PAUSE
+    LOADING,            # added 2026-04-28 — pushed by LevelStreamingService at
+                        # transition step 1, popped at step 11 (section_entered fires);
+                        # ALL gameplay input swallowed; UI overlays (Document Overlay,
+                        # menus) MUST force-dismiss on push since the underlying scene
+                        # is being torn down
 }
 
 var _stack: Array[Context] = [Context.GAMEPLAY]
 
 func push(ctx: Context) -> void:
+    var old_ctx: Context = current()
     _stack.push_back(ctx)
-    # If a future cross-system reaction is needed, add ui_context_changed
-    # signal to Events.gd taxonomy (ADR-0002) and emit it here.
+    # 2026-04-28 amendment: emit ui_context_changed for every push/pop.
+    # Subscribers (HUD Core CR-10, Audio overlay/menu BGM duck, Cutscenes
+    # letterbox suppression, Subtitles auto-suppress) branch on new_ctx.
+    Events.ui_context_changed.emit(ctx, old_ctx)
 
 func pop() -> void:
     assert(_stack.size() > 1, "InputContext stack underflow — never pop GAMEPLAY")
-    _stack.pop_back()
+    var old_ctx: Context = _stack.pop_back()
+    Events.ui_context_changed.emit(current(), old_ctx)
 
 func current() -> Context:
     return _stack.back()
@@ -231,7 +250,7 @@ func close() -> void:
 ```gdscript
 # Theme inheritance pattern (in editor or via code):
 # Each surface's root Control: theme = preload("res://src/core/ui_framework/themes/[surface]_theme.tres")
-# Each surface theme's base_theme property (or fallback_theme — verify in 4.6) points to project_theme.tres
+# Each surface theme's `fallback_theme` property points to project_theme.tres (verified 2026-04-27 — Gate 2 closed)
 # All descendant Controls inherit automatically — do NOT set theme on individual children.
 ```
 
@@ -242,19 +261,36 @@ func close() -> void:
 3. **Modal dismiss NEVER uses focused Buttons.** `_unhandled_input()` + `ui_cancel` action handles all modal close events. This sidesteps Godot 4.6's dual-focus split — dismiss does not depend on which control has keyboard or mouse focus.
 4. **Document Overlay sepia dim is a lifecycle call to `PostProcessStack`** (system 5). Document Overlay calls `PostProcessStack.enable_sepia_dim()` on open and `disable_sepia_dim()` on close. The shader implementation belongs to Post-Process Stack — when its GDD is authored, it MUST expose this exact API surface.
 5. **Subtitle collision rule (resolves Art Bible 7E)**: when `InputContext.is_active(DOCUMENT_OVERLAY)`, the Subtitle system suppresses ambient VO subtitles. Subtitle system subscribes to `Events.document_opened` / `Events.document_closed` to manage suppression. Mission-critical scripted dialogue subtitles tied to the document reveal itself may still play (case-by-case, scripted in Mission & Level Scripting).
-6. **Theme inheritance via single base.** Every surface Theme sets `base_theme` (or 4.6-equivalent property — verify Gate 2) to `project_theme.tres`. Surface Themes contain ONLY overrides. Do NOT set `Control.theme` on individual descendants — let inheritance walk down from the surface root.
+6. **Theme inheritance via single base.** Every surface Theme sets `fallback_theme = preload("res://src/core/ui_framework/project_theme.tres")` (Gate 2 closed 2026-04-27 — `Theme.fallback_theme` is the verified Godot 4.x property). Surface Themes contain ONLY overrides. Do NOT set `Control.theme` on individual descendants — let inheritance walk down from the surface root.
 7. **Per-surface CanvasLayer indices** (z-order):
    - Layer 0: gameplay viewport (3D + 2D world)
    - Layer 4: PostProcessStack sepia dim ColorRect (when active) — owned by system 5 but documented here for z-ordering clarity
    - Layer 5: Document Overlay card
    - Layer 8: Pause menu / Main menu
-   - Layer 10: Cutscene letterbox / Mission cards
+   - **Layer 10: Settings panel** (when `InputContext.SETTINGS` active) **OR Cutscene letterbox / Mission cards** (when a cutscene is active) — **mutually exclusive** by InputContext gate. **Annotation added 2026-04-27 (closes B7 from /review-all-gdds 2026-04-27 + closes Menu System OQ-MENU-15)**: layer 10 is shared between two surfaces that never coexist in the canonical state machine — Settings panel pushes `InputContext.SETTINGS` and is dismissable to the previous context; Cutscenes hold a context (currently undeclared, owned by Cutscenes & Mission Cards GDD #22 when authored) that is pushed at cutscene start and popped at cutscene end. The two contexts are not stackable: the Menu System cannot open Settings while a cutscene is playing (Settings entry-point is gated on `InputContext.is_active(MENU)` or `InputContext.is_active(PAUSE)`, neither of which a cutscene context permits), and a cutscene cannot fire while Settings is open (Mission Scripting cutscene triggers gate on `InputContext.current() == GAMEPLAY`). The layer collision is therefore safe by construction. Implementation rule: the per-surface `CanvasLayer` node must be instanced lazily (created at surface-open, freed at surface-close) so both surfaces never have a `CanvasLayer` instance at layer 10 simultaneously even if the InputContext gate is bypassed by a future bug. Cutscenes & Mission Cards GDD when authored must reflect this annotation in its own forbidden-pattern list.
    - Layer 15: Subtitle layer (always on top so subtitles never hide behind menus)
 8. **HUD elements set `mouse_filter = MOUSE_FILTER_IGNORE`** — HUD never takes focus or consumes mouse input.
 9. **All visible text via `tr()`** from day one. Localization Scaffold (system 7) provides the string-table mechanism; this ADR mandates its use.
 10. **AccessKit screen reader integration**: standard Controls (Button, Label) get accessibility roles automatically. For custom Controls, set `accessibility_*` properties (exact names verified per Gate 1) at construction time. Day 1 for Menu System and Settings & Accessibility surfaces. Polish-phase deferral acceptable for HUD numerals (per-frame updates may flood accessibility tree — use `accessibility_live = "off"` or equivalent).
 11. **Use `Label` for static/numeric text; reserve `RichTextLabel` for the Document Overlay body** where period-styled bold headers, inline spacing, and letter-tracking effects require rich formatting. `RichTextLabel` is significantly heavier due to BBCode parsing.
 12. **InputContext stack starts with `GAMEPLAY`**. Never pop below this base. The `assert` in `pop()` enforces this.
+13. **Push/pop authority** (added 2026-04-28 per `/review-all-gdds` amendment A6 — closes B4 carryforward). Each `Context` value has exactly one authorised pusher and one authorised popper. A system that calls `InputContext.push(ctx)` for a context it does not own MUST be rejected at code review.
+
+    | Context | Pusher (sole authority) | Popper (sole authority) | Notes |
+    |---|---|---|---|
+    | `GAMEPLAY` | `_ready()` of the autoload | (never popped) | Stack base; assert prevents underflow |
+    | `MENU` | Menu System | Menu System | Pause / main menu / mission dossier |
+    | `DOCUMENT_OVERLAY` | Document Overlay UI (system 20) | Document Overlay UI | Per Overlay §C 8-step open + 6-step close lifecycle |
+    | `PAUSE` | Menu System | Menu System | Subset of MENU per existing wording |
+    | `SETTINGS` | Settings & Accessibility | Settings & Accessibility | Stage-Manager carve-out |
+    | `MODAL` *(NEW 2026-04-28)* | The system that opens the modal (Menu / Settings / F&R / Save-failed dialog publisher) | Same system that pushed it | Quit-confirm, Save-overwrite, Resolution-revert countdown banner. Gameplay input swallowed identically to MENU |
+    | `LOADING` *(NEW 2026-04-28)* | `LevelStreamingService` step 1 | `LevelStreamingService` step 11 (after `section_entered` fires) | All gameplay input swallowed; UI overlays MUST force-dismiss on push since the underlying scene is being torn down |
+
+    **Forbidden cross-system push** (registered as a forbidden pattern adjacent to `autoload_singleton_coupling`): a system MUST NOT push or pop a Context value owned by another system. Example: HUD Core MUST NOT push `MENU` to "open the pause menu"; it must instead emit a player-action signal that Menu System subscribes to and Menu System performs the push.
+
+    **`ui_context_changed` emission is automatic.** The bus signal `Events.ui_context_changed(new_ctx, old_ctx)` (declared in ADR-0002 2026-04-28 amendment) is emitted by the InputContext autoload itself on every push/pop. Pushers MUST NOT emit it manually; subscribers (HUD Core CR-10, Audio overlay/menu BGM duck, Cutscenes letterbox suppression, Subtitles auto-suppress) read it and branch on `new_ctx`.
+
+    **Stacking rules**: `MODAL` may be pushed over any other context (`MENU`, `SETTINGS`, `PAUSE`, even `DOCUMENT_OVERLAY`) and pops back to whatever was beneath. `LOADING` is exclusive — when LevelStreamingService pushes `LOADING`, every UI surface above it (`MENU`, `DOCUMENT_OVERLAY`, etc.) MUST force-dismiss because the scene tree they live on is being unloaded. The `current_section` is being torn down; their roots will be freed.
 
 ## Alternatives Considered
 
@@ -321,13 +357,14 @@ func close() -> void:
 ### Neutral
 
 - 5 Theme files (1 base + 4 surface) is a manageable count at this scope. Adding a new surface adds one Theme file and one CanvasLayer index assignment.
-- `InputContext` enum has 5 contexts initially. Adding a new context (e.g., `INVENTORY` if a future feature needs it) is a single enum addition.
+- `InputContext` enum has 7 contexts as of the 2026-04-28 amendment (`GAMEPLAY`, `MENU`, `DOCUMENT_OVERLAY`, `PAUSE`, `SETTINGS`, `MODAL`, `LOADING`). Adding a new context (e.g., `INVENTORY` if a future feature needs it) is a single enum addition + push/pop authority table row + ADR-0002 owner update.
 
 ## Risks
 
 | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
-| `Control.base_theme` property name changed in 4.5/4.6 | LOW | LOW | **Gate 2**: 5-minute editor check. If renamed, update Implementation Guidelines item 6. |
+| ~~`Control.base_theme` property name changed in 4.5/4.6~~ — **CLOSED 2026-04-27**: `Theme.fallback_theme` is the verified Godot 4.x property; `base_theme` does not exist on `Theme` in any 4.x release. Implementation Guidelines item 6 corrected. | — | — | Gate 2 closed |
+| `RichTextLabel.bbcode_enabled = true` exposes raw BBCode source to AccessKit (NOT parsed plain text) | MEDIUM | HIGH | **Gate 5 (new 2026-04-27)**: editor + screen-reader test. If raw BBCode is exposed, every formatted document body fails SC 1.3.1 — resolution = parallel AT-only plain-text property OR forbid BBCode in body content (heavy Writer-brief constraint). Affects Document Overlay UI body specifically. |
 | `Control.accessibility_*` property names not as expected for custom Controls | MEDIUM | MEDIUM | **Gate 1**: editor inspector check. May need to adopt different naming for the Settings & Accessibility surface; doesn't block the Menu System (uses standard Controls). |
 | 4.6 dual-focus dismiss behavior differs from `_unhandled_input()` expectation | LOW | MEDIUM | **Gate 3 (validation criterion)**: smoke-test modal open + dismiss on KB/M and gamepad in Godot 4.6 before marking ADR Accepted. |
 | `InputContext` autoload drifts toward becoming a service locator (gains methods that act on UI surfaces) | MEDIUM | HIGH | Forbidden pattern registered: `input_context_service_locator`. Code review on every PR touching `input_context.gd`. |
@@ -355,15 +392,17 @@ func close() -> void:
 
 This is the project's fourth and final required ADR. No existing UI to migrate. Implementation order:
 
-1. **Verification gates** (15-minute Godot 4.6 editor session):
-   - Gate 1: open inspector on a custom Control subclass; confirm `accessibility_name`, `accessibility_role`, `accessibility_description` (or equivalents) are present
-   - Gate 2: confirm Theme resource exposes `base_theme` (or `fallback_theme`) for inheritance
-   - Gate 3: smoke-test modal `_unhandled_input()` + `ui_cancel` action on both KB/M and gamepad
+1. **Verification gates** (Godot 4.6 editor session):
+   - Gate 1 [BLOCKING]: open inspector on a custom Control subclass; confirm AccessKit property surface — likely real names per godot-specialist 2026-04-27: `accessibility_description` (NOT `accessibility_name`); `accessibility_role` may be inferred from node type rather than settable as string property; `accessibility_live` semantics + AT-flush timing require verification (potential two-deep deferral pattern needed if AT flush precedes deferred callbacks within same frame)
+   - Gate 2 [CLOSED 2026-04-27]: `Theme.fallback_theme` is the verified property (`base_theme` does not exist in Godot 4.x)
+   - Gate 3 [BLOCKING]: smoke-test modal `_unhandled_input()` + `ui_cancel` action on both KB/M and gamepad
+   - Gate 4 [CLOSED 2026-04-27]: `Node.AUTO_TRANSLATE_MODE_*` enum (ALWAYS / DISABLED / INHERIT) verified in Godot 4.5+
+   - Gate 5 [BLOCKING NEW 2026-04-27]: confirm `RichTextLabel` with `bbcode_enabled = true` exposes parsed plain text to AccessKit, NOT raw BBCode source — required for SC 1.3.1 conformance on formatted Document Overlay UI bodies
 2. Create `res://src/core/ui_framework/` directory tree.
 3. Author `project_theme.tres` with fonts (paths only, FontRegistry resolves at runtime), colors (per Art Bible 4.4), and styles (per Art Bible 3.3 / 7).
 4. Implement `FontRegistry` static class.
 5. Implement `InputContext` autoload; register in `project.godot` at the line position declared by ADR-0007.
-6. Author 4 surface themes (`hud_theme.tres`, `document_overlay_theme.tres`, `menu_theme.tres`, `settings_theme.tres`) — each sets `base_theme` to `project_theme.tres` and overrides only what's specific.
+6. Author 4 surface themes (`hud_theme.tres`, `document_overlay_theme.tres`, `menu_theme.tres`, `settings_theme.tres`) — each sets `fallback_theme = preload("res://src/core/ui_framework/project_theme.tres")` and overrides only what's specific.
 7. Configure InputMap actions: `ui_cancel` (Esc + B/Circle), `interact` (E + A/Cross), and any others surfaces need.
 8. Smoke test: stub HUD scene that displays a Label, listens to `Events.player_health_changed`, and updates correctly. Stub Document Overlay that opens on a key press, pushes InputContext, calls PostProcessStack stub, dismisses on `ui_cancel`.
 9. Set ADR-0004 status Proposed → Accepted.
@@ -373,9 +412,11 @@ This is the project's fourth and final required ADR. No existing UI to migrate. 
 
 ## Validation Criteria
 
-- [ ] **Gate 1**: Godot 4.6 editor exposes `accessibility_*` properties on custom Control nodes.
-- [ ] **Gate 2**: Theme inheritance property name confirmed (`base_theme` or `fallback_theme` or other).
-- [ ] **Gate 3**: Smoke test — modal open → KB/M dismiss + gamepad dismiss both succeed.
+- [ ] **Gate 1 [BLOCKING]**: Godot 4.6 editor exposes AccessKit-related properties on custom Control nodes (verify actual property names — likely `accessibility_description`; `accessibility_role` settability uncertain; `accessibility_live` AT-flush timing).
+- [x] **Gate 2 [CLOSED 2026-04-27]**: Theme inheritance property is `Theme.fallback_theme` — verified per godot-specialist sign-off via Document Overlay UI design-review.
+- [ ] **Gate 3 [BLOCKING]**: Smoke test — modal open → KB/M dismiss + gamepad dismiss both succeed.
+- [x] **Gate 4 [CLOSED 2026-04-27]**: `Node.AUTO_TRANSLATE_MODE_*` enum constants verified in Godot 4.5+.
+- [ ] **Gate 5 [BLOCKING NEW 2026-04-27]**: `RichTextLabel` with `bbcode_enabled = true` exposes parsed plain text to AccessKit (NOT raw BBCode source) — required for SC 1.3.1 conformance.
 - [ ] `project_theme.tres` registers all colors from Art Bible 4 and base font sizes.
 - [ ] `FontRegistry` static class implements all 5 typed getters with the size-floor substitution working at 17 vs 18 px.
 - [ ] `InputContext` autoload registered at the line position declared by ADR-0007; `assert` in `pop()` prevents stack underflow.

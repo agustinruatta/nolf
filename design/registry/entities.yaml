@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: 2026-04-25   # `/design-system hud-core` Phase 5b registry sweep (2026-04-25): 2 referenced_by updates + 6 NEW entries — (U1) `player_max_health.referenced_by` += hud-core.md (HUD F.2 critical-state ratio); (U2) `player_critical_health_threshold.referenced_by` += hud-core.md + audio.md (Audio §F.4 already references but was never registered as such), unit clarified to `hp_percent` with note documenting the canonical Audio/HUD divide-by-100 pattern; (N1) `hud_damage_flash_cooldown_ms = 333` ms safe [200, 500] — Combat-owned, HUD-enforced WCAG 2.3.1 photosensitivity gate; (N2) `crosshair_dot_size_pct_v = 0.19%` safe [0.15, 0.30] — Combat-owned, HUD F.4 dot radius computation; (N3) `crosshair_halo_style = tri_band` safe {none, parchment_only, tri_band} — Combat-owned, HUD V.6 _draw() composition; (N4) `crosshair_enabled = true` safe {true, false} — Combat-owned default, Settings-persisted opt-out; (N5) `gadget_rejected_desat_duration_s = 0.2` s safe [0.1, 0.5] — HUD-owned (NEW knob); (N6) `HUDCore` cross_system_class — CanvasLayer scene at index 1, NOT autoload, public extension API `get_prompt_label()` for HUD State Signaling (system #19 VS forward-ext). Previous: `/consistency-check` post-MLS sweep (2026-04-24, same day): 2 🔴 CONFLICT fixes applied — (F1) MLS `MissionState.fired_triggers` field renamed to `triggers_fired` to match save-load.md L99 canonical schema (Save/Load L107/L159/L299, level-streaming.md L122/L204/L308, failure-respawn.md L283 all already use `triggers_fired`; MLS was drift-risking schema divergence); (F2) MLS autoload slot #8 → #9 reassignment (F&R claimed slot #8 first via its own pre-impl coord item #1, and load-order dependency requires F&R before MLS since MLS subscribes to F&R's respawn_triggered). Previous: `/design-system mission-level-scripting` Phase 5b registry sweep (2026-04-24, same day): 14 NEW entries — 5 cross-system Resource types (MissionResource / MissionObjective / MissionState / MLSTrigger / MissionScriptingService autoload) + 9 constants (alert_comedy_budget=2 safe [1,5] / SUPERSEDE_CASCADE_MAX=3 safe [2,5] / off_path_min_distance_m=10.0 safe [5.0,20.0] / pistol_per_section_max=3 safe [2,4] / pistol_per_2_section_min=1 safe [1,2] / dart_min_sections_span=2 fixed / medkit_per_section_max=1 safe [1,2] / t_capture_i_budget_ms=1.0 safe [0.5,2.0] / t_assemble_total_ceiling_ms=5.0 safe [3.0,10.0]). No `referenced_by` updates on existing entries (WorldItem, Checkpoint, FailureRespawnState, fr_checkpoint_marker_node_name, phantom_guard all already listed `mission-level-scripting.md`). MLS formulas F.1/F.2/F.5/F.7 are MLS-internal predicates/invariants — not registered per registry README rule "Only register facts that cross system boundaries." F.3 + F.4 numeric tunables captured via their constants above. Previous: `/consistency-check` (2026-04-24, immediately after `/design-system failure-respawn`): 4 fixes — (C1) F&R F.2 timing budget corrected (was citing stale 0.5/0.5 s fade values; LS revised 2026-04-21 to 2-frame hard-cut ~33 ms each) + F&R AC-FR-8.1, AC-FR-10.1, AC-FR-10.2, CR-12 step 7 updated to cite LS's ≤0.57 s budget; (S1) STALE FIX `fade_out_duration` 0.3 → 0.033 s (2-frame snap per LS 2026-04-21 senior-director ruling; registry was not updated at time of LS revision); (S2) STALE FIX `fade_in_duration` 0.5 → 0.033 s (same); (S3) STALE FIX `total_transition_budget_s` 1.3 → 0.57 s (LS 2-frame hard-cut total); (U1) NEW entry `respawn_floor_rifle_total = -1 LOCKED sentinel` (previously referenced by Combat + F&R + Inventory but never registered); referenced_by updates on fade_out_duration + fade_in_duration + load_hold_budget_ms + total_transition_budget_s to include failure-respawn.md per F&R F.2 consumption. LS-Gate-4 (Save/Load GDD §Visual/Audio timing amendment) flagged for producer; not fixed in this sweep (owned by save-load author per level-streaming.md L296). Previous: `/design-system failure-respawn` Phase 5b registry sweep (2026-04-24, same day): (1) UPDATE `kill_plane_y.referenced_by` — add `design/gdd/failure-respawn.md` (F&R receives the kill-plane-routed `player_died(ENVIRONMENTAL)` per CR-3, E.22); (2) NEW entry `Checkpoint` cross-system resource type (owned by F&R; consumed by PC `reset_for_respawn(checkpoint: Checkpoint)` + Mission Scripting section-authoring); (3) NEW entry `FailureRespawnState` cross-system resource type (F&R-owned sub-resource on SaveGame per CR-6 — floor_applied_this_checkpoint bool; consumed by Inventory via F&R's restore callback); (4) NEW constant `fr_checkpoint_marker_node_name = "player_respawn_point"` (F&R CR-11 section-authoring contract — all section scenes must include a Marker3D child with this exact node name). Previous: `/design-review inventory-gadgets.md` in-session revision pass + `/architecture-decision adr-0002-amendment` (2026-04-24): (A) NEW entry `guard_drop_dart_on_parfum_ko = 0 LOCKED` (OQ-INV-1 Option B resolution — anti-farm invariant mirroring guard_drop_dart_on_fist_ko; Parfum-KO drops nothing to prevent unlimited-Parfum dart-farm vector post-acquisition). (B) Forward-referenced touch-up needed: combat-damage.md DamageType enum gains MELEE_PARFUM member; stealth-ai.md guard_incapacitated emit-site grows cause param (both producer-tracked downstream scope from ADR-0002 2026-04-24 amendment). Previous: 2026-04-23 `/design-system inventory-gadgets` Phase 5b registry sweep: (1) STALE FIX — guard_drop_pistol_rounds value 8→3 to match combat-damage.md §F.6 (NOLF1 rebalance 2026-04-22 never propagated to registry); (2) NEW — rifle_max_reserve=12 safe [9,18] (Inventory CR-8 pickup cap for rifle reserve); (3) NEW — medkit_heal_amount=40 HP safe [25,60] (Inventory F.4 medkit apply_heal amount); (4) NEW — 3 gadget entries gadget_compact + gadget_cigarette_case + gadget_parfum (the 3-gadget MVP roster from Inventory §C.2); (5) NEW — WorldItem cross-system entity (spawned by Inventory CR-7/CR-13, authored by Mission Scripting, interacted via PC priority-2 raycast); (6) referenced_by updated for guard_drop_pistol_rounds, guard_drop_dart_on_dart_ko, guard_drop_dart_on_fist_ko, respawn_floor_pistol_total, respawn_floor_dart_total (all now referenced by inventory-gadgets.md). Previous: 2026-04-22 OQ-CD-1 SAI amendment closure (phantom_guard gains UNCONSCIOUS 6th alert_state; new attributes takedown_types, terminal_state_routing, public_accessors (has_los_to_player + takedown_prompt_active), receive_damage_contract (signature + routing + synchronicity), takedown_range_m=1.5. Unblocks Combat AC-CD-7.1, 7.3, 6.1 and LOS-cadence / Takedown-input flows. Previous same-day: /consistency-check stale-registry sweep — S1 damage_formula gains spread_range [2.0, 20.0] sub-attribute (combat-damage.md §F.3 claim now matched); S2 phantom_guard gains head_bone_name="head" canonical asset contract (combat-damage.md §C.3 claim now matched); S3 kill_plane_y.referenced_by drops level-streaming.md (LS GDD CR-12 deleted its dependency). Previous: 2026-04-21 conflict-resolution pass (C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total value 8→16 now TOTAL mag+reserve; C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total value 4→8 now TOTAL).
+last_updated: 2026-04-27   # `/design-system document-overlay-ui` Phase 5b registry sweep (2026-04-27 evening): 4 referenced_by updates + 6 NEW entries — (U1) `DocumentCollection.referenced_by` += document-overlay-ui.md (Overlay calls open_document/close_document per DC CR-11; subscribes document_opened/document_closed; CR-2 auto-open on pickup contract). (U2) `Document.referenced_by` += document-overlay-ui.md (Overlay reads title_key/body_key via tr() at render time per CR-7 + CR-8 NOTIFICATION_TRANSLATION_CHANGED re-resolve). (U3) `HUDCore.referenced_by` += document-overlay-ui.md (Overlay's CR-11 + FP-OV-5 — Overlay does NOT manipulate HUD visibility; trusts HUD's InputContext.current() != GAMEPLAY gate). (U4) `SettingsService.referenced_by` += document-overlay-ui.md (Overlay reads accessibility.reduced_motion_enabled at C.4 step 5 to decide sepia fade duration; pending OQ-DOV-COORD-2 PPS amendment). (N1) `DocumentOverlayUI` cross_system_class — Control-rooted scene at CanvasLayer 5 per ADR-0004 §IG7; NOT autoload (ADR-0007 slot #9 = MLS); per-section instantiation by MLS; sole-subscriber discipline (CR-1 zero ADR-0002 emissions); subscribes Events.document_opened + Events.document_closed; calls DC.open_document/close_document; calls PostProcessStack.enable_sepia_dim/disable_sepia_dim; pure VS scope (no MVP slice — DC ships pickup-only at MVP); 16 forbidden patterns FP-OV-1..FP-OV-16; ADR-0008 Slot 7 sub-claim 0.3 ms shared with HUD Core (HUD hides during DOCUMENT_OVERLAY); 4 states IDLE/OPENING/READING/CLOSING. (N2) `document_overlay_canvas_layer = 5` LOCKED safe [5,5] — ADR-0004 §IG7 explicit z-order registry; modal_scaffold_canvas_layer.notes already references this; explicit registration here for grep clarity + cross-system lint enforcement. (N3) `overlay_card_width_px = 960` ref + min 800 safe [800, 1200] — Overlay-owned tunable per §G.1; F.4 clamping predicate `clamp(960, 800, viewport_width)`; below 800 px American Typewriter at body size becomes illegible. (N4) `overlay_card_height_px = 680` safe [540, 800] — Overlay-owned tunable per §G.1; fixed at all viewport sizes; ScrollContainer absorbs body overflow; derived from 200-word body × ~28 px line-height ≈ 380 px + 64 px header + 64 px body padding + 30 px footer + ~142 px margin. (N5) `overlay_scroll_bar_width_px = 4` safe [2, 6] — Overlay-owned tunable per §G.1; Ink Black `#1A1A1A` StyleBoxFlat; Polish-phase art-director may amend per OQ-DOV-COORD-7. (N6) `document_body_word_count_ceiling = 250` words English safe [150, 300] — Writer-owned forward-dep introduced by this GDD per OQ-DOV-COORD-4; Lectern Pause requires single-read absorption; 250 × 1.4 German factor ≈ 350 words still fits scroll UX; documents above 300 words violate the fantasy. **CLOSES forward-dep contract for DC §F.5 item #6 (Document Overlay UI #20 GDD adopts DC.open_document/close_document API + NOTIFICATION_TRANSLATION_CHANGED + PPS lifecycle)**. **11 BLOCKING coord items emerging** (OQ-DOV-COORD-1..11) — see §F.6 / §Open Questions: DC sync close_document emit / PPS reduced-motion API / MLS section_unloading signal / Writer word-count ceiling / Localization 3 keys / ADR-0004 §IG3 doc fix / OPENING-state teardown branch / CI lint single-instance / CI script authoring / ADR-0004 promotion. **6 verification gates** (4 BLOCKING + 2 ADVISORY): Gate A accessibility_* prop names / Gate B base_theme prop name / Gate C ui_cancel dismiss / Gate D auto_translate_mode enum names / Gate E RichTextLabel locale-change / Gate F ScrollContainer scroll routing. CD-GDD-ALIGN gate at Phase 5a-bis SKIPPED per solo mode. Previous: `/consistency-check` post-DC-design-review-revision sweep (2026-04-27 PM): 7 ⚠️ STALE fixes + 1 NEW entry — (S1) `dc_off_path_ratio_min.safe_range` [0.65, 1.0] → [0.65, 0.86] per /design-review systems-designer Finding 6 (cap matches mission-actual 18/21=0.857 to preserve §C.5.1 anchors); (S2) `DocumentCollection.public_api` += `restore(state) -> void` (NEW MLS-orchestrated method per CR-5/CR-6 revision); (S3) `DocumentCollection.notes` rewritten — DC NO LONGER registers own LSS callback, MLS orchestrates per §F.5 item #1 sub-bullet; APPROVED 2026-04-27 status added; (S4) `DocumentBody.lifecycle` step 2 reworded for MLS orchestration + step 4 null-guard added per E.15 symmetry; (S5) `DocumentCollectionState.restore_method` rewritten for MLS orchestration; VG-DC-2 retired (replaced by explicit duplicate-discipline contract); (S6) `DocumentCollectionState.notes` rewritten — register-restore-callback claim retired, duplicate-discipline contract clarified; (S7) `section_documents.notes` rewritten — gate runs inside DC.restore() not _ready(). (N1) NEW `DocumentBody_tscn` cross_system_asset_path — canonical scene template at res://src/gameplay/documents/document_body.tscn per DC §C.5.8 spec; Tools-Programmer-owned; AC-DC-1.5 lint #10 enforces template-instance authoring; §F.5 BLOCKING coord item #5 must close pre-MVP-sprint. **Document Collection APPROVED 2026-04-27** post `/design-review` revision pass (10 BLOCKING items resolved). 0 🔴 CONFLICT entries detected (cross-GDD references all preserved; revision was internal to DC GDD and registry only). Previous: `/design-system document-collection` Phase 5b registry sweep (2026-04-27 PM): 2 referenced_by updates + 8 NEW entries — (U1) `player_interact_ray_length.referenced_by` += document-collection.md (DC F.3 is_reachable + §C.5.4 authoring rule); (U2) `off_path_min_distance_m.referenced_by` += document-collection.md + notes expanded with DC F.2 is_off_path qualification + §C.5.6 lint #8 critical_path_spline requirement. (N1) `DocumentCollection` cross_system_class — Node, Section/Systems/DocumentCollection canonical scene path, NOT autoload (ADR-0007 slot #9 = MLS), sole publisher of 3 ADR-0002 Document signals, subscribes player_interacted, public API capture/open_document/close_document, forbidden methods CR-13. (N2) `DocumentBody` cross_system_entity — StaticBody3D, LAYER_INTERACTABLES exclusive, interact_priority=0 (DOCUMENT highest), stencil Tier 1 (4 px), CollisionShape3D BoxShape3D ~0.30×0.05×0.20 m, height [0.4, 1.5] m authoring constraint, &"section_documents" group, V.6 snap-clear policy. (N3) `Document` cross_system_resource — id/title_key/body_key/section_id/interact_label_key/tier_override/type fields, key-only persistence (CR-8 tr() discipline), 7 categories per §C.4 routing for Audio cluster SFX. (N4) `DocumentCollectionState` cross_system_resource — frozen ADR-0003 schema collected: Array[StringName], LSS register_restore_callback restore path, duplicate() aliasing break (VG-DC-2 contingent). (N5) `section_documents` group_tag — DC iterates for CR-5 spawn-gate; CI lint #7 §E.17 requires DC node presence when group non-empty. (N6) `dc_total_document_count = 21` documents safe [15, 25] — Plaza 3/Lower 4/Restaurant 6/Upper 5/Bomb 3 distribution; within game-concept 15-25 budget. (N7) `dc_off_path_ratio_min = 0.75` ratio safe [0.65, 1.0] — Pillar 2 absolute floor; default distribution 86% off-path with 3 on-path slots (Plaza Security Logbook + Restaurant Vogel Memo + Bomb Detonation Telex). (N8) `dc_pickup_event_budget_ms = 0.05` ms safe [0.025, 0.07] — ADR-0008 sub-slot peak event-frame; F.1 t_pickup formula clamp; **BLOCKING coord OQ-DC-1: ADR-0008 §Pooled Residual amendment required**. **CLOSES upstream-dependency contract for Document Overlay UI #20 (VS) + HSS #19 (VS).** **5 BLOCKING MVP coord items emerging**: ADR-0008 amendment / MLS Plaza authoring / Localization BQA-never-expanded + 2 new keys / Section-validation CI 9 lints / Audio gameplay_session_ended signal contract. **3 BLOCKING VS coord items**: MLS §C.5 VS expansion 21-doc roster / Document Overlay UI #20 GDD adopts DC API / HSS #19 GDD subscribes document_collected. **4 ADVISORY engine VGs**: Jolt call_deferred queue_free / Array[StringName] duplicate / _ready ordering / .tres hot-reload. Previous: `/consistency-check` post-menu-system sweep (2026-04-27): 1 🔴 CONFLICT fix + 2 NEW entries — (C1) MLS L679 civilian outline tier — "Guards and civilians: Medium tier" line split into "Guards: Medium tier (2)" + "Civilians: Light tier (3) by default; Heaviest tier (1) at BQA pickup distance per CR-14"; Outline Pipeline ADR-0001 authoritative per L62/L108/L112; CLOSES CivilianAI advisory coord item §F.5#7 (logged 2026-04-25; sites L596 + L609 + L612 of civilian-ai.md annotated with 2026-04-27 closure). (N1) `pistol_max_reserve = 48` rounds safe [24, 64] — Combat-owned hard cap; referenced_by Combat (§F.6 source L731 + tuning-knobs L769/L1015 + E-case L1400 clamp), Inventory (§C.2 L214 + §F.2 max_reserve_cap dict L544 + §V tuning-knobs L1001 — Inventory owns runtime clamp), F&R (CR-5 / F.2 restore_weapon_ammo upper bound). Aggressive-skipping curve cap: late-game reserve+mag never exceeds 48+8=56, preserving Pillar-2 scarcity. (N2) `dart_max_reserve = 24` darts safe [16, 32] — Combat-owned hard cap, parallel function; tighter range than pistol because darts are primary stealth tool. Both registered as previously-unregistered cross-GDD constants (rifle counterpart was registered 2026-04-23 inventory sweep but pistol+dart never were despite cross-GDD use). 0 ⚠️ STALE entries detected. 3 ℹ️ informational items noted but not actioned (forward-dep file references for unauthored hud-state-signaling.md / cutscenes-mission-cards.md, FC "7 tags + default = 8" convention, 5.5-hit-kill descriptive note vs ceil(100/18)=6 mathematical reconciliation). docs/consistency-failures.md not present — reflexion log skipped per skill spec. Previous: `/design-system menu-system` Phase 5b registry sweep (2026-04-26 PM): 2 referenced_by updates + 4 NEW entries — (U1) `HUDCore.referenced_by` += menu-system.md (Menu provides photosensitivity boot-warning modal scaffold per CR-8 — CLOSES HUD Core REV-2026-04-26 D2 HARD MVP DEP); (U2) `SettingsService.referenced_by` += menu-system.md (Menu polls _boot_warning_pending per CR-8 + calls open_panel from Settings entry-point per CR-7 + calls dismiss_warning on Acknowledge + subscribes setting_changed accessibility/reduced_motion_enabled per CR-23 — CLOSES BLOCKING coord OQ-SA-3); (N1) `MenuSystem` cross_system_class — root scene MainMenu.tscn (Project Settings Main Scene, NOT autoload per ADR-0007); PauseMenu CanvasLayer 8 overlay; ModalScaffold CanvasLayer 20; CR-19 sole-publisher discipline = consumer-only (zero ADR-0002 emissions); subscribes Save domain (save_failed/game_saved/game_loaded) + Settings domain (setting_changed filtered to accessibility.reduced_motion_enabled) + Input.joy_connection_changed engine signal direct; (N2) `ModalScaffold` cross_system_class — single shared Control-rooted modal scaffold scene with depth-1 _pending_modal_content queue; child of MainMenu/PauseMenu; CanvasLayer 20; AccessKit one-shot assertive pattern (CR-21 + F.7); focus trap CR-24; dismiss via `_unhandled_input()` + ui_cancel per ADR-0004 §97; used by photosensitivity warning (Settings CR-18 — non-dismissible) + save-failed (CR-10 — non-blocking) + quit-confirm (CR-9) + return-to-registry / re-brief / new-game-overwrite (VS); (N3) `modal_scaffold_canvas_layer = 20` LOCKED safe [20,20] — godot-specialist verified to avoid collisions HUD 1 / PPS 4 / Document Overlay 5 / Pause 8 / Settings 10 / Cutscenes 10 / Subtitles 15 / LS fade 127; (N4) `menu_music_fade_out_ms = 800` ms safe [200, 2000] — Menu-owned tuning knob; Audio Rule 6 TRANS_LINEAR on volume_db produces perceptually-linear fade; CR-20 invariant + LS L201 contract. **CLOSES Settings OQ-SA-3 + HUD Core REV-2026-04-26 D2 HARD MVP DEP + PPS OQ-PPS-2 (Pause uses 52% Ink Black ColorRect, NOT sepia tint)**. Previous: `/design-system settings-accessibility` Phase 5b registry sweep (2026-04-26): 4 referenced_by updates + 3 NEW entries — (U1) `crosshair_enabled.referenced_by` += settings-accessibility.md + notes expanded with dual-discovery atomicity rule (AC-SA-5.8 + AC-SA-8.1); (U2) `crosshair_dot_size_pct_v.referenced_by` += settings-accessibility.md (G.4 VS-tier slider); (U3) `crosshair_halo_style.referenced_by` += settings-accessibility.md (G.4 VS-tier OptionButton); (U4) `hud_damage_flash_cooldown_ms.referenced_by` += settings-accessibility.md (G.3 + CR-17 — slider [333, 1000] with WCAG 2.3.1 hard floor); (N1) `SettingsService` cross_system_class — autoload slot #8 (ADR-0007 amendment BLOCKING), sole publisher of setting_changed (ADR-0002 §290 Variant exception) + settings_loaded (NEW), sole owner of user://settings.cfg (ADR-0003), six categories audio/graphics/accessibility/hud/controls/language; (N2) `settings_loaded` cross_system_signal — one-shot, no payload, ADR-0002 amendment BLOCKING per OQ-SA-2; (N3) `damage_flash_enabled` constant — Settings-owned kill-switch default true/opt-OUT; gates BOTH HUD numeral flash AND Combat Enhanced Hit Feedback per CR-16 + AC-SA-5.1 + AC-SA-8.2 — Combat NEW BLOCKING coord must add subscription. Previous: `/consistency-check` post-REV-2026-04-26 sweep (2026-04-26): 2 🔴 CONFLICT fixes — (C1) HUDCore.notes signal count 10 → 9 (REV-2026-04-26 D4 removed `takedown_availability_changed` per cockpit-dial fantasy enforcement); HUDCore.notes expanded to 14 total connections (was unstated); 2-state prompt-strip noted (was 3-state); APPROVED status + 7 BLOCKING coord items recorded; (C2) HUDCore.referenced_by[hud-state-signaling.md] reframed from "VS forward-dep" to "MVP HARD dep (alert-cue minimal slice per HUD UI-2 D3) + VS forward-ext (get_prompt_label)"; HUDCore.referenced_by[settings-accessibility.md] ADDED (MVP HARD dep per HUD UI-2 D2 — photosensitivity + crosshair toggle UI). 1 cross-GDD CONFLICT fix in inventory-gadgets.md (3 occurrences of "HUD Core (Not Started)" → "HUD Core APPROVED 2026-04-26" + dry-fire rate-gate note added per HUD REV-2026-04-26 D1). NO new registry entries (cross-system constants `damage_flash_enabled` + Settings #23 / HSS #19 minimal-UI scope deferred to register when those GDDs are authored). Previous: `/design-system hud-core` Phase 5b registry sweep (2026-04-25): 2 referenced_by updates + 6 NEW entries — (U1) `player_max_health.referenced_by` += hud-core.md (HUD F.2 critical-state ratio); (U2) `player_critical_health_threshold.referenced_by` += hud-core.md + audio.md (Audio §F.4 already references but was never registered as such), unit clarified to `hp_percent` with note documenting the canonical Audio/HUD divide-by-100 pattern; (N1) `hud_damage_flash_cooldown_ms = 333` ms safe [200, 500] — Combat-owned, HUD-enforced WCAG 2.3.1 photosensitivity gate; (N2) `crosshair_dot_size_pct_v = 0.19%` safe [0.15, 0.30] — Combat-owned, HUD F.4 dot radius computation; (N3) `crosshair_halo_style = tri_band` safe {none, parchment_only, tri_band} — Combat-owned, HUD V.6 _draw() composition; (N4) `crosshair_enabled = true` safe {true, false} — Combat-owned default, Settings-persisted opt-out; (N5) `gadget_rejected_desat_duration_s = 0.2` s safe [0.1, 0.5] — HUD-owned (NEW knob); (N6) `HUDCore` cross_system_class — CanvasLayer scene at index 1, NOT autoload, public extension API `get_prompt_label()` for HUD State Signaling (system #19 VS forward-ext). Previous: `/consistency-check` post-MLS sweep (2026-04-24, same day): 2 🔴 CONFLICT fixes applied — (F1) MLS `MissionState.fired_triggers` field renamed to `triggers_fired` to match save-load.md L99 canonical schema (Save/Load L107/L159/L299, level-streaming.md L122/L204/L308, failure-respawn.md L283 all already use `triggers_fired`; MLS was drift-risking schema divergence); (F2) MLS autoload slot #8 → #9 reassignment (F&R claimed slot #8 first via its own pre-impl coord item #1, and load-order dependency requires F&R before MLS since MLS subscribes to F&R's respawn_triggered). Previous: `/design-system mission-level-scripting` Phase 5b registry sweep (2026-04-24, same day): 14 NEW entries — 5 cross-system Resource types (MissionResource / MissionObjective / MissionState / MLSTrigger / MissionScriptingService autoload) + 9 constants (alert_comedy_budget=2 safe [1,5] / SUPERSEDE_CASCADE_MAX=3 safe [2,5] / off_path_min_distance_m=10.0 safe [5.0,20.0] / pistol_per_section_max=3 safe [2,4] / pistol_per_2_section_min=1 safe [1,2] / dart_min_sections_span=2 fixed / medkit_per_section_max=1 safe [1,2] / t_capture_i_budget_ms=1.0 safe [0.5,2.0] / t_assemble_total_ceiling_ms=5.0 safe [3.0,10.0]). No `referenced_by` updates on existing entries (WorldItem, Checkpoint, FailureRespawnState, fr_checkpoint_marker_node_name, phantom_guard all already listed `mission-level-scripting.md`). MLS formulas F.1/F.2/F.5/F.7 are MLS-internal predicates/invariants — not registered per registry README rule "Only register facts that cross system boundaries." F.3 + F.4 numeric tunables captured via their constants above. Previous: `/consistency-check` (2026-04-24, immediately after `/design-system failure-respawn`): 4 fixes — (C1) F&R F.2 timing budget corrected (was citing stale 0.5/0.5 s fade values; LS revised 2026-04-21 to 2-frame hard-cut ~33 ms each) + F&R AC-FR-8.1, AC-FR-10.1, AC-FR-10.2, CR-12 step 7 updated to cite LS's ≤0.57 s budget; (S1) STALE FIX `fade_out_duration` 0.3 → 0.033 s (2-frame snap per LS 2026-04-21 senior-director ruling; registry was not updated at time of LS revision); (S2) STALE FIX `fade_in_duration` 0.5 → 0.033 s (same); (S3) STALE FIX `total_transition_budget_s` 1.3 → 0.57 s (LS 2-frame hard-cut total); (U1) NEW entry `respawn_floor_rifle_total = -1 LOCKED sentinel` (previously referenced by Combat + F&R + Inventory but never registered); referenced_by updates on fade_out_duration + fade_in_duration + load_hold_budget_ms + total_transition_budget_s to include failure-respawn.md per F&R F.2 consumption. LS-Gate-4 (Save/Load GDD §Visual/Audio timing amendment) flagged for producer; not fixed in this sweep (owned by save-load author per level-streaming.md L296). Previous: `/design-system failure-respawn` Phase 5b registry sweep (2026-04-24, same day): (1) UPDATE `kill_plane_y.referenced_by` — add `design/gdd/failure-respawn.md` (F&R receives the kill-plane-routed `player_died(ENVIRONMENTAL)` per CR-3, E.22); (2) NEW entry `Checkpoint` cross-system resource type (owned by F&R; consumed by PC `reset_for_respawn(checkpoint: Checkpoint)` + Mission Scripting section-authoring); (3) NEW entry `FailureRespawnState` cross-system resource type (F&R-owned sub-resource on SaveGame per CR-6 — floor_applied_this_checkpoint bool; consumed by Inventory via F&R's restore callback); (4) NEW constant `fr_checkpoint_marker_node_name = "player_respawn_point"` (F&R CR-11 section-authoring contract — all section scenes must include a Marker3D child with this exact node name). Previous: `/design-review inventory-gadgets.md` in-session revision pass + `/architecture-decision adr-0002-amendment` (2026-04-24): (A) NEW entry `guard_drop_dart_on_parfum_ko = 0 LOCKED` (OQ-INV-1 Option B resolution — anti-farm invariant mirroring guard_drop_dart_on_fist_ko; Parfum-KO drops nothing to prevent unlimited-Parfum dart-farm vector post-acquisition). (B) Forward-referenced touch-up needed: combat-damage.md DamageType enum gains MELEE_PARFUM member; stealth-ai.md guard_incapacitated emit-site grows cause param (both producer-tracked downstream scope from ADR-0002 2026-04-24 amendment). Previous: 2026-04-23 `/design-system inventory-gadgets` Phase 5b registry sweep: (1) STALE FIX — guard_drop_pistol_rounds value 8→3 to match combat-damage.md §F.6 (NOLF1 rebalance 2026-04-22 never propagated to registry); (2) NEW — rifle_max_reserve=12 safe [9,18] (Inventory CR-8 pickup cap for rifle reserve); (3) NEW — medkit_heal_amount=40 HP safe [25,60] (Inventory F.4 medkit apply_heal amount); (4) NEW — 3 gadget entries gadget_compact + gadget_cigarette_case + gadget_parfum (the 3-gadget MVP roster from Inventory §C.2); (5) NEW — WorldItem cross-system entity (spawned by Inventory CR-7/CR-13, authored by Mission Scripting, interacted via PC priority-2 raycast); (6) referenced_by updated for guard_drop_pistol_rounds, guard_drop_dart_on_dart_ko, guard_drop_dart_on_fist_ko, respawn_floor_pistol_total, respawn_floor_dart_total (all now referenced by inventory-gadgets.md). Previous: 2026-04-22 OQ-CD-1 SAI amendment closure (phantom_guard gains UNCONSCIOUS 6th alert_state; new attributes takedown_types, terminal_state_routing, public_accessors (has_los_to_player + takedown_prompt_active), receive_damage_contract (signature + routing + synchronicity), takedown_range_m=1.5. Unblocks Combat AC-CD-7.1, 7.3, 6.1 and LOS-cadence / Takedown-input flows. Previous same-day: /consistency-check stale-registry sweep — S1 damage_formula gains spread_range [2.0, 20.0] sub-attribute (combat-damage.md §F.3 claim now matched); S2 phantom_guard gains head_bone_name="head" canonical asset contract (combat-damage.md §C.3 claim now matched); S3 kill_plane_y.referenced_by drops level-streaming.md (LS GDD CR-12 deleted its dependency). Previous: 2026-04-21 conflict-resolution pass (C1 damage_formula.output_range [16,240]→[13,240]; C2 silenced_pistol_takedown_damage DEPRECATED → new blade_takedown_damage; C3 guard_pistol_damage_vs_eve safe-range tightened [14,25]→[14,20]; C4 pistol_starting_reserve 16→32; C5 dart_starting_reserve 8→16; C6 guard_drop_dart_ko_rounds DEPRECATED → split into guard_drop_dart_on_dart_ko + guard_drop_dart_on_fist_ko; C7 respawn_ammo_floor_pistol RENAMED → respawn_floor_pistol_total value 8→16 now TOTAL mag+reserve; C8 respawn_ammo_floor_dart RENAMED → respawn_floor_dart_total value 4→8 now TOTAL).
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -185,11 +185,13 @@ formulas:
       - target_is_guard
       - H
     expression: "final_damage = base_damage × H  where H = 2.0 iff (is_headshot == true AND target_is_guard == true), else H = 1.0"
-    output_range: [13, 240]   # was: [16, 240] before 2026-04-21 — corrected per combat-damage.md §F.1 self-annotation (fist_base_damage safe floor is 13, not 16).
+    default_range: [34, 240]  # 2026-04-27 (/consistency-check C1 fix): split from prior single output_range:[13,240]. Default tuning floor = pistol body 34; ceiling = rifle headshot 120×2 = 240. Synced to combat-damage.md §F.1 + §F.6 per L457 prescription after the 2026-04-22 fists rework (fist_base_damage 16→40 lifted floor from 13 to 34).
+    safe_range: [34, 300]     # 2026-04-27 (/consistency-check C1 fix): safe-range floor = same 34 (pistol body / fist safe floor); ceiling = rifle headshot at safe-tune ceiling 150×2 = 300.
+    output_range: [34, 240]   # DEPRECATED-but-kept alias = default_range. Was [16,240] pre-2026-04-21, then [13,240] until 2026-04-27 (fist floor was reworked 16→40 in combat-damage.md 2026-04-22; registry sync deferred until /consistency-check 2026-04-27 C1).
     spread_range: [2.0, 20.0] # added 2026-04-22 per combat-damage.md §F.3 claim (systems-designer Finding 5 — safe-range ceilings). Default-tuning output: [2.0, 13.0]; safe-range max: 20° (9° sprint + 6° cover + 5° falloff). Co-located with damage_formula because §F.3 is the guard-spread sub-formula of the same damage pipeline.
-    notes: "Combat & Damage F.1 master damage formula. Eve's apply_damage intake and guard's receive_damage intake both consume final_damage. Headshot multiplier is computed internally in Combat BEFORE emission — enemy_damaged.amount is post-multiplier. Target_is_guard gate prevents headshot multiplier on Eve (guards always fire body-only). Min 13 = fist_base_damage safe floor; max 240 = rifle headshot (120×2). spread_range covers the F.3 guard-spread sub-formula output (default [2.0, 13.0], safe-range ceiling 20°)."
+    notes: "Combat & Damage F.1 master damage formula. Eve's apply_damage intake and guard's receive_damage intake both consume final_damage. Headshot multiplier is computed internally in Combat BEFORE emission — enemy_damaged.amount is post-multiplier. Target_is_guard gate prevents headshot multiplier on Eve (guards always fire body-only). Default-range floor 34 = pistol body / fist safe floor (post 2026-04-22 fists rework — fist_base_damage 40 default, safe range [34,50]); default ceiling 240 = rifle headshot (120×2). Safe-range ceiling 300 = rifle headshot at safe-tune max (150×2). spread_range covers the F.3 guard-spread sub-formula output (default [2.0, 13.0], safe-range ceiling 20°)."
     added: 2026-04-21
-    revised: 2026-04-22
+    revised: 2026-04-27   # C1 fix: output_range floor 13→34 + split into default_range/safe_range per combat-damage.md L457 prescription.
 
 # Example:
 #
@@ -269,11 +271,12 @@ constants:
     referenced_by:
       - design/gdd/player-character.md
       - design/gdd/combat-damage.md
-      - design/gdd/hud-core.md   # F.2 critical-state ratio computation; AC-HUD-2.x assertions
+      - design/gdd/hud-core.md          # F.2 critical-state ratio computation; AC-HUD-2.x assertions
+      - design/gdd/inventory-gadgets.md # apply_heal clamp ceiling (L654) + heal-formula variable table (L662) + Pillar-3 rationale (L1021)
     value: 100
     unit: hp
     added: 2026-04-19
-    revised: 2026-04-25   # hud-core.md added to referenced_by (F.2 critical-state ratio + AC-HUD-2.x)
+    revised: 2026-04-27   # /consistency-check S1 fix: inventory-gadgets.md added to referenced_by (apply_heal clamp ceiling + heal formula). Previous: 2026-04-25 hud-core.md added (F.2 critical-state ratio + AC-HUD-2.x).
   - name: player_critical_health_threshold
     status: active
     source: design/gdd/player-character.md
@@ -410,11 +413,12 @@ constants:
     source: design/gdd/player-character.md
     referenced_by:
       - design/gdd/player-character.md
+      - design/gdd/document-collection.md          # F.3 is_reachable upper bound + §C.5.4 authoring rule (placement_ray_distance ≤ 2.0 m)
     value: 2.0
     unit: m
     notes: "Interactables must be authored within this distance from likely player positions."
     added: 2026-04-19
-    revised: ""
+    revised: 2026-04-27
 
   # ── Collision layers (CANONICAL — all systems with colliders or raycasts reference these) ──
   - name: collision_layer_world
@@ -585,24 +589,24 @@ constants:
     referenced_by:
       - design/gdd/level-streaming.md
       - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R F.2 timing-budget sum consumes this value
-      # design/gdd/save-load.md — Save/Load still references 0.3/0.5 s wording (LS-Gate-4 cleanup pending per level-streaming.md L296)
+      # Save/Load (save-load.md §Visual/Audio) does NOT live-reference this value — it points to LS as canonical owner per LS-Gate-4 Option B closure (2026-04-27). Intentionally absent from referenced_by.
     value: 0.033
     unit: s   # was: 0.3 before 2026-04-24 — LS senior-director ruling 2026-04-21 replaced the 0.3/0.5 dissolve with a 2-frame hard-cut snap (~33 ms @ 60 fps); registry was not updated at the time of that revision. Canonical authoritative form: FADE_OUT_FRAMES = 2 @ 60 fps. Caught by /consistency-check 2026-04-24 during F&R Phase 5b sweep.
-    notes: "2-frame hard-cut snap-to-black duration on section transition (≈33 ms @ 60 fps). Authoritative form is FADE_OUT_FRAMES = 2 in LS §Tuning. The prior 0.3 s dissolve spec was superseded 2026-04-21 per CD ruling ('The black hold IS the cut'). Save/Load §Visual/Audio still references the old 0.3/0.5 s values — LS-Gate-4 coord item (level-streaming.md L296) pending Save/Load author touch-up."
+    notes: "2-frame hard-cut snap-to-black duration on section transition (≈33 ms @ 60 fps). Authoritative form is FADE_OUT_FRAMES = 2 in LS §Tuning. The prior 0.3 s dissolve spec was superseded 2026-04-21 per CD ruling ('The black hold IS the cut'). LS-Gate-4 closed 2026-04-27 via /consistency-check C2 — Save/Load adopted Option B (pointer-only wording, no inline timing values), so Save/Load is intentionally absent from referenced_by."
     added: 2026-04-21
-    revised: 2026-04-24   # value corrected 0.3 → 0.033 per LS 2-frame hard-cut spec (stale since 2026-04-21 LS revision)
+    revised: 2026-04-27   # 2026-04-27 (/consistency-check C2): closed LS-Gate-4 by Option B (Save/Load points to LS rather than restating values); cleaned up pending-cleanup comments. Previous: 2026-04-24 value corrected 0.3 → 0.033 per LS 2-frame hard-cut spec.
   - name: fade_in_duration
     status: active
     source: design/gdd/level-streaming.md
     referenced_by:
       - design/gdd/level-streaming.md
       - design/gdd/failure-respawn.md   # added 2026-04-24 — F&R F.2 timing-budget sum
-      # design/gdd/save-load.md — LS-Gate-4 cleanup pending
+      # Save/Load: pointer-only reference per LS-Gate-4 Option B closure (2026-04-27); no live value reference, intentionally absent.
     value: 0.033
     unit: s   # was: 0.5 before 2026-04-24 — see fade_out_duration note; same stale-revision situation
     notes: "2-frame hard-cut snap-reveal duration on section transition. Symmetric with fade_out_duration (both are 2-frame snaps, not the prior asymmetric 0.3/0.5 s dissolve). Authoritative form: FADE_IN_FRAMES = 2 in LS §Tuning."
     added: 2026-04-21
-    revised: 2026-04-24   # value corrected 0.5 → 0.033 per LS 2-frame hard-cut spec
+    revised: 2026-04-27   # 2026-04-27 (/consistency-check C2): LS-Gate-4 closed via Option B; cleanup-pending comment removed. Previous: 2026-04-24 value corrected 0.5 → 0.033 per LS 2-frame hard-cut spec.
   - name: load_hold_budget_ms
     status: active
     source: design/gdd/level-streaming.md
@@ -981,6 +985,30 @@ constants:
     notes: "SENTINEL value: when respawn_floor_rifle_total == -1, Inventory.apply_respawn_floor_if_needed preserves rifle snapshot total unchanged (no floor applied). Intentional design: rifle is a bonus weapon, not a safety-net weapon; adding a rifle floor would violate Pillar 2 scarcity. Safe range [-1] LOCKED — changing to a positive value would require re-designing the rifle's scarcity role. Caught by /consistency-check 2026-04-24 as previously-unregistered cross-GDD constant (Combat + F&R + Inventory all reference it)."
     added: 2026-04-24
     revised: ""
+  - name: pistol_max_reserve
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md          # §F.6 source claim L731 + tuning-knobs L769/L1015 + E-case L1400 clamp
+      - design/gdd/inventory-gadgets.md      # §C.2 starting-ammo table L214 + §F.2 max_reserve_cap dict L544 + §V tuning-knobs L1001 — Inventory owns the runtime clamp
+      - design/gdd/failure-respawn.md        # CR-5 / F.2 restore_weapon_ammo clamp upper bound
+    value: 48
+    unit: rounds
+    notes: "Combat F.6 hard cap on pistol reserve ammo (~1.5× starting reserve of 32). Pickup past cap loses excess per E.32. Also used by restore_weapon_ammo clamp to sanitize corrupted save snapshots. Aggressive-skipping curve cap: late-game reserve+mag never exceeds 48+8=56, preserving Pillar-2 scarcity vs the 80+ accumulation-curve draft. Safe range [24, 64]: <24 starves Patient playstyle; >64 erodes scarcity discipline. Caught by /consistency-check 2026-04-27 as previously-unregistered cross-GDD constant (Combat + Inventory + F&R all reference; Inventory marks it registry-locked)."
+    added: 2026-04-27
+    revised: ""
+  - name: dart_max_reserve
+    status: active
+    source: design/gdd/combat-damage.md
+    referenced_by:
+      - design/gdd/combat-damage.md          # §F.6 source claim L731 + tuning-knobs L770/L1016
+      - design/gdd/inventory-gadgets.md      # §C.2 L215 + §F.2 max_reserve_cap dict L544 + §V tuning-knobs L1004 — Inventory owns the runtime clamp
+      - design/gdd/failure-respawn.md        # CR-5 / F.2 restore_weapon_ammo clamp upper bound
+    value: 24
+    unit: darts
+    notes: "Combat F.6 hard cap on dart reserve ammo (~1.5× starting reserve of 16). Same function as pistol cap: pickup overflow lost per E.32, restore clamp sanitizes corrupted snapshots. Tighter range than pistol because darts are the primary stealth tool — over-supply collapses Pillar-1 ghost-route discipline. Safe range [16, 32]: <16 starves stealth-only runs; >32 enables farm-and-dart playstyle. Caught by /consistency-check 2026-04-27 alongside pistol_max_reserve."
+    added: 2026-04-27
+    revised: ""
 
   # ─── Inventory & Gadgets (owned by design/gdd/inventory-gadgets.md) ─────────
   - name: rifle_max_reserve
@@ -1271,12 +1299,13 @@ constants:
     source: design/gdd/mission-level-scripting.md
     referenced_by:
       - design/gdd/mission-level-scripting.md       # F.6 + §C.5.4 pistol cache distribution
+      - design/gdd/document-collection.md           # F.2 is_off_path qualification predicate (≥75% off-path docs per CR-9)
     value: 10.0
     safe_range: [5.0, 20.0]
     unit: meters
-    notes: "F.6 minimum Euclidean distance from main-path centerline for pistol cache placement. Authoring guideline enforced by level-designer judgement + playtest review (NOT CI-derived from NavMesh at MVP — post-MVP tooling deferred). <5 m: caches feel on-path (violates Pillar 2). >20 m: unreachable in tight sections (softlock risk)."
+    notes: "F.6 minimum Euclidean distance from main-path centerline for pistol cache placement (MLS) AND Document Collection F.2 off-path qualification (DC). Authoring guideline enforced by level-designer judgement + playtest review (NOT CI-derived from NavMesh at MVP — post-MVP tooling deferred). <5 m: caches/docs feel on-path (violates Pillar 2). >20 m: unreachable in tight sections (softlock risk). DC §C.5.6 lint #8 requires `&\"critical_path\"` spline node in every section scene to make F.2 path_distance computable."
     added: 2026-04-24
-    revised: ""
+    revised: 2026-04-27
 
   - name: pistol_per_section_max
     status: active
@@ -1475,6 +1504,7 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md   # §G + E.42 — photosensitivity rate-gate constant; WCAG 2.3.1 ceiling
       - design/gdd/hud-core.md        # F.1 enforcement; CR-7/CR-7b damage-flash coalescing; AC-HUD-3.x
+      - design/gdd/settings-accessibility.md  # G.3 + CR-17 — exposed as slider [333, 1000] with hard 333 floor; player cannot lower below WCAG 2.3.1 ceiling
     value: 333
     safe_range: [200, 500]
     unit: milliseconds
@@ -1488,6 +1518,7 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md   # §G + UI-1 — resolution-independent dot size spec
       - design/gdd/hud-core.md        # F.4 dot radius computation; CR-11 crosshair widget; AC-HUD-7.1/7.2
+      - design/gdd/settings-accessibility.md  # G.4 — VS-tier slider exposed in HUD sub-screen
     value: 0.19
     safe_range: [0.15, 0.30]
     unit: percent_of_viewport_height
@@ -1501,6 +1532,7 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md   # §G + UI-1 — halo composition for ≥3:1 contrast against ANY background
       - design/gdd/hud-core.md        # V.6 _draw() override; CR-11; AC-HUD-7.5 visual-evidence
+      - design/gdd/settings-accessibility.md  # G.4 — VS-tier OptionButton selector (none / parchment_only / tri_band)
     value: tri_band
     safe_range: ["none", "parchment_only", "tri_band"]
     unit: enum
@@ -1514,10 +1546,11 @@ constants:
     referenced_by:
       - design/gdd/combat-damage.md   # §UI-6 — opt-out toggle, default-on
       - design/gdd/hud-core.md        # CR-11 visibility gating; AC-HUD-7.3/7.4
+      - design/gdd/settings-accessibility.md  # G.3 + G.4 — dual-discovery; CR-4 + AC-SA-5.8 + AC-SA-8.1 require BOTH `setting_changed("accessibility", "crosshair_enabled", v)` AND `setting_changed("hud", "crosshair_enabled", v)` to fire in same call stack
     value: true
     safe_range: [true, false]
     unit: bool
-    notes: "Combat-owned default (true / opt-out by default). Settings & Accessibility (forward-dep) owns persistence + UI placement. Per Combat §UI-6: surfaced via BOTH `Settings → Accessibility → Crosshair` AND `Settings → HUD → Crosshair` (single source of truth, dual discovery paths). HUD Core CR-11 mirrors `_crosshair_enabled_mirror` from `setting_changed('hud', 'crosshair_enabled', value)`; crosshair Control visible iff `(hud_root.visible == true) AND (_crosshair_enabled_mirror == true)`."
+    notes: "Combat-owned default (true / opt-out by default). Settings & Accessibility (system #23) owns persistence + UI placement; dual-discovered (single source of truth, two discovery paths: Settings → Accessibility → Crosshair AND Settings → HUD → Crosshair). HUD Core CR-11 mirrors `_crosshair_enabled_mirror` from `setting_changed('hud', 'crosshair_enabled', value)`; crosshair Control visible iff `(hud_root.visible == true) AND (_crosshair_enabled_mirror == true)`. Per Settings AC-SA-5.8 + AC-SA-8.1, SettingsService MUST emit `setting_changed` for BOTH categories sequentially within the same call stack — both emits load-bearing for HUD Core (subscribes under `hud`) and Combat (subscribes under `accessibility`) consumers."
     added: 2026-04-25
     revised: ""
 
@@ -1540,15 +1573,448 @@ constants:
     type: cross_system_class
     referenced_by:
       - design/gdd/hud-core.md           # owns the class; CanvasLayer scene at index 1; instanced once per main scene
-      - design/gdd/hud-state-signaling.md  # forward-dep (system #19, VS) — extends HUD Core via get_prompt_label() per UI-3
+      - design/gdd/hud-state-signaling.md  # MVP HARD dep (alert-cue minimal slice per HUD UI-2) + VS forward-ext (get_prompt_label) — REV-2026-04-26
+      - design/gdd/settings-accessibility.md  # MVP HARD dep (photosensitivity + crosshair toggle UI per HUD UI-2) — REV-2026-04-26
+      - design/gdd/menu-system.md             # Menu provides photosensitivity boot-warning modal scaffold per CR-8 — CLOSES HUD Core REV-2026-04-26 D2 HARD MVP DEP for boot-warning UI
+      - design/gdd/document-overlay-ui.md     # Overlay's CR-11 + FP-OV-5 — Overlay does NOT manipulate HUD visibility directly; trusts HUD's own InputContext.current() != GAMEPLAY visibility gate when DOCUMENT_OVERLAY is pushed (Overlay shares Slot 7 0.3 ms cap when active, but they never share simultaneously since HUD hides during DOCUMENT_OVERLAY)
     class_name: HUDCore
     base: CanvasLayer
     autoload: false   # HUD is per-main-scene CanvasLayer instance, NOT autoload (FP-13; ADR-0007 caps autoloads at 7)
     canvas_layer_index: 1   # within ADR-0004 §7 0..3 reserved range; below sepia dim layer 4
     public_extension_api:
-      - "get_prompt_label() -> Label  # HUD State Signaling (system #19, VS) writes additional states through this single forward extension point"
-    notes: "HUD Core is the screen-space subscriber surface for 10 ADR-0002 signals (8 frozen + 2 amendment: ui_context_changed + takedown_availability_changed). Emits zero signals. Polls only 2 PC accessors (get_current_interact_target + is_hand_busy). 5 widgets: Health BL / Weapon+Ammo BR / Gadget tile TR / Prompt-strip CB / Crosshair centre. Persists across section_entered without re-subscribing (CR-15). No capture()/restore_callback — rebuilds via signal replay on LOAD_FROM_SAVE (CR-14). HSS forward-extension via get_prompt_label() is the single permitted external API."
+      - "get_prompt_label() -> Label  # HUD State Signaling (system #19) writes additional states through this single forward extension point. MVP slice: alert-cue write per UI-2 D3. VS: MEMO_NOTIFICATION + alarm-stinger banner."
+    notes: "HUD Core is the screen-space subscriber surface for 9 ADR-0002 signals (was 10 — REV-2026-04-26 per D4 removed `takedown_availability_changed`; remaining: 8 frozen + 1 amendment `ui_context_changed`). 14 total connections per CR-1 (9 Events bus + 1 Settings + 3 Timer + 1 viewport). Emits zero signals. Polls only 2 PC accessors (get_current_interact_target + is_hand_busy). 5 widgets: Health BL / Weapon+Ammo BR / Gadget tile TR / Prompt-strip CB / Crosshair centre. Prompt-strip is 2-state machine (HIDDEN, INTERACT_PROMPT — TAKEDOWN_CUE removed per D4). Persists across section_entered without re-subscribing (CR-15). No capture()/restore_callback — rebuilds via signal replay on LOAD_FROM_SAVE (CR-14). HSS forward-extension via get_prompt_label() is the single permitted external API (MVP: HSS writes alert-cue per UI-2 D3; VS: MEMO_NOTIFICATION + alarm stinger). Status APPROVED 2026-04-26 (REV-2026-04-26 second-pass; user accepted without third re-review per `reviews/hud-core-review-log.md`). 7 BLOCKING coord items remain open before sprint planning (Settings #23 + HSS #19 minimal-UI MVP deps; ADR-0002 amendment for ui_context_changed; ADR-0004 Gates 1+2; Godot 4.6 API verification batch; OQ-HUD-5 F.5 measurement; Input GDD CR-21 contract)."
     added: 2026-04-25
+    revised: 2026-04-26
+
+  - name: SettingsService
+    status: active
+    source: design/gdd/settings-accessibility.md
+    type: cross_system_class
+    referenced_by:
+      - design/gdd/settings-accessibility.md   # owns the class; autoload slot #8 per CR-3 (ADR-0007 amendment pending)
+      - design/gdd/audio.md                    # subscribes to setting_changed("audio", ...) for bus volumes + clock_tick
+      - design/gdd/combat-damage.md            # subscribes to setting_changed("accessibility", ...) for damage_flash_enabled / EHF / damage_flash_duration_frames / ads_tween_duration_multiplier; subscribes to ("controls", "ads_is_toggle")
+      - design/gdd/hud-core.md                 # subscribes to setting_changed("hud", ...) for crosshair_enabled / hud_scale + setting_changed("accessibility", ...) for damage_flash_enabled / damage_flash_cooldown_ms
+      - design/gdd/player-character.md         # subscribes to setting_changed("controls", ...) for sensitivities + sprint_is_toggle / crouch_is_toggle + ("graphics", "resolution_scale") for hands-outline (closes AC-9.2)
+      - design/gdd/outline-pipeline.md         # subscribes to setting_changed("graphics", "resolution_scale") + exposes get_hardware_default_resolution_scale() query for CR-11
+      - design/gdd/inventory-gadgets.md        # subscribes to setting_changed("accessibility", ...) for haptic_feedback_enabled / gadget_ready_indicator_enabled
+      - design/gdd/menu-system.md              # reads _boot_warning_pending synchronously in _ready() per CR-8 + calls open_panel() from Settings entry-point button per CR-7 + calls dismiss_warning() on photosensitivity Acknowledge per CR-8 + subscribes setting_changed("accessibility", "reduced_motion_enabled", _) per CR-23 — CLOSES BLOCKING coord OQ-SA-3
+      - design/gdd/document-overlay-ui.md      # reads SettingsService.get_value("accessibility", "reduced_motion_enabled", false) at C.4 step 5 to decide between PostProcessStack.enable_sepia_dim() (default 0.5s fade) vs enable_sepia_dim(0.0) (instant snap) per OQ-DOV-COORD-2 BLOCKING amendment to PPS GDD; AC-DOV-1.2 + AC-DOV-11.3 BLOCKED-pending COORD-2
+    class_name: SettingsService
+    base: Node
+    autoload: true
+    autoload_slot: 8   # ADR-0007 amendment BLOCKING (currently 7 autoloads; Settings becomes #8 after Combat)
+    public_api:
+      - "get_value(category: StringName, name: StringName) -> Variant   # runtime query for tools/debug/tests; consumers MUST NOT call from _ready() (CR-6 / FP-3)"
+      - "_boot_warning_pending: bool   # read-only after _ready(); Menu System polls for photosensitivity warning trigger per CR-18 / OQ-SA-3"
+    sole_publisher_of:
+      - "Events.setting_changed(category: StringName, name: StringName, value: Variant)   # ADR-0002 §290; sole Variant payload exception in entire signal taxonomy"
+      - "Events.settings_loaded()   # one-shot, no payload; emitted once after boot burst per CR-9 (ADR-0002 amendment BLOCKING)"
+    sole_owner_of:
+      - "user://settings.cfg   # ConfigFile per ADR-0003; strictly separate from SaveGame; new-game does not wipe"
+    six_categories:
+      - audio
+      - graphics
+      - accessibility
+      - hud
+      - controls
+      - language
+    notes: "Persistence + signal-emit layer for player preferences AND the player-facing modal panel that exposes them. Sole publisher of `setting_changed` (Variant payload exception) + sole owner of `user://settings.cfg`. Six categories: audio / graphics / accessibility / hud / controls / language. Modal panel pushes InputContext.SETTINGS per ADR-0004; HSplitContainer sidebar+detail-pane layout at CanvasLayer index 10. Boot-time burst: load cfg → apply rebinds (NOT via setting_changed per CR-19) → emit setting_changed per stored key → emit settings_loaded one-shot. Write-through on every change (no Apply button) except resolution_scale which has 10-second revert banner per CR-15. Pillar 5 carve-out: panel non-diegetic by design; defaults remain period-authentic; crosshair + subtitles are the only opt-OUT exceptions (Combat-locked + WCAG SC 1.2.2). 8 BLOCKING + 3 ADVISORY coord items per §F: ADR-0007 slot #8 amendment, ADR-0002 settings_loaded signal amendment, ADR-0004 Gate 1 (accessibility_* property names) + Gate 2 (Theme inheritance prop name), Outline Pipeline get_hardware_default_resolution_scale() query API (CR-11), Combat damage_flash_enabled subscription suppresses EHF (CR-16), Input GDD register use_gadget+takedown separately (CR-22) + document rebind boot pattern (CR-19), Menu System reads _boot_warning_pending + provides modal scaffold (CR-18 / OQ-SA-3)."
+    added: 2026-04-26
+    revised: ""
+
+  - name: settings_loaded
+    status: active
+    source: design/gdd/settings-accessibility.md
+    type: cross_system_signal
+    referenced_by:
+      - design/gdd/settings-accessibility.md   # CR-9 — emitted once after boot burst completes
+    signal_signature: "settings_loaded()"   # no payload
+    publisher: SettingsService   # sole-publisher per ADR-0002
+    semantics: "one-shot at boot; never re-emitted during session"
+    notes: "ADR-0002 amendment BLOCKING for sprint (OQ-SA-2). Used by consumers that need to react to 'Settings is now ready' rather than to individual setting changes — e.g., PostProcessStack rebuilding its pipeline after receiving both `resolution_scale` and `outline_shader_enabled` from the burst. Without `settings_loaded`, each partial burst emit would trigger an expensive rebuild; with it, consumers can defer the rebuild until the burst is complete. AC-SA-1.5 + AC-SA-8.5 enforce the one-shot semantics: never re-emitted on Settings panel open/close, scene change, or any subsequent setting_changed emit."
+    added: 2026-04-26
+    revised: ""
+
+  - name: damage_flash_enabled
+    status: active
+    source: design/gdd/settings-accessibility.md
+    referenced_by:
+      - design/gdd/settings-accessibility.md   # CR-16 + G.3 — kill-switch gates BOTH HUD damage flash AND Combat Enhanced Hit Feedback
+      - design/gdd/hud-core.md                 # subscribes to setting_changed("accessibility", "damage_flash_enabled", _) — when false, no numeral flash regardless of cooldown
+      - design/gdd/combat-damage.md            # NEW BLOCKING coord — must add subscription to suppress EHF pulse path (V.6) when value is false
+    value: true
+    safe_range: [true, false]
+    unit: bool
+    notes: "Settings-owned key (default true / opt-OUT, accessibility-first photosensitivity safety). Single key gates BOTH the HUD numeral flash (HUD Core CR-7) AND Combat's Enhanced Hit Feedback pulse path (Combat V.6) per Settings CR-16. When false, neither effect renders regardless of other settings. Muzzle flashes remain ungated (diegetic, separate concern; unisolated single-frame events at typical fire-rate are below WCAG 2.3.1 threshold). AC-SA-5.1 + AC-SA-8.2 enforce both-system suppression. Combat must add `setting_changed(\"accessibility\", \"damage_flash_enabled\", _)` subscription that suppresses EHF — BLOCKING coord item #6 per Settings §F. Cooldown floor (333 ms WCAG 2.3.1 ceiling) is enforced by HUD via separate hud_damage_flash_cooldown_ms key when this is true; this kill-switch is the master gate."
+    added: 2026-04-26
+    revised: ""
+
+  - name: MenuSystem
+    status: active
+    source: design/gdd/menu-system.md
+    type: cross_system_class
+    referenced_by:
+      - design/gdd/menu-system.md              # owns the system; MainMenu.tscn = Project Settings Main Scene; PauseMenu.tscn = CanvasLayer 8 overlay; ModalScaffold = CanvasLayer 20
+      - design/gdd/save-load.md                # Menu owns 4 save UI surfaces (Load Game grid, Save Game grid, save-failed dialog, save-card design); Menu calls slot_metadata / load_from_slot / save_to_slot per Save/Load CR-9/10/11/8/5
+      - design/gdd/level-streaming.md          # Menu is one of three caller-allowlist members for transition_to_section() per LS CR-4 (NEW_GAME from Main Menu / LOAD_FROM_SAVE from both Main + Pause); registers step-9 restore callback per LS L55
+      - design/gdd/input.md                    # Menu consumes pause + ui_up/down/left/right + ui_accept + ui_cancel per Input GDD L105–L110; subscribes Input.joy_connection_changed per L156
+      - design/gdd/settings-accessibility.md   # Menu polls SettingsService._boot_warning_pending per CR-8; provides modal scaffold; Settings entry-point button per CR-7 — CLOSES OQ-SA-3
+      - design/gdd/audio.md                    # Menu fades MAIN_MENU bus before LS NEW_GAME per CR-20 + Audio L97/L201; menu foley on UI bus exclusively
+      - design/gdd/localization-scaffold.md    # all visible strings via tr("menu.*"); auto_translate_mode = AUTO_TRANSLATE_MODE_ALWAYS on Label nodes per L129
+      - design/gdd/hud-core.md                 # Menu's photosensitivity boot-warning modal scaffold CLOSES HUD Core REV-2026-04-26 D2 HARD MVP DEP for boot-warning UI
+      - design/gdd/failure-respawn.md          # VS soft dep — Menu calls FailureRespawn.has_checkpoint() to gate Re-Brief Operation entry per CR-13 (BLOCKING coord OQ-MENU-6: F&R must add public query API)
+    class_name: MenuSystem
+    base: (root scene — N/A)
+    autoload: false   # MainMenu.tscn = Project Settings Main Scene; PauseMenu.tscn = per-section CanvasLayer overlay add_child'd on demand; ModalScaffold = single shared Control-rooted child of Main/Pause
+    canvas_layer_indices:
+      - "MainMenu: scene root (no CanvasLayer wrapper)"
+      - "PauseMenu: 8 (per ADR-0004 IG7)"
+      - "ModalScaffold: 20 (above Settings 10 / Cutscenes 10 / Subtitles 15; below LS fade 127 — per godot-specialist Item 3)"
+    public_api:
+      - "ModalScaffold.show_modal(content_scene_path: String, return_focus_node: Control = null) -> void"
+      - "ModalScaffold.hide_modal() -> void"
+      - "ModalScaffold.modal_dismissed (signal)"
+    sole_publisher_of: []   # CR-19 sole-publisher discipline = consumer-only; emits zero ADR-0002 domain signals at MVP and VS
+    subscribes_to:
+      - "Events.save_failed (Save domain) — non-blocking dialog per CR-10"
+      - "Events.game_saved (Save domain) — quicksave feedback card per CR-15 (filtered slot==0)"
+      - "Events.game_loaded (Save domain) — quickload feedback card per CR-15 (filtered slot==0)"
+      - "Events.setting_changed (Settings domain — Variant payload exception) — filtered for accessibility.reduced_motion_enabled per CR-23"
+      - "Input.joy_connection_changed (engine signal — direct subscription per Input GDD L156, NOT re-emitted through Events bus per ADR-0002 §IG3)"
+    notes: "Menu System is the project's primary player-facing chrome layer + modal scaffold + scene-handoff infrastructure. Player Fantasy: 'The Case File' (Pillar 5 Primary + Pillar 1 Primary + Pillar 3 Supporting; manila-folder pause; bureaucratic register Save Dispatch / Resume Surveillance / Close File / Personnel File). Day-1 MVP slice: photosensitivity boot-warning modal scaffold + Settings entry-point + minimal Main Menu shell — HARD-blocking for HUD Core + Settings sprints per HUD REV-D2 + Settings OQ-SA-3 (both CLOSED by this GDD). Full VS scope: Main Menu / Pause Menu / Load Game grid 8-slot 2×4 / Save Game grid 7-slot 2×3+1 / save-failed dialog / quit-confirm / Re-Brief Operation / Return-to-Registry / mission-dossier card backdrop. 25 Core Rules (incl. CR-1 boot scene; CR-4 PauseMenu CanvasLayer overlay NOT scene change; CR-8 photosensitivity poll synchronous; CR-9 quit-confirm modal scaffold; CR-12 in-card overwrite-confirm with 2-press exit; CR-18 no autoload no per-frame polling; CR-19 sole-publisher discipline = consumer-only; CR-20 music fade-before-LS-transition invariant; CR-21 AccessKit one-shot assertive). 8 Formulas. 40 Edge Cases (10 clusters). 18 Forbidden Patterns. 61 ACs (22 groups). 14 BLOCKING + 10 ADVISORY coord items per §Open Questions; key blockers: ADR-0004 amendment for Context.MODAL + Context.LOADING (bundles 3 prior items); ADR-0004 Gate 1 + Gate 2 (inherited); F&R has_checkpoint() VS query API; LS transition_failed signal/bool; Save/Load required-keys validation predicate; Settings dismiss_warning() returns bool; Tween / call_deferred / TextServer engine verification gates."
+    added: 2026-04-26
+    revised: ""
+
+  - name: ModalScaffold
+    status: active
+    source: design/gdd/menu-system.md
+    type: cross_system_class
+    referenced_by:
+      - design/gdd/menu-system.md              # owns the class; single shared instance child of MainMenu/PauseMenu; CanvasLayer 20
+      - design/gdd/settings-accessibility.md   # photosensitivity boot-warning modal copy mounted into ModalScaffold per CR-18 / OQ-SA-3 (Settings owns copy + dismissed-flag persistence; Menu owns scaffold node)
+    class_name: ModalScaffold
+    base: Control   # NOT Window, NOT AcceptDialog, NOT ConfirmationDialog (per godot-specialist Item 4 — Window-based built-ins fight period theme + couple to OS chrome + fragmented AccessKit semantics)
+    autoload: false   # child of MainMenu (or PauseMenu when PauseMenu is mounted)
+    canvas_layer_index: 20   # locked per godot-specialist Item 3 (above Settings 10 / Cutscenes 10 / Subtitles 15; below LS fade 127)
+    public_api:
+      - "show_modal(content_scene_path: String, return_focus_node: Control = null) -> void   # pushes Context.MODAL; sets accessibility_live=assertive BEFORE visible=true; queues call_deferred to clear assertive next frame"
+      - "hide_modal() -> void   # pops Context.MODAL; restores focus to return_focus_node (with is_instance_valid fallback to default focus target); flushes _pending_modal_content if non-null"
+      - "modal_dismissed (signal) — emitted on hide_modal() completion"
+    queue:
+      - "_pending_modal_content: PackedScene = null   # depth-1 queue per §C.4; if show_modal() is called while _is_modal_active == true, incoming content is stored here (replacing any prior queued item — most-recent-wins); on hide_modal() if non-null, immediately call show_modal(_pending_modal_content) and clear"
+    canvas_tree:
+      - "Control (root, mouse_filter = MOUSE_FILTER_STOP)"
+      - "  ColorRect backdrop (52% Ink Black #1A1A1A — NOT blur, NOT translucent gameplay-buffer manipulation per FP-1)"
+      - "  PanelContainer (stamped card; StyleBoxFlat with hard 0 px corners)"
+      - "    [content child swapped per modal type via show_modal()]"
+    accessibility:
+      - "accessibility_role = \"dialog\"   # set BEFORE show_modal() triggers visibility (Gate F7-A)"
+      - "accessibility_live = \"assertive\" set BEFORE visible=true; cleared to \"off\" next frame via call_deferred (CR-21 + F.7 one-shot pattern)"
+    focus:
+      - "show_modal(): default focus target via content.get_default_focus_target().call_deferred(\"grab_focus\")"
+      - "hide_modal(): return_focus_node.call_deferred(\"grab_focus\") if is_instance_valid(return_focus_node); else fallback to first focusable in parent menu"
+      - "Focus trap (CR-24): focus_neighbor_top/bottom/left/right wired on first/last focusable Control in modal content; Tab/Shift+Tab cycles within modal only"
+    dismissal:
+      - "_unhandled_input() checks event.is_action_pressed(&\"ui_cancel\") per ADR-0004 §97 (sidesteps Godot 4.6 dual-focus split)"
+      - "If current content is dismissible (boot-warning is NOT — CR-8), call hide_modal()"
+    used_by:
+      - "Photosensitivity warning (Settings CR-18, Day-1 MVP) — non-dismissible by ui_cancel"
+      - "Save-failed dialog (CR-10, VS) — non-blocking; underlying menu controls NOT disabled"
+      - "Quit-Confirm (CR-9, MVP)"
+      - "Return-to-Registry confirm (CR-14, VS)"
+      - "Re-Brief Operation confirm (CR-13, VS — gated on F&R has_checkpoint)"
+      - "New-Game-Overwrite confirm (CR-6, MVP — only fires when slot 0 is player's only progress)"
+    notes: "Single shared modal scaffold for the entire Menu System. Implementation pattern verified by godot-specialist (Item 4 + Item 11): Control-rooted custom modal, NOT Window/AcceptDialog/ConfirmationDialog. Modal content scenes swapped via show_modal(). Depth-1 queue via _pending_modal_content handles save-failed during quit-confirm or save-failed during photosensitivity scenarios (§E Cluster B case 4 + Cluster D case 2 — most-recent-wins; save-failed is idempotent). Settings GDD CR-18 / OQ-SA-3 mounts the photosensitivity warning copy + Acknowledge / Go to Settings buttons into this scaffold; Settings owns copy + dismissed-flag, Menu owns scaffold node. AccessKit role + one-shot assertive pattern requires ADR-0004 Gate 1 closure (BLOCKING)."
+    added: 2026-04-26
+    revised: ""
+
+  - name: modal_scaffold_canvas_layer
+    status: active
+    source: design/gdd/menu-system.md
+    type: constant
+    referenced_by:
+      - design/gdd/menu-system.md              # §C.4 + §G.3 — locked per godot-specialist Item 3
+      - design/gdd/settings-accessibility.md   # for collision avoidance — Settings panel uses 10; Menu modal scaffold sits at 20 above
+    value: 20
+    safe_range: [20, 20]   # LOCKED — must be above Settings 10, Cutscenes 10, Subtitles 15; below LS fade 127
+    unit: canvas_layer_index
+    notes: "Locked CanvasLayer index for the shared ModalScaffold. Verified by godot-specialist to avoid collisions: HUD = 1, PostProcessStack sepia dim = 4, Document Overlay = 5, Pause Menu = 8, Settings panel = 10, Cutscene letterbox = 10 (collision flagged for ADR-0004 IG7 — Settings/Cutscenes never simultaneously active so benign), Subtitles = 15, ModalScaffold = 20, LS fade overlay = 127. Any future modal-class GDD must check this constant before claiming a CanvasLayer index."
+    added: 2026-04-26
+    revised: ""
+
+  - name: menu_music_fade_out_ms
+    status: active
+    source: design/gdd/menu-system.md
+    type: constant
+    referenced_by:
+      - design/gdd/menu-system.md              # §G.1 tuning knob; CR-20 invariant
+      - design/gdd/audio.md                    # Audio Rule 6 standard pattern: create_tween().tween_property(music_player, "volume_db", -80.0, ms/1000.0)
+      - design/gdd/level-streaming.md          # LS L201 — Menu fades MAIN_MENU bus BEFORE calling LS.transition_to_section(NEW_GAME)
+    value: 800
+    safe_range: [200, 2000]
+    unit: milliseconds
+    notes: "Menu music fade-out duration before LS NEW_GAME call. Below 200 ms produces audible click on transition. Above 2000 ms causes player-perceived delay. Default 800 ms balances perceptual smoothness with UI responsiveness. Curve: TRANS_LINEAR on volume_db property (Godot's volume_db is logarithmic, so linear interpolation produces perceptually-linear fade per Audio Rule 6). Reduced-motion gate (F.3) clamps to 0 ms when accessibility.reduced_motion_enabled is true."
+    added: 2026-04-26
+    revised: ""
+
+  # ── Document Collection (system #17) — added 2026-04-27 by /design-system document-collection ──
+
+  - name: DocumentCollection
+    status: active
+    source: design/gdd/document-collection.md
+    type: cross_system_class
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-14 + §C.6 pseudocode; canonical scene path Section/Systems/DocumentCollection
+      - design/gdd/mission-level-scripting.md       # MLS section authoring contract — every section with documents/ group must have DC node (CI lint #7)
+      - design/gdd/audio.md                         # Audio subscribes 3 DC signals; references DC's emit-site contract
+      - design/gdd/document-overlay-ui.md           # Overlay calls DC.open_document/close_document per DC CR-11; subscribes document_opened/document_closed for own render lifecycle (CR-1 + CR-2 + C.4/C.5 lifecycles); auto-open on pickup contract (Option A — pending OQ-DOV-COORD-1 confirmation that DC.collect()+DC.open_document() execute same frame)
+    godot_base: Node
+    autoload: false                                  # ADR-0007 registry full at slot #9 (F&R=#8, MLS=#9)
+    canonical_scene_path: "Section/Systems/DocumentCollection"
+    sole_publisher_of: ["document_collected", "document_opened", "document_closed"]   # CR-7 + ADR-0002
+    subscribes_to: ["Events.player_interacted"]      # CR-3 + CR-16 ADR-0002 IG3 connect/disconnect lifecycle
+    public_api: ["capture() -> DocumentCollectionState", "restore(state: DocumentCollectionState) -> void", "open_document(id: StringName) -> bool [VS]", "close_document() -> bool [VS]"]
+    forbidden_methods: ["get_collected_count", "get_total_count", "is_complete", "get_completion_percent"]   # CR-13 absolute
+    notes: "Per-section node tree at Section/Systems/DocumentCollection. NOT autoload (ADR-0007 slot #9 = MLS). Sole publisher of 3 ADR-0002 Document-domain signals. Subscriber lifecycle ADR-0002 IG3 (connect at _ready, disconnect at _exit_tree with is_connected guard). MVP scope = pickup-only loop + 3-doc Plaza tutorial + save persistence; VS scope = full 21-doc roster + open_document/close_document API + Document Overlay UI #20 + HSS #19 toast. **REVISED 2026-04-27 per design-review revision pass**: DC does NOT register its own LSS step-9 callback; MLS orchestrates per-system restore via `dc.restore(state)` within MLS's registered LS callback (see DC GDD CR-5 + §F.5 item #1 sub-bullet — MLS restore-orchestration BLOCKING coord). DC.restore(state) applies state then immediately runs spawn-gate; spawn-gate iterates `&\"section_documents\"` group with null-guard on body.document. Pillar fit: Primary 2 (Discovery) load-bearing + Supporting 1 (Comedy via typography) + Supporting 4 (Iconic Locations via Tower-bound furniture). ADR-0008 sub-slot 0.05 ms peak event-frame (BLOCKING coord OQ-DC-1). Solo-mode CD-GDD-ALIGN gate skipped per .claude/docs/director-gates.md. **APPROVED 2026-04-27** post `/design-review` revision pass."
+    added: 2026-04-27
+    revised: 2026-04-27   # /design-review revision pass — added restore() to public_api; rewrote MLS restore orchestration; old CR-5 _ready/register_restore_callback claim retired
+
+  - name: DocumentBody
+    status: active
+    source: design/gdd/document-collection.md
+    type: cross_system_entity
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-2 + §C.3 spec; uncollected-document body
+      - design/gdd/mission-level-scripting.md       # MLS authors documents/ Node3D group children per-section (8 CI lints §C.5.6 + §E.17/E.28)
+      - design/gdd/player-character.md              # PC _resolve_interact_target() resolves DocumentBody at priority 0 (DOCUMENT)
+    godot_base: StaticBody3D
+    collision_layer: LAYER_INTERACTABLES             # ADR-0006; exclusive (lint §C.5.6 #5)
+    collision_shape: BoxShape3D                       # ~0.30 × 0.05 × 0.20 m thin paper-shape
+    interact_priority: 0                              # DOCUMENT — highest, beats TERMINAL=1 / PICKUP=2 / DOOR=3
+    outline_tier: 1                                   # ADR-0001 Tier 1 heaviest 4 px @ 1080p
+    body_collision_center_height_m: [0.4, 1.5]       # §C.5.4 authoring rule; lint §C.5.6 #6
+    fields:
+      - "@export var document: Document             # required non-null per §C.5.6 lint #1"
+    group_membership: ["section_documents"]           # &"section_documents" group; DC iterates for CR-5 spawn-gate
+    lifecycle:
+      - "Section authoring places DocumentBody in &\"section_documents\" group, instanced from canonical DocumentBody.tscn template (§C.5.8 — see DocumentBody_tscn entry)"
+      - "MLS's LS step-9 callback orchestrates restore: calls DC.restore(save_game.documents) BEFORE LS emits section_entered; DC.restore() applies state + immediately runs spawn-gate (CR-5 revised 2026-04-27)"
+      - "PC._resolve_interact_target() resolves to body at priority 0; PC reach completes; player_interacted(body) fires"
+      - "DC subscriber null-guards body.document then appends id, emits document_collected, calls body.call_deferred(\"queue_free\") per V.6 snap-clear (CR-3)"
+    notes: "Cross-system uncollected-document pickup entity. Static prop with no animation (V.6 snap-clear policy). Stencil Tier 1 outline is sole visual affordance (FP-V-DC-1..8 forbid extra glow/pulse/annotation). Per-category mesh complexity 50–120 tris per V.2; visible mesh determined by Document.type (7 categories per §C.4 — flat plane / stacked planes / clipboard / closed book / cylinder for telex / folded blueprint / envelope+sheet). **REVISED 2026-04-27**: lifecycle step 2 updated to MLS-orchestrated restore (DC no longer registers own LS callback per CR-5 revision); body.document null-guard added to step 4 (E.15 symmetry per AC-DC-4.3 + AC-DC-6.5). Authoring discipline: bodies must be instanced from `DocumentBody.tscn` canonical template — hand-authored bodies fail CI lint #10 (AC-DC-1.5 + §F.5 item #5)."
+    added: 2026-04-27
+    revised: 2026-04-27   # /design-review revision pass — lifecycle step 2 reworded for MLS orchestration; null-guard added; tscn template authoring rule
+
+  - name: Document
+    status: active
+    source: design/gdd/document-collection.md
+    type: cross_system_resource
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-1 schema + §C.2 table
+      - design/gdd/mission-level-scripting.md       # @export var document: Document on each DocumentBody (CI lint §C.5.6 #1)
+      - design/gdd/audio.md                         # Audio reads Document.type for 3-cluster pickup SFX routing (§A.2 — option (b) lazy-load recommended)
+      - design/gdd/hud-core.md                      # HUD reads Document.interact_label_key via PC accessor (HUD CR-21 _compose_prompt_text)
+      - design/gdd/document-overlay-ui.md           # Overlay reads Document.title_key + Document.body_key via tr() at render time per CR-7 (Localization CR-9 cached_translation_at_ready forbidden); cached as StringName _current_title_key + _current_body_key for NOTIFICATION_TRANSLATION_CHANGED re-resolve (CR-8); never stores resolved strings
+    godot_base: Resource
+    fields:
+      - "id: StringName                                  # unique mission-wide; snake_case; saved to DocumentCollectionState.collected"
+      - "title_key: StringName                            # Localization key doc.[id].title; resolved by Document Overlay UI at render time"
+      - "body_key: StringName                             # Localization key doc.[id].body; VS-tier (resolved by Overlay)"
+      - "section_id: StringName                           # owning section identifier; CI lint §C.5.6 #3 verifies match"
+      - "interact_label_key: StringName = &\"ui.interact.read_document\"   # HUD prompt key; MVP fallback &\"ui.interact.pocket_document\" until Overlay ships"
+      - "tier_override: int = -1                          # -1 = default Tier 1 per ADR-0001; reserved for VS edge cases"
+      - "type: StringName                                 # one of 7 categories per §C.4 (operational_memo / personnel_dossier / maintenance_log / service_document / telex_transcript / technical_specification / personal_communication); Audio reads for cluster routing"
+    notes: "Document Resource on disk (.tres) per Document Collection CR-1. Stores keys only (CR-8 tr() discipline — DC NEVER calls tr()). All visible content via Localization Scaffold; locale-change re-resolution is the rendering subscriber's responsibility. NOT serialized in SaveGame — only ids in DocumentCollectionState.collected persist. CR-19 BQA acronym never-expanded rule applies to all title_key + body_key resolutions."
+    added: 2026-04-27
+    revised: ""
+
+  - name: DocumentCollectionState
+    status: active
+    source: design/gdd/document-collection.md
+    type: cross_system_resource
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-6 capture/restore contract
+      - design/gdd/save-load.md                     # ADR-0003 SaveGame.documents: DocumentCollectionState (one of 6 typed sub-resources)
+      - design/gdd/mission-level-scripting.md       # MLS CR-15 SaveGame assembler reads DC.capture() during FORWARD autosave
+    godot_base: Resource
+    fields:
+      - "collected: Array[StringName]                # frozen ADR-0003 schema; ID-only persistence; no Document content stored"
+    capture_method: "DocumentCollection.capture() -> DocumentCollectionState"
+    restore_method: "DocumentCollection.restore(state: DocumentCollectionState) invoked by MLS within MLS's LS step-9 callback (DC does NOT register own LS callback per CR-5 revision 2026-04-27); restore() applies state then immediately runs spawn-gate before LS emits section_entered"
+    notes: "Save sub-resource on SaveGame (ADR-0003 frozen schema). DC owns capture/restore methods; MLS orchestrates the calls within MLS's registered LS callback (NOT DC's own LS callback). **REVISED 2026-04-27**: per /design-review godot-specialist Findings 1+3, the prior 'DC registers own LSS step-9 callback' claim was structurally incorrect — DC's _ready() runs at LS step 7 (add_child), BEFORE step-9 callbacks fire, so the prior pattern would run spawn-gate against empty state. New pattern: MLS owns the single LS callback for the section and calls dc.restore(save_game.documents) inside it. **VG-DC-2 RETIRED 2026-04-27** — replaced by explicit duplicate-discipline contract in CR-6: Save/Load duplicate_deep at SaveGame Resource boundary + DC's value-typed Array[StringName].duplicate() at inner copy is sufficient (StringName is value-typed). Stale ids in collected (no matching DocumentBody.document.id) are benign no-ops per E.11."
+    added: 2026-04-27
+    revised: 2026-04-27   # /design-review revision pass — restore_method rewritten for MLS orchestration; VG-DC-2 retired in favor of explicit duplicate-discipline contract
+
+  - name: section_documents
+    status: active
+    source: design/gdd/document-collection.md
+    type: group_tag
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-5 spawn-gate iterates this group; CR-2 group membership
+      - design/gdd/mission-level-scripting.md       # MLS section authoring places DocumentBody children in this group (CI lint §C.5.6 #1)
+    notes: "Level-designer-authored Node3D group on every DocumentBody in a section scene. **REVISED 2026-04-27**: DC.restore(state) (called by MLS during LS step-9 callback orchestration, NOT DC's _ready) iterates this group via get_tree().get_nodes_in_group(&\"section_documents\") to free already-collected bodies before LS emits section_entered (CR-5 canonical guard). Each iteration null-guards body.document per E.15 symmetry. CI lint #7 (§E.17) requires DocumentCollection system node presence when this group is non-empty."
+    added: 2026-04-27
+    revised: 2026-04-27   # /design-review revision pass — restore-orchestration ownership shifted MLS<-DC; null-guard symmetry noted
+
+  - name: DocumentBody_tscn
+    status: active
+    source: design/gdd/document-collection.md   # §C.5.8 canonical template specification
+    type: cross_system_asset_path
+    asset_path: "res://src/gameplay/documents/document_body.tscn"
+    referenced_by:
+      - design/gdd/document-collection.md           # §C.5.8 canonical structure spec; AC-DC-1.5 lint #10 enforces template-instance authoring; §F.5 BLOCKING coord item #5
+      - design/gdd/mission-level-scripting.md       # MLS section authoring instances this template for every DocumentBody placement (Plaza MVP + VS 21-doc roster)
+    canonical_structure:
+      - "DocumentBody [StaticBody3D, class_name DocumentBody]"
+      - "  collision_layer = LAYER_INTERACTABLES (no other bits per ADR-0006 + lint §C.5.6 #5)"
+      - "  collision_mask = 0"
+      - "  @export var document: Document = null   # LD must populate per body"
+      - "  interact_priority = 0   # DOCUMENT priority (highest)"
+      - "  group: &\"section_documents\""
+      - "  CollisionShape3D child: BoxShape3D 0.30 × 0.05 × 0.20 m"
+      - "  MeshInstance3D child: mesh assigned in derived/instanced scenes per §V.1 7-category register"
+    owner: tools-programmer
+    blocking_coord: "§F.5 item #5 — Tools-Programmer must create this canonical template BEFORE LD authoring of any DocumentBody. Pre-MVP-sprint."
+    notes: "Canonical scene template for every uncollected document in the game. **NEW 2026-04-27** per /design-review level-designer Finding 7 (missing authoring artifacts). Hand-authored DocumentBody nodes that bypass this template fail CI lint #10 (AC-DC-1.5): the lint scans section scenes for `StaticBody3D` nodes with `script = res://src/gameplay/documents/document_body.gd` whose ancestor is NOT a PackedScene instance pointing to this asset path. Template ownership: Tools-Programmer creates and maintains; changes require a §F.5 coord item entry because every section scene re-uses the template. Workflow: LD opens section scene → instances template at Section/Documents/[surface_id]_[doc_short_id] → assigns Document export to a Document.tres → assigns MeshInstance3D.mesh to per-category mesh per §V.1 → adds to section_documents group."
+    added: 2026-04-27
+    revised: ""
+
+  - name: dc_total_document_count
+    status: active
+    source: design/gdd/document-collection.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-9 + §G.1 tuning knob
+      - design/gdd/mission-level-scripting.md       # VS sprint coord — full 21-doc roster placement (§F.5 item #5 / OQ-DC-6)
+    value: 21
+    safe_range: [15, 25]
+    unit: documents_per_mission
+    notes: "Total documents across all 5 Tower sections at VS. Distribution: Plaza 3 / Lower Scaffolds 4 / Restaurant 6 / Upper Structure 5 / Bomb Chamber 3. Below 15: under-rewards observation, weakens Pillar 2; above 25: writer/localization burden, density violations §C.5.1. Within game-concept.md MVP definition's 15–25 range. MVP ships with 3-doc Plaza tutorial subset only (§C.5.3); VS expands to full 21."
+    added: 2026-04-27
+    revised: ""
+
+  - name: dc_off_path_ratio_min
+    status: active
+    source: design/gdd/document-collection.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-9 Pillar 2 absolute floor + §G.1 tuning knob; F.2 is_off_path predicate
+      - design/gdd/mission-level-scripting.md       # VS authoring CI lint via §C.5.6 lint #8 (critical_path_spline) + AC-DC-10.1
+    value: 0.75
+    safe_range: [0.65, 0.86]   # was [0.65, 1.0] before 2026-04-27 /design-review systems-designer Finding 6 — upper bound capped at 18/21=0.857 (mission actual ratio) to preserve §C.5.1 structural on-path anchors
+    unit: ratio
+    notes: "Minimum fraction of documents per section that must qualify as off-path (path_distance >= off_path_min_distance_m=10.0 m per F.2). Default distribution achieves 18/21 = 86%, exceeding floor with headroom for narrative-critical on-path slots (3: Plaza Security Logbook + Restaurant Vogel Dietary Memo + Bomb Chamber Detonation Telex). Below 0.65: weakens Pillar 2 Discovery Rewards Patience; below 0.50: invalidates patient-observer fantasy entirely. **REVISED 2026-04-27 per /design-review systems-designer Finding 6**: upper bound capped at 0.86 (= 1 − 3/21, matches mission actual ratio at default distribution) — at 1.0 the knob would invalidate the 3 §C.5.1 structural on-path anchors. Tuning above 0.86 requires re-classification of on-path anchors, which is a design decision not a tuning operation. AC-DC-1.4 + lint #9 enforce this invariant at build time. Pillar 2 absolute — cannot drop below 0.65 without pillar-set amendment."
+    added: 2026-04-27
+    revised: 2026-04-27   # /design-review revision pass — upper bound 1.0 → 0.86 per cross-constraint with §C.5.1 anchors
+
+  - name: dc_pickup_event_budget_ms
+    status: active
+    source: design/gdd/document-collection.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-collection.md           # CR-15 ADR-0008 sub-slot claim; F.1 t_pickup formula clamp
+      - docs/architecture/adr-0008-performance-budget-distribution.md   # BLOCKING coord — §Pooled Residual amendment must register sub-slot (OQ-DC-1)
+    value: 0.05
+    safe_range: [0.025, 0.07]
+    unit: milliseconds
+    notes: "DC peak event-frame CPU cost ceiling on Iris Xe min-spec hardware. Steady-state = 0 ms (DC has no _process / _physics_process per CR-15). Sub-slot of the 0.8 ms ADR-0008 residual pool shared with CAI 0.15 ms / MLS 0.1 ms+0.3 ms peak / F&R / DC. F.1 formula: t_pickup = t_signal_dispatch + t_set_membership + t_array_append + t_signal_emit + t_call_deferred; at N_subscribers=4 (locked VS count: HSS, Audio, MLS, Save/Load) typical ≈ 0.046 ms (8% headroom). At N_subscribers≥6 worst-case ≈ 0.070 ms breaches claim — triggers ADR-0008 amendment review per E.32 / OQ-DC-VG-1 advisory. BLOCKING coord OQ-DC-1: ADR-0008 §Pooled Residual must register this sub-slot before MVP sprint."
+    added: 2026-04-27
+    revised: ""
+
+  - name: DocumentOverlayUI
+    status: active
+    source: design/gdd/document-overlay-ui.md
+    type: cross_system_class
+    referenced_by:
+      - design/gdd/document-overlay-ui.md           # owns the class; per-section CanvasLayer 5 scene; instantiated by MLS at section load
+      - design/gdd/document-collection.md           # DC §F.5 item #6 + §G — Overlay calls DC.open_document/close_document; subscribes document_opened/document_closed for own render lifecycle
+      - design/gdd/mission-level-scripting.md       # MLS instantiates per-section per CR-13; emits section_unloading(section_id) per OQ-DOV-COORD-3 BLOCKING that Overlay subscribes for CR-12 force-close
+      - docs/architecture/adr-0004-ui-framework.md  # CanvasLayer 5 §IG7 + InputContext push/pop §IG2 + dismiss pattern §IG3 + sepia-dim lifecycle §IG4 + RichTextLabel §IG11
+      - docs/architecture/adr-0008-performance-budget-distribution.md  # Slot 7 sub-claim 0.3 ms shared UI cap when READING; HUD hides per CR-11
+    class_name: DocumentOverlayUI
+    base: CanvasLayer
+    autoload: false                                 # ADR-0007 registry full at slot #9 = MLS; per-section instance per CR-13
+    canvas_layer_index: 5                            # ADR-0004 §IG7 LOCKED — between PPS sepia ColorRect at 4 and Pause Menu at 8
+    canonical_scene_path: "Section/UI/DocumentOverlayUI"   # per-section UI container; lifetime = section lifetime
+    sole_publisher_of: []                            # CR-1 zero-emission — DC is sole publisher of all 3 Document-domain signals
+    subscribes_to:
+      - "Events.document_opened(StringName)"        # CR-1 + C.4 entry trigger
+      - "Events.document_closed(StringName)"        # CR-1 + C.5 final state transition
+      - "MLS.section_unloading(StringName)"         # CR-12 force-close; pending OQ-DOV-COORD-3 MLS amendment
+    public_api: []                                   # zero public API — leaf node in dependency graph; no system depends on this Overlay
+    forbidden_methods: []                            # 16 forbidden patterns FP-OV-1..FP-OV-16 enforced via CI grep + scene-tree static analysis
+    state_machine: ["IDLE", "OPENING", "READING", "CLOSING"]   # 4 states per §C.3
+    notes: "Per-section CanvasLayer-5 modal reading surface for Document Collection's body content. Pure Vertical Slice (NO MVP slice — DC ships pickup-only at MVP per DC §A scope). Pillar 2 (Discovery Rewards Patience) + Pillar 3 (Stealth as Theatre — sepia-dim suspended parenthesis) load-bearing; Pillar 1 (Comedy via typography) + Pillar 5 (Period Authenticity — no modern UX) supporting. Player Fantasy: 'The Lectern Pause' (CD-recommended; posture / attention is the verb). Open lifecycle (C.4 8 strict-order steps): cache keys → save mouse mode → push InputContext.DOCUMENT_OVERLAY → set MOUSE_MODE_VISIBLE → enable sepia (with reduced-motion check) → tr() resolve at render time → show card + grab focus → AccessKit one-shot assertive. Close lifecycle (C.5 6 strict-order steps per Input CR-7): consume input FIRST → restore mouse mode → pop InputContext → disable sepia → hide+clear card synchronously (Option B snappy dismiss) → call DC.close_document. Modal dismiss via _unhandled_input() + ui_cancel action only (NEVER focused Button per ADR-0004 §IG3 — sidesteps Godot 4.6 dual-focus split). NOTIFICATION_TRANSLATION_CHANGED re-resolves both keys via direct text= reassignment (NOT clear()+append_text). Card 960×680 px at 1080p, RichTextLabel + ScrollContainer body, BQA Blue header + Parchment body + Ink Black text per Art Bible §4.4 + §7D. ADR-0008 Slot 7 sub-claim 0.3 ms shared with HUD Core (HUD hides during DOCUMENT_OVERLAY per its own InputContext gate). 16 forbidden patterns FP-OV-1..FP-OV-16. 11 BLOCKING coord items emerging (OQ-DOV-COORD-1..11). 4 BLOCKING + 2 ADVISORY verification gates. CD-GDD-ALIGN gate at Phase 5a-bis SKIPPED per solo mode."
+    added: 2026-04-27
+    revised: ""
+
+  - name: document_overlay_canvas_layer
+    status: active
+    source: design/gdd/document-overlay-ui.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-overlay-ui.md           # CR-13 + §C.2 scene tree spec
+      - docs/architecture/adr-0004-ui-framework.md  # §IG7 z-order registry — 5 between PPS sepia ColorRect at 4 and Pause Menu at 8
+    value: 5
+    safe_range: [5, 5]   # LOCKED — changing requires ADR-0004 amendment
+    unit: canvas_layer_index
+    notes: "Locked CanvasLayer index for Document Overlay UI. Verified by godot-specialist (and already documented in modal_scaffold_canvas_layer.notes 2026-04-26): HUD = 1, PostProcessStack sepia dim = 4, Document Overlay = 5, Pause Menu = 8, Settings panel = 10, Cutscene letterbox = 10, Subtitles = 15, ModalScaffold = 20, LS fade overlay = 127. Document Overlay sits ABOVE the sepia dim ColorRect (layer 4) so the card renders at full saturation while the world behind composes through the sepia (per PPS CR-3 + this GDD §V.2). Below Pause Menu / Settings / Cutscenes so InputContext stack ordering is correct (DOCUMENT_OVERLAY context is pushed before / popped after those higher-priority modals — but in normal gameplay reading and pause are sequential, not nested per CR-10). Explicit registration in entities.yaml for grep-clarity + cross-system lint enforcement (any future GDD claiming index 5 must reference this entry)."
+    added: 2026-04-27
+    revised: ""
+
+  - name: overlay_card_width_px
+    status: active
+    source: design/gdd/document-overlay-ui.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-overlay-ui.md           # F.4 clamping predicate + §G.1 tunable + §C.2 scene tree
+    value: 960
+    safe_range: [800, 1200]   # below 800 px American Typewriter at body size becomes illegible
+    unit: pixels
+    notes: "Reference card width at 1920×1080 viewport. F.4 predicate: card_width = clamp(960, 800, viewport_width). At sub-1280 px viewports, clamps to 800 px minimum. At 1920×1080+, capped at 960 px (does not grow on large monitors — card stays reference size). Implementation: PanelContainer.custom_minimum_size = Vector2(800, 0), size = Vector2(960, 680). Polish-phase art-director may amend safe_range if playtest reveals 720p users feel cramped or 4K users feel cards float in too much empty space. NOT a balance value — pure layout choice."
+    added: 2026-04-27
+    revised: ""
+
+  - name: overlay_card_height_px
+    status: active
+    source: design/gdd/document-overlay-ui.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-overlay-ui.md           # F.4 fixed value + §G.1 tunable + §C.2 scene tree
+    value: 680
+    safe_range: [540, 800]
+    unit: pixels
+    notes: "Fixed card height at all viewport sizes. ScrollContainer absorbs body overflow; height does NOT clamp to viewport (at 720p the 680 px card has 20 px total vertical margin — acceptable). Derived from comfort-fit budget for median 200-word body: 200 words × ~28 px line-height ≈ 380 px body text + 64 px header + 64 px body padding (32 top + 32 bottom) + 30 px footer + ~142 px margin ≈ 680 px total. Polish-phase art-director may amend safe_range if playtest reveals layout issues. NOT a balance value — pure layout choice."
+    added: 2026-04-27
+    revised: ""
+
+  - name: overlay_scroll_bar_width_px
+    status: active
+    source: design/gdd/document-overlay-ui.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-overlay-ui.md           # §G.1 tunable + §V.1 visual register + §C.6 scroll grammar
+    value: 4
+    safe_range: [2, 6]
+    unit: pixels
+    notes: "Thin scroll bar visual width on the right edge of the card body, when content overflows. Ink Black `#1A1A1A` StyleBoxFlat, no rounded corners. Visible only when body overflows (vertical_scroll_mode = SCROLL_MODE_AUTO). Below 2 px is invisible; above 6 px is visually heavy / period-anachronistic. Polish-phase art-director defines exact StyleBoxFlat in document_overlay_theme.tres per OQ-DOV-COORD-7 ADVISORY coord item. NOT a balance value — pure visual choice."
+    added: 2026-04-27
+    revised: ""
+
+  - name: document_body_word_count_ceiling
+    status: active
+    source: design/gdd/document-overlay-ui.md
+    type: constant
+    referenced_by:
+      - design/gdd/document-overlay-ui.md           # §G.3 forward-dep tunable; §B Player Fantasy single-read absorption requirement
+      - design/narrative/document-writer-brief.md   # Writer-owned consumer; OQ-DOV-COORD-4 BLOCKING amendment to add explicit word-count ceiling
+    value: 250
+    safe_range: [150, 300]
+    unit: words_english
+    notes: "Body word-count ceiling per document. Lectern Pause player fantasy (this GDD §B) requires single-read absorption — documents above 300 words violate the fantasy (the player feels obligated to read a novel rather than absorb a memo). Localization expansion: 250 words English × 1.4 German factor ≈ 350 words, which still fits scroll UX (E.11). Below 150 words is too terse to land the BQA dossier register comedy. **OQ-DOV-COORD-4 (BLOCKING for sprint)**: Writer brief at design/narrative/document-writer-brief.md must add this ceiling explicitly. Forward-dep tunable introduced by Document Overlay UI GDD; consumed by Writer + Localization Scaffold during document authoring. NOT a balance value (no gameplay effect of going slightly above/below); design-feel ceiling enforced by Pillar 2 fantasy."
+    added: 2026-04-27
     revised: ""
 
 # Example:

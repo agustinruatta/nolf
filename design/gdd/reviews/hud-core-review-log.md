@@ -116,3 +116,119 @@ The REV-2026-04-25 in-session pass addressed the highest-priority blockers but: 
 Run `/clear` then `/design-review design/gdd/hud-core.md` to re-review the post-REV state with a clean context. Expected outcome: most BLOCKING items closed if implementer-side measurements (F.5 constants + Godot 4.6 API names) have been done before re-review; otherwise, the verdict will likely remain NEEDS REVISION pending those measurements.
 
 ---
+
+## Review — 2026-04-25 (re-review) — Verdict: MAJOR REVISION NEEDED → REV-2026-04-26 second-pass applied 2026-04-26 → status NEEDS REVISION (third re-review pending)
+
+**Scope signal**: **L** (creative-director synthesis: was XL on first pass; concentrated structural debt with clear boundaries, ~4-6h focused re-author)
+
+**Specialists consulted (7 + creative-director)**: game-designer, systems-designer, qa-lead, ux-designer, ui-programmer, performance-analyst, godot-specialist + creative-director (senior synthesis)
+
+**Review depth**: full (default)
+
+**Blocking items raised**: 15 themes (some carrying multiple sub-items)
+**Recommended items raised**: ~12
+**Nice-to-have items raised**: ~4
+**Disagreements**: 0 — all 7 specialists converged on MAJOR REVISION
+
+### Senior verdict (creative-director)
+
+> "The 24+ specialist findings collapse into **five structural failures**: (1) the performance budget math is structurally untrustworthy, (2) REV-2026-04-25 introduced contradictions while closing prior ones, (3) accessibility commitments were promoted to 'Day-1' without delivery paths, (4) spec-body did not absorb the coord-item and coroutine fixes, (5) the AC suite is not a test plan. **The defect-injection rate during REV-2026-04-25 exceeded the closure rate.** Recoverable, but only with a constrained third pass — process must change, not just content. Production risk: this is a process problem, not a content problem; do not put HUD Core back in queue for a fourth review until a single uninterrupted re-author session has occurred."
+
+### Summary of 15 BLOCKING themes
+
+1. F.5 worst-case math: three irreconcilable figures (0.259/0.279/0.309 ms); AC-HUD-9.2 omits `C_draw`; gadget-slot phantom Label inflated N by 1; maxed scenario produced 0.339 ms over cap.
+2. AC-HUD-3.7 vs AC-HUD-4.5 dry-fire rate-gate contradiction (NEW + existing AC mandate opposite implementations).
+3. `_compose_prompt_text()` undefined; FP-8 violated (per-frame `tr()`).
+4. §C.4 vs §V.4 coroutine pseudocode disagree on entry conditions.
+5. Coord-item fixes (§V.3 enum prefix, §C.2 method form) flagged in changelog but not propagated to spec body.
+6. Photosensitivity opt-out has no Day-1 player-accessible UI path; stub returns `true`; Settings #23 + boot-warning #22 both Not Started.
+7. HoH/deaf "formal exception with named owner + timeline" mechanism does not exist; HSS #19 Not Started.
+8. Gadget empty-tile alpha 0.4 likely fails WCAG 3:1 non-text contrast; AC-HUD-5.2 has no contrast gate.
+9. Prompt-strip key glyph rebinding mechanism missing; `[E]`/`[F]` static literals exclude gamepad players Day-1.
+10. OQ-HUD-7 latch creates Path-C gravity well: latch + signal + AC-HUD-6.3 in MVP code biases toward Path C restoration.
+11. Dual-focus split exemption unverified vs Godot 4.6 HIGH-RISK change; no per-widget `focus_mode = FOCUS_NONE`.
+12. CR-1 connection count incorrect (claimed 16; actually 14); AC-HUD-1.1 verifies only 10 of those.
+13. CR-3 PC injection contract not implementable (no pre-`add_child` mandate; no LSS re-injection path; no null guard in §C.3).
+14. Multiple AC defects (AC-HUD-2.7 not deterministic; AC-HUD-3.1 disjunction; AC-HUD-9.4 disjunction; AC-HUD-9.1 references nonexistent ADR-0008 normalization table; AC-HUD-3.2 float literal; AC-HUD-6.7 same-frame `queue_free()`; AC-HUD-3.8 stub; AC-HUD-11.5 deferred-OQ-as-AC; no smoke vs full-suite gate designation).
+15. REV-2026-04-25 internal contradictions (reduced-motion claim self-contradicts; CR-8 prose still un-gated; HoH auto-dismiss timer collides with §C.3).
+
+### User-adjudicated decisions (4)
+
+| # | Question | Decision | Recommended? |
+|---|---|---|---|
+| D1 | Dry-fire rate-gate contradiction | Gate dry-fire at 3 Hz via dedicated `_dry_fire_timer`; rewrite CR-8; update AC-HUD-4.5; remove "Why NOT rate-gated" footnote | Yes |
+| D2 | Photosensitivity opt-out Day-1 delivery path | Promote Settings #23 minimal photosensitivity-toggle UI to HARD MVP dep | Yes |
+| D3 | HoH/deaf alert-state cue path | Promote HSS #19 minimal alert-cue slice to HARD MVP dep | Yes |
+| D4 | TAKEDOWN_CUE latch scope | Remove latch + signal + AC-HUD-6.3 from MVP entirely; close OQ-HUD-7 (Path A finalised) | Yes |
+
+### REV-2026-04-26 second-pass — what was changed in-session
+
+**User-adjudicated changes (4 — D1/D2/D3/D4)**: applied per the table above.
+
+**Technical fixes (additional, applied per specialist findings)**:
+- F.5 rebuilt with single canonical formula; gadget-slot phantom Label removed (N = 4, was 5); `C_a11y` term added (REV-2026-04-26); `theme_override_writes` corrected from 4→2; pessimistic worst case now 0.289 ms (~11 µs headroom — measurement still BLOCKING per OQ-HUD-5).
+- `_compose_prompt_text()` defined with `_last_interact_label_key` mirror cache (FP-8 compliant; was undefined).
+- §C.4 vs §V.4 coroutine pseudocode aligned (caller does gate check; `_execute_flash` does only the re-entry guard).
+- §V.3 enum prefix `TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL` propagated; §V.3 stretch_mode prefix added.
+- §C.2 scale rule rewritten: `set_anchors_preset(Control.PRESET_FULL_RECT)` method form; crosshair un-parented from scaled root (closes F.4×F.3 sub-pixel risk); explicit per-widget `focus_mode = FOCUS_NONE` annotation under 4.6 dual-focus split (BLOCKING-for-sprint verification still required).
+- CR-3 PC injection: pre-`add_child` ordering MANDATED; LSS re-injection path documented; explicit null guard `if pc == null: state = HIDDEN; return` shown in §C.3 pseudocode.
+- CR-1 recounted to 14 (was claimed 16); `setting_changed` shown as single connection with handler dispatch; `_dry_fire_timer.timeout` connection added.
+- CR-8 rewritten with rate-gate + dedicated `_dry_fire_timer`; first-emission false-positive sentinel guard added.
+- CR-17 cache list updated (removed `_takedown_eligible`, added new caches and sentinels).
+- CR-21 NEW: prompt-strip key glyph runtime-rebound from Input system; Input GDD listed as new HARD upstream forward-dep.
+- AC defects rewritten: AC-HUD-1.1/1.2 (14 connections), AC-HUD-2.7 (named tool + sampling), AC-HUD-3.1 (single mechanism), AC-HUD-3.2 (no float literal), AC-HUD-3.7 (single mandated implementation), AC-HUD-4.5 (rate-gated), AC-HUD-6.7 (`await` after `queue_free()`), AC-HUD-9.1 (no nonexistent table reference), AC-HUD-9.2 (formula corrected: N=4 + `C_draw` + `C_a11y`), AC-HUD-9.4 (single rule, no disjunction).
+- AC-HUD-6.3 + 6.4 deleted (TAKEDOWN_CUE removed).
+- AC-HUD-11.5 moved to OQ-HUD-8.
+- AC-HUD-5.7 NEW (gadget empty-tile WCAG 3:1 contrast gate).
+- §H.0 NEW: smoke-check vs full-suite gate designation.
+- §UI-2 reduced-motion row disambiguated (toggle is the accommodation; rate-gate is the harm-prevention safety floor).
+- §UI-2 photosensitivity row updated: Settings #23 minimal-UI HARD MVP dep; stub no longer cert-compliant.
+- §UI-2 HoH/deaf row updated: HSS #19 minimal slice HARD MVP dep; "formal exception" path WITHDRAWN.
+- §C.3 prompt-strip state machine collapsed from 3→2 states (HIDDEN, INTERACT_PROMPT); resolver pseudocode shows null guard + simplified branching.
+- §C.5 Coord items: removed item #2 (TAKEDOWN_CUE amendment WITHDRAWN); added items #2b (Settings #23 dep), #2c (HSS #19 dep), #7 (Input GDD CR-21 contract); rolled-up summary updated.
+- Stealth AI removed from §C.5 Interactions matrix (was inbound; now forbidden non-dep at MVP).
+- Bidirectional consistency check updated.
+- Cluster D edge cases pruned (removed TAKEDOWN_CUE-related cases).
+- Cluster F LOAD_FROM_SAVE init list updated.
+- §V.4 coroutine pseudocode aligned with §C.4 (caller responsibility for gate check).
+- F.5 footnote "Why dry-fire flash is NOT rate-gated" REMOVED.
+- OQ-HUD-7 closed (Path A finalised, no MVP implementation surface).
+- OQ-HUD-8 NEW (AccessKit Day-1 default behaviour + screen-reader regression for consolidated ammo Label).
+
+### Coord items status (post-REV-2026-04-26)
+
+**BLOCKING (7)**: ADR-0002 amendment for `ui_context_changed`; Settings #23 Day-1 minimal UI; HSS #19 Day-1 alert-cue minimal slice; ADR-0004 Gate 1 (`accessibility_live`) + Gate 2 (Theme inheritance); Godot 4.6 API verification batch (with focus_mode dual-focus item); OQ-HUD-5 F.5 measurement (`C_label`, `C_draw`, `C_poll`, `C_theme_override`, `C_a11y`); Input GDD CR-21 rebinding contract.
+
+### Why third re-review is required
+
+The REV-2026-04-26 in-session pass addressed all 15 BLOCKING themes from the re-review, applied all 4 user-adjudicated decisions, and propagated coord-item fixes into the spec body. **However**, the creative-director's senior verdict explicitly warned that patch-iteration in this state risks introducing new defects. A fresh-session `/design-review design/gdd/hud-core.md` is required to verify the REV-2026-04-26 pass did not itself introduce new contradictions (the same pattern as REV-2026-04-25). The OQ-HUD-5 measurement gate remains a BLOCKING sprint gate independently of GDD review status.
+
+### Files modified in REV-2026-04-26
+
+- `design/gdd/hud-core.md` — primary revision target (~30 distinct edits across 22 sections; doc grew from 1,234 to ~1,350 lines).
+- `design/gdd/reviews/hud-core-review-log.md` — this entry.
+- `design/gdd/systems-index.md` — pending update (status remains NEEDS REVISION; comment refreshed).
+
+### Next session
+
+Run `/clear` then `/design-review design/gdd/hud-core.md` to re-review REV-2026-04-26 with clean context. Expected outcome: if no new contradictions were introduced and OQ-HUD-5 measurements have been performed, verdict should be APPROVED or NEEDS MINOR REVISION. If the pattern repeats (review introduces new defects faster than they close), escalate per producer to pair-authoring per creative-director directive.
+
+---
+
+## Closure decision — 2026-04-26 — Status: APPROVED (without third re-review)
+
+**Decision**: User explicitly chose "Accept revisions and mark Approved, skip re-review" at the close of the REV-2026-04-26 second-pass session. This was the **non-recommended option** in the closing widget — the recommended option was "Re-review in a new session" per the creative-director's senior verdict.
+
+**Recorded for audit trail (per creative-director directive in the senior verdict)**:
+
+> "Two consecutive MAJOR REVISION verdicts is the team's early warning that solo patch-iteration on this document has stalled... do not put HUD Core back in queue for a fourth review until the author confirms a single uninterrupted re-author session (not patch-to-checklist) has occurred. If a third pass also lands at MAJOR REVISION, escalate to pair-authoring."
+
+The user's decision overrides this recommendation. The HUD Core GDD ships with **APPROVED** status from this session, but with the following caveats encoded in the GDD header and the systems-index:
+
+1. **7 BLOCKING coord items remain open** (ADR-0002 amendment for `ui_context_changed`; Settings #23 + HSS #19 minimal-UI MVP deps; ADR-0004 Gate 1 + Gate 2; Godot 4.6 API verification batch; OQ-HUD-5 F.5 measurement; Input GDD CR-21 contract) — these are independent of GDD review status and must close before sprint planning.
+2. **Producer is instructed (per creative-director directive)** to schedule a smoke `/design-review` on the spec at the start of HUD Core sprint planning, to catch any contradictions the REV-2026-04-26 pass introduced but did not surface (the documented pattern from REV-2026-04-25).
+3. **Production-risk signal**: REV-2026-04-25 introduced new BLOCKING items while closing prior ones; the same risk applies to REV-2026-04-26. The audit trail preserves this signal so future sessions can honestly evaluate whether HUD Core sprint-time defects originated in the GDD or in implementation.
+
+**Signed off**: User (decision authority); recorded by `/design-review` skill on 2026-04-26.
+
+---

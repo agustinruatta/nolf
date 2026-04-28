@@ -1,6 +1,6 @@
 ---
 name: Project Context — The Paris Affair
-description: Core concept, pillars, HUD philosophy, and locked upstream contracts relevant to UX design work on system #16 (HUD Core)
+description: Core concept, pillars, HUD philosophy, and locked upstream contracts for HUD Core (#16) and Settings & Accessibility (#23)
 type: project
 ---
 
@@ -45,4 +45,24 @@ Stamina bar, crouch indicator, damage direction indicator, sprint cooldown, hit 
 
 ## System Status
 
-System #16 HUD Core — In Design as of 2026-04-25. GDD skeleton at `design/gdd/hud-core.md`. §Overview and §Player Fantasy written. §Detailed Design in progress.
+System #16 HUD Core — APPROVED 2026-04-26. GDD at `design/gdd/hud-core.md`. 7 BLOCKING coord items remain open before sprint planning.
+
+System #23 Settings & Accessibility — §C UX flow scope authored 2026-04-26. Player Fantasy: "The Stage Manager" (quiet, professional, brisk, non-diegetic, restrained). Six categories locked: Audio, Graphics, Accessibility, HUD, Controls, Language.
+
+## Settings Panel UX — Locked Decisions (2026-04-26)
+
+- Architecture: sidebar-with-detail-pane (`HSplitContainer`; left category list ~200 px; right `ScrollContainer` field pane)
+- Navigation: column-first focus model; `ui_right` crosses left→right; `ui_left` crosses right→left; no horizontal wrap; vertical wrap only in category list
+- Hover: highlights only; right pane swaps on click/accept, not hover
+- Rebind capture: uses `_input` + `set_input_as_handled()` (NOT `_unhandled_input`) to swallow all keys including `ui_cancel`; `ui_cancel` during CAPTURING cancels (does not bind Escape); conflict → inline banner with Replace/Cancel options (not a separate modal)
+- Multi-bind: one keyboard binding + one gamepad binding per action stored separately; no two-keyboard-key multi-bind
+- Boot warning: minimal centered modal before studio logo on first launch only; default focus = "Disable Effects Now"; persistence key `accessibility.photosensitivity_warning_dismissed`; does NOT re-show on New Game if settings.cfg intact
+- Sliders: safety-floor sliders set `min_value` = floor (no rubber-band); discrete options use `OptionButton` not snap-slider; volume displayed 0-100% (not dB); readout `Label` right of slider, same baseline
+- Apply pattern: immediate apply on change (no Apply button); resolution scale only gets 10s revert-timer inline banner; settings written to cfg on panel dismiss
+- Forbidden: animated category transitions, toasts on change, slider-drag sounds, moralizing tooltip copy, forced settings onboarding, color-only toggle state, visible locale switcher when only one locale exists
+
+## Open Questions (Settings)
+
+- OQ-UX-1 (BLOCKING, Controls sprint): Gamepad rebind layout — second column vs sub-tab for VS; ui-programmer must decide row structure at MVP
+- OQ-UX-2 (ADVISORY, playtest): Resolution revert timer — 10s default, tuning knob `RESOLUTION_REVERT_TIMEOUT_SEC` [5,30]
+- OQ-UX-3 (BLOCKING, Accessibility sprint): ADR-0004 Gate 1+2 must resolve before any AccessKit property names are implemented

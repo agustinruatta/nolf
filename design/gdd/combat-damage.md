@@ -199,13 +199,25 @@ Resolves /design-review: dart-on-wall no longer spams `push_warning` (world geom
 
 **Dart wall-spawn edge case (revised 2026-04-22 — godot-specialist B14 fix)**: if Eve is flush against cover, the spawn offset (`camera.global_position + aim_direction × 0.5`, F.4) can place the dart *inside* wall geometry. The dart's `_on_impact` fires at spawn time with `body is StaticBody3D`, and the dart frees silently with no SFX, no damage, no player feedback. To prevent this silent failure, Combat's fire routine performs a `PhysicsRayQueryParameters3D.create(camera_pos, spawn_pos)` pre-check against `MASK_WORLD`; if occluded, the shot is cancelled at the fire site — a dry-fire click SFX plays (Audio-owned), no dart is spawned, no ammo is consumed, and `weapon_fired` does NOT emit. Documented in E.41 below.
 
-**CR-7 Melee contact (fists).** Revised 2026-04-22 — 3-swing KO cycle per user decision; primitive correction per godot-specialist B9.
+**CR-7 Melee contact (fists).** Revised 2026-04-22 — 3-swing KO cycle per user decision; primitive correction per godot-specialist B9. Revised 2026-04-28 — `MELEE_FIST` swing emits a 2 m positional NoiseEvent per `/review-all-gdds` 2026-04-28 design decision (closes the cost-free non-lethal dominant-strategy risk identified in the cross-review).
 
 Fists use a forward-sweep detection volume from camera origin:
 - Godot 4.6 has no `ConeShape3D`. The detection volume is a `SphereShape3D` of radius 0.35 m swept from camera origin along the forward axis for 0.7 m via `ShapeCast3D.target_position = -camera.basis.z * 0.7`. The spherical swept volume approximates a 30° half-angle cone at 0.7 m reach within ±0.1 m tolerance — acceptable for melee feel and computationally cheap.
 - 1 hit per swing (OQ-CD-4 gates multi-target selection: nearest-collider sort pending prototype).
 - Windup 0.3 s → hit resolves on windup-end frame → recovery 0.4 s → total cycle 0.7 s.
 - KO threshold: 3 swings at `fist_base_damage = 40` → 120 HP cumulative against a 100 HP guard. Per-KO time budget: 2.1 s (down from 4.9 s). Viable as deliberate silent non-lethal KO per CR-3 revised role.
+
+**Fist swing noise event (NEW 2026-04-28 per `/review-all-gdds` GD design decision)**: every fist swing emits a positional `NoiseEvent` to SAI's `HearingPoller` at the moment of windup-start (NOT at hit-resolve — guards must hear the swing whether or not it connects). NoiseEvent properties:
+- **Type**: `NoiseEventType.MELEE_FIST` (new enum value owned by SAI's perception subsystem; ADR-0002 amendment NOT required — `NoiseEventType` is internal to SAI's `HearingPoller`, not a Signal Bus signal).
+- **Radius**: **2.0 m** (between Crouch's 3 m noise radius and Walk's 5 m). Audible to adjacent guards within 2 m AND with line-of-sight (Eve in cover with the guard around the corner does NOT propagate — same hearing rules as PC's `player_footstep` per SAI §F.2). At 2 m, fist-swinging in a tight corridor (most NOLF1-style indoor space) DOES reach an adjacent patrolling guard; in an open hall, it does not.
+- **Position**: Eve's `global_transform.origin` at swing-windup-start.
+- **Source**: Eve (player) — guards process this as a `STEALTH_NOISE` cause in SAI's perception cache, NOT as a combat event. Hearing a fist swing does not directly transition guards to COMBAT — it accumulates suspicion via SAI's normal perception channel (Suspicious → Searching if cumulative).
+
+**Why 2 m and not 0 m**: a silent fist swing makes fist-KO the cost-free dominant non-lethal verb (no ammo cost, no clock pressure, no audible footprint), bypassing the dart-economy scarcity that Pillar 2 leans on. **Why 2 m and not 3 m or 4 m**: 2 m audibility requires meaningful guard isolation (the player must wait for the patrol to round a corner, not just stand 3 m back) without making fist-KO outright punishing. Tunable safe range: **`fist_swing_noise_radius_m = 2.0` (default), [1.5, 3.5]**. **Audio side-effect**: Audio subscribes to `weapon_fired`-equivalent signals for combat SFX, NOT to NoiseEvents — fist-swing audio is owned by Audio's whoosh-SFX routing per audio.md §B.1; the NoiseEvent is a perception-only construct, NOT an audio cue. The SFX itself is the audible whoosh; the NoiseEvent is the AI-perception representation.
+
+**Coordination items emerging from this 2026-04-28 decision**:
+- **SAI GDD §F.2b EVENT_WEIGHT table**: add `MELEE_FIST` row (Crouch-tier weight ~5 to match the 2 m radius / Crouch's 3 m radius weight ~6 — adjusted to be slightly less alarming because fist swing is brief whereas footsteps repeat). SAI-owned edit, producer-tracked.
+- **Audio §Concurrency Policies**: clarify that the existing fist-swing whoosh SFX (Combat-owned per audio.md §B.1) does NOT route through a `NoiseEvent` subscription — Audio plays the whoosh directly on its own `weapon_fired`-equivalent path. The NoiseEvent is consumed only by SAI's `HearingPoller`. Audio-owned edit (1-line clarification), advisory.
 
 **CR-8 Crosshair.** Revised 2026-04-22 to resolve ux-designer BLOCKER-2 (resolution scaling) and BLOCKER-3 (contrast claim). See UI-1 for complete specification — Combat describes behavior; HUD Core renders.
 
@@ -739,6 +751,7 @@ respawn_floor_rifle_total  = -1   # sentinel: preserved as-is, no floor applied
 | `dart_damage` | 150 | [100, 200] | No | 1-shot KO with headroom |
 | `rifle_base_damage` | 120 | [100, 150] | No | 1-shot body kill niche |
 | `fist_base_damage` | **40** (revised 2026-04-22 from 16) | **[34, 50]** | No | 3-swing deliberate KO (default); 2-swing at safe ceiling. Safe range preserves 2–3-swing window; outside this range fists either slapstick (>3 swings) or overpowered (<2 swings). |
+| `fist_swing_noise_radius_m` | **2.0** (NEW 2026-04-28 per `/review-all-gdds` GD design decision) | **[1.5, 3.5]** | No | 2 m NoiseEvent radius emitted at fist-swing windup-start (CR-7). Below 1.5 m: fist-KO becomes dominant cost-free non-lethal verb (Pillar 2 violation — bypasses dart economy). Above 3.5 m: fists become outright punishing in narrow corridors (most NOLF1-style indoor space), making fist-KO unviable as a deliberate stealth tool. Tuning lever may surface in playtest if 2 m proves too generous (push to 2.5) or too punishing (drop to 1.5). |
 | `guard_pistol_damage_vs_eve` | 18 | [14, 20] | **Yes** (Tier 1 playtest) | Pillar 3 survivability feel. Safe range honors AC-CD-14.1 (`ceil(100/20) = 5` min hits to kill). |
 | `guard_first_shot_delay_s` | 0.65 | [0.4, 1.0] | No | Reaction window |
 | `guard_los_cadence_s` | 1.4 | [1.0, 2.0] | No | LOS fire rhythm |

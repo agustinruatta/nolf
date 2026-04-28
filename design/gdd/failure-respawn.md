@@ -268,7 +268,7 @@ The §Detailed Design → Interactions table lists per-system data flows. This s
 | **ADR-0002** (Signal Bus + Event Taxonomy) | F&R is the sole publisher of the Failure/Respawn signal domain (`respawn_triggered`); enum ownership (`CombatSystemNode.DeathCause`, `LevelStreamingService.TransitionReason`) consumed |
 | **ADR-0003** (Save Format Contract) | `SaveGame` schema — F&R adds a new `FailureRespawnState` sub-resource (coord item); atomic write semantics; `duplicate_deep()` on load contract |
 | **ADR-0004** (UI Framework) | `InputContext` stack push/pop semantics (true stack, not replace-top) — underpins CR-9 Option B |
-| **ADR-0007** (Autoload Load Order Registry) | F&R autoload placement at line 8 after `Combat` — **coord item: ADR-0007 amendment required** before sprint |
+| **ADR-0007** (Autoload Load Order Registry) | F&R registered as autoload per ADR-0007 (amended 2026-04-27 — coord closed; B2 from /review-all-gdds 2026-04-27 resolved). Load-order edge: MLS subscribes to F&R's `respawn_triggered`, so F&R precedes MLS in the canonical registration table. |
 | **ADR-0008** (Performance Budget Distribution) | Total respawn duration (F.2) consumes LS + Audio + PC sub-budgets; F&R's own per-frame cost is ~0 ms outside the flow |
 
 ### Forbidden non-dependencies (explicitly NOT deps)
@@ -306,7 +306,7 @@ F&R has a deliberately thin tuning surface. Most player-felt knobs (audio fade t
 
 | Parameter | Default | Safe Range | Notes |
 |---|---|---|---|
-| `FR_AUTOLOAD_POSITION` | line 8 (after `Combat`) | Locked | Per ADR-0007 amendment (coord item). Tunable only via ADR amendment. |
+| `FR_AUTOLOAD_POSITION` | per ADR-0007 (canonical registration table) | Locked | Per ADR-0007 (amended 2026-04-27). Tunable only via paired ADR-0007 amendment + `project.godot` edit. |
 | `FR_FAILURE_TRIGGER_SIGNALS` | `{Events.player_died}` | Locked at MVP | Adding mission-fail triggers is an MVP scope expansion requiring design review. |
 | `FR_FLOW_STATE_INITIAL` | `IDLE` | Locked | Autoload always boots in IDLE. |
 | `FR_CHECKPOINT_MARKER_NODE_NAME` | `"player_respawn_point"` | Locked (string match) | The `Marker3D` node name F&R searches for per CR-11. Section-authoring contract. |
@@ -491,7 +491,7 @@ Evidence paths base: `tests/unit/failure_respawn/` (Logic), `tests/integration/f
 
 | Blocker | Blocks AC(s) | Resolution required |
 |---|---|---|
-| **ADR-0007 amendment** — F&R autoload at line 8 (after Combat) | All ACs | ADR-0007 amended; coord landing confirmed |
+| ~~**ADR-0007 amendment** — F&R autoload at line 8 (after Combat)~~ | All ACs | ✅ RESOLVED 2026-04-27 — F&R registered per ADR-0007 amended canonical table; B2 from /review-all-gdds 2026-04-27 closed |
 | **Inventory GDD coordination** — add `apply_respawn_floor_if_needed(snapshot, should_apply_floor)` public API (rename from existing `restore_weapon_ammo(floor_dict)` per Inventory L312) | AC-FR-4.1, 4.2, 4.3, 5.3, 5.4 | Inventory GDD updated with public API signature; existing `restore_weapon_ammo` reference in Inventory L312 + F.2 variable table reconciled with F&R's policy/mechanism split |
 | **Save/Load GDD + ADR-0003 schema coordination** — (a) add `FailureRespawnState` sub-resource to `SaveGame`; (b) remove/rewrite save-load.md L100 + L151 which still describe F&R using `load_from_slot(0)` during respawn (contradicts F&R CR-4 in-memory handoff); (c) forbid internal `await` inside `save_to_slot(0, ...)` in ADR-0003; (d) atomic-commit fence: `FailureRespawnState.gd` + `save_game.gd` schema update must land in the same PR | AC-FR-3.1, 5.1–5.6 | Save/Load GDD §Interactions + ADR-0003 schema updated |
 | **Input GDD coordination** — add `InputContext.LOADING` context to Input GDD (currently not mentioned anywhere in `input.md`) | AC-FR-7.1, 7.2, 7.3 | Input GDD adds LOADING context with ADR-0004 stack-semantics reference; F&R's CR-9 Option B stacking assumption is backed by upstream spec |

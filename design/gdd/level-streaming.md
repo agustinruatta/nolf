@@ -213,7 +213,7 @@ Total transition budget: ~33 ms snap-out + ≤500 ms SWAPPING + ~33 ms snap-in =
 
 - **Transition time budget** (≤1.3 s total, composed of `t_fade_out + t_load_hold + t_fade_in`) — defined in §Detailed Design (States and Transitions) and §Tuning Knobs. Each component has an independent safe range; they sum to the total. No weighting, no formula.
 - **Fade alpha curve** — linear `Tween` over `t_fade_out` and `t_fade_in`. No easing function at MVP. Specified at the implementation level in §Tuning Knobs, not here.
-- **Kill-plane validation** (CR-11) — the assertion `section_bounds.position.y >= kill_plane_y - 5.0 m` is a dev-build authoring check fired once per `section_entered`. Binary pass/fail. Not a runtime calculation.
+<!-- Removed 2026-04-27 (/consistency-check adjacent #2): the prior "Kill-plane validation (CR-11) — section_bounds.position.y >= kill_plane_y - 5.0 m" bullet described an assertion that CR-12 (L162) deleted. Geometry-gap detection is level-designer authoring QA, not an LS dev-build assertion. L311 already acknowledges CR-11 deletion; this bullet was the last residual reference. -->
 - **Section ID lookup** — string-equality compare (`section_id == registry_key`), bounded by registry size (5 MVP entries, plus main-menu and Tier 1 stubs). Not a formula.
 - **Cache memory footprint** — proportional to `count(sections_visited_this_session) × avg_packed_scene_size`, but MVP does not specify an eviction policy, so there is no bound to check. Surfaced in §Open Questions for Tier 2.
 
@@ -328,12 +328,13 @@ All 4 gates are MUST-CLOSE before sprint kickoff. Gates 1 and 2 are BLOCKING (im
 |---|---|---|---|
 | Signal taxonomy | `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` | `Events.section_entered(section_id, is_respawn)`, `Events.section_exited(section_id, is_respawn)` | Data dependency (LS publishes). **Requires amendment** — bundle with Stealth AI's amendment. |
 | Save format contract | `docs/architecture/adr-0003-save-format-contract.md` | `section_id: StringName` as save key; caller-assembled pattern | Rule dependency (LS implements). |
-| Save/Load fade ownership | `design/gdd/save-load.md` §Visual/Audio | 0.3 s fade out → section load → 0.5 s fade in | Bidirectional match confirmed. |
+| Save/Load fade ownership | `design/gdd/save-load.md` §Visual/Audio | Pointer-only reference to LS §Tuning Knobs (no inline timing values; canonical spec lives here in LS GDD per LS-Gate-4 Option B closure 2026-04-27) | Bidirectional pointer (Save/Load defers to LS as owner; LS GDD's §Tuning Knobs is authoritative). |
 | Input context stack | `design/gdd/input.md` | `InputContext.LOADING` must exist | Rule dependency. **Verify before Input GDD approval.** |
 | Audio respawn handler | `design/gdd/audio.md` §Interactions / Persistence domain | 2.0 s ease-in from silence on respawn | Rule dependency (Audio subscribes; LS's `is_respawn` flag activates). |
 | PC safe-arrival state | `design/gdd/player-character.md` | `reset_for_respawn(checkpoint)` core rule | Rule dependency. |
-| Kill-plane constant | `design/registry/entities.yaml` | `kill_plane_y` (active) | Data dependency (LS reads). |
 | Forbidden patterns | (future `docs/registry/architecture.yaml` entries) | `level_streaming_caller_outside_allowlist`, `section_scene_missing_actor_id`, `level_streaming_runtime_async_restore` | Rule dependency (to be added in Phase 5b). |
+<!-- Removed 2026-04-27 (/consistency-check C3): the prior "Kill-plane constant — Data dependency (LS reads)" row contradicted CR-12 (L162) which deleted LS's kill_plane_y read. Geometry-gap detection is level-designer authoring QA, not an LS runtime concern. -->
+
 
 ## Tuning Knobs
 
@@ -399,7 +400,7 @@ All 4 gates are MUST-CLOSE before sprint kickoff. Gates 1 and 2 are BLOCKING (im
 
 ### NOT owned by this GDD (cross-references)
 
-- **Kill-plane Y value** (`kill_plane_y` constant) → Player Character. LS reads; does not modify.
+- **Kill-plane Y value** (`kill_plane_y` constant) → Player Character. LS does NOT read or modify (per CR-12 — geometry-gap detection is level-designer authoring QA, not an LS runtime assertion). Listed here only because earlier drafts implied LS owned this; CR-12 deleted that dependency. Wording aligned with CR-12 on 2026-04-27 (/consistency-check C3).
 - **`InputContext.LOADING` enum value** → Input GDD. LS pushes/pops; does not define.
 - **Section scene assets** (`plaza.tscn`, `lower_scaffolds.tscn`, etc.) → Level Designer content authoring.
 - **Music transition curves** on `section_entered` / `section_exited` → Audio GDD.

@@ -14,7 +14,7 @@ Signal Bus is the project's typed event hub — a single autoload (`Events.gd`) 
 
 ## Overview
 
-The Signal Bus is a Foundation-layer infrastructure system. Players never engage with it directly — they engage with its consequences: alert-state music transitions that fire reliably when guards spot Eve, HUD values that update the moment Eve takes damage, document-pickup notifications that appear without delay or duplication. Without a Signal Bus, every system that needs to react to another system's events would either hold direct references to those systems (tight coupling that breaks reorganization), reach into autoload singletons by name to call methods (the autoload-singleton-coupling anti-pattern), or wire signals at scene level (fragile against scene structure changes). Signal Bus replaces all three failure modes with one rule: cross-system events go through `Events.gd`, declared once, consumed by anyone. The full event taxonomy (**36 typed signals across 9 gameplay domains — AI/Stealth, Combat, Player, Inventory, Documents, Mission, Failure & Respawn, Civilian, Dialogue — plus 2 infrastructure domains, Persistence and Settings**; revised 2026-04-20 after ADR-0002 Player-domain amendment of 2026-04-19; further revised 2026-04-22 after the 4th-pass LS + SAI ADR-0002 amendment added `guard_incapacitated` + `guard_woke_up` to AI/Stealth and grew `section_entered` / `section_exited` with a `reason: LevelStreamingService.TransitionReason` 2nd param), the autoload registration order, the subscriber lifecycle pattern, the enum ownership rule, and the 5 forbidden patterns that fence Signal Bus against drift are all specified in ADR-0002. This GDD describes the design-level *why* and the acceptance criteria; ADR-0002 is the implementation contract.
+The Signal Bus is a Foundation-layer infrastructure system. Players never engage with it directly — they engage with its consequences: alert-state music transitions that fire reliably when guards spot Eve, HUD values that update the moment Eve takes damage, document-pickup notifications that appear without delay or duplication. Without a Signal Bus, every system that needs to react to another system's events would either hold direct references to those systems (tight coupling that breaks reorganization), reach into autoload singletons by name to call methods (the autoload-singleton-coupling anti-pattern), or wire signals at scene level (fragile against scene structure changes). Signal Bus replaces all three failure modes with one rule: cross-system events go through `Events.gd`, declared once, consumed by anyone. The full event taxonomy (**40 typed signals across 9 gameplay domains — AI/Stealth, Combat, Player, Inventory, Documents, Mission, Failure & Respawn, Civilian, Dialogue — plus 3 infrastructure domains, Persistence, Settings, and UI**; revised 2026-04-20 after ADR-0002 Player-domain amendment of 2026-04-19; further revised 2026-04-22 after the 4th-pass LS + SAI ADR-0002 amendment added `guard_incapacitated` + `guard_woke_up` to AI/Stealth and grew `section_entered` / `section_exited` with a `reason: LevelStreamingService.TransitionReason` 2nd param; further revised 2026-04-24 after the Inventory amendment added `gadget_activation_rejected` + `weapon_dry_fire_click` and extended `guard_incapacitated` with a `cause: int` 2nd param; count canonicalized to 38 by /review-all-gdds 2026-04-27 sweep — closes B1; further revised 2026-04-28 after the `/review-all-gdds` 2026-04-28 amendment added `settings_loaded()` to Settings domain and `ui_context_changed(new: InputContext.Context, old: InputContext.Context)` to a new UI domain — closes W4 carryforward + HUD-Overlay coordination gap, count → 40), the autoload registration order, the subscriber lifecycle pattern, the enum ownership rule, and the 5 forbidden patterns that fence Signal Bus against drift are all specified in ADR-0002. This GDD describes the design-level *why* and the acceptance criteria; ADR-0002 is the implementation contract.
 
 ## Player Fantasy
 
@@ -37,7 +37,7 @@ These are invisible wins. Players will never praise Signal Bus by name. They wil
 3. **Publishers emit; subscribers react.** Signal Bus is fire-and-forget. There is no return value, no synchronous callback, no "did anyone hear me?" query. Publishers do not get confirmation that subscribers ran. Subscribers do not get a guarantee that the publisher is still alive.
 4. **Subscribers MUST validate Node-typed payloads.** When a signal carries a `Node` (or subclass) parameter, the subscriber MUST call `is_instance_valid(node)` before dereferencing it. Signals can be queued, and the source node may be freed before the subscriber runs. This applies to ~6 of the 12 subscriber systems (any that handle `actor`, `source`, `enemy`, `civilian`, `weapon` parameters). Document this validity guard in every subscriber GDD's interaction notes.
 5. **GDD-level enum ownership obligation.** When a GDD introduces a new signal whose payload uses an enum (e.g., `StealthAI.AlertState`), the GDD must declare in its **Dependencies** section which system owns that enum. The bus does not own enums; the system that owns the concept does.
-6. **Per-frame-per-multiple-entities events require GDD-level performance notes.** The current 34-signal taxonomy was analyzed in ADR-0002 and confirmed within budget. Any *future* signal that fires per-physics-frame (60/sec) for 3+ entities simultaneously must repeat that analysis in the publishing system's GDD before shipping. No event in the current taxonomy crosses this threshold. Note: `player_footstep` (Player domain, added 2026-04-19) peaks at ~3.5 Hz during Sprint — well within budget.
+6. **Per-frame-per-multiple-entities events require GDD-level performance notes.** The current 38-signal taxonomy was analyzed in ADR-0002 and confirmed within budget. Any *future* signal that fires per-physics-frame (60/sec) for 3+ entities simultaneously must repeat that analysis in the publishing system's GDD before shipping. No event in the current taxonomy crosses this threshold. Note: `player_footstep` (Player domain, added 2026-04-19) peaks at ~3.5 Hz during Sprint — well within budget.
 
 ### States and Transitions
 
@@ -45,7 +45,7 @@ These are invisible wins. Players will never praise Signal Bus by name. They wil
 
 ### Interactions with Other Systems
 
-The full 34-signal taxonomy is documented in **ADR-0002 Key Interfaces**. The GDD-level summary follows in two parts: a domain summary (orientation) and a consumer matrix (subscriber map). Both updated 2026-04-20 after the ADR-0002 Player-domain amendment.
+The full 40-signal taxonomy is documented in **ADR-0002 Key Interfaces**. The GDD-level summary follows in two parts: a domain summary (orientation) and a consumer matrix (subscriber map). Counts canonicalized to 38 by /review-all-gdds 2026-04-27 sweep (closes B1) — reflects the cumulative state after the 2026-04-19 Player-domain amendment + 2026-04-22 OQ-CD-1/4th-pass amendments + 2026-04-24 Inventory amendment.
 
 #### Domain summary
 
@@ -61,28 +61,30 @@ The full 34-signal taxonomy is documented in **ADR-0002 Key Interfaces**. The GD
 | **Civilian** | `civilian_panicked`, `civilian_witnessed_event` | Civilian AI | **Yes** |
 | **Dialogue** | `dialogue_line_started`, `dialogue_line_finished` | Dialogue & Subtitles | No (StringName) |
 | **Persistence** | `game_saved`, `game_loaded`, `save_failed` | Save / Load | No (int + StringName + enum) |
-| **Settings** | `setting_changed` | Settings & Accessibility | No (StringName + Variant) |
+| **Settings** | `setting_changed`, `settings_loaded` *(added 2026-04-28)* | Settings & Accessibility | No (StringName + Variant; `settings_loaded` no payload) |
+| **UI** *(added 2026-04-28)* | `ui_context_changed` | InputContextStack autoload | No (enum × 2) |
 
 #### Consumer matrix
 
 Which systems subscribe to which event domains (✓ = subscribes). Derived from `architecture.yaml` `gameplay_event_dispatch` consumer list and per-system dependency annotations in `systems-index.md`.
 
-| System ↓ \ Domain → | AI | Combat | Player | Inv | Docs | Mission | Fail | Civ | Dlg | Persist | Settings |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Audio | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ |
-| Stealth AI | | ✓ | | | | ✓ | | ✓ | | | |
-| Combat & Damage | ✓ | | | | | ✓ | | | | | |
-| Inventory & Gadgets | | ✓ | | | | | | | | | |
-| Document Collection | | | ✓ | | | ✓ | | | | | |
-| Mission & Level Scripting | ✓ | ✓ | | | ✓ | | ✓ | | | | |
-| Failure & Respawn | | ✓ | | | | ✓ | | | | | |
-| Civilian AI | ✓ | ✓ | | | | | | | | | |
-| Dialogue & Subtitles | ✓ | | | | ✓ | | | | | | |
-| HUD Core | | ✓ | ✓ | ✓ | | | ✓ | | | | |
-| HUD State Signaling | ✓ | ✓ | | | ✓ | ✓ | ✓ | | | | |
-| Cutscenes & Mission Cards | | | | | | ✓ | | | | | |
-| Save / Load | | | | | | ✓ | | | | | |
-| Settings & Accessibility | | | | | | | | | | | |
+| System ↓ \ Domain → | AI | Combat | Player | Inv | Docs | Mission | Fail | Civ | Dlg | Persist | Settings | UI |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Audio | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Stealth AI | | ✓ | | | | ✓ | | ✓ | | | | |
+| Combat & Damage | ✓ | | | | | ✓ | | | | | ✓ | |
+| Inventory & Gadgets | | ✓ | | | | | | | | | | |
+| Document Collection | | | ✓ | | | ✓ | | | | | | |
+| Mission & Level Scripting | ✓ | ✓ | | | ✓ | | ✓ | | | | | |
+| Failure & Respawn | | ✓ | | | | ✓ | | | | | | |
+| Civilian AI | ✓ | ✓ | | | | | | | | | | |
+| Dialogue & Subtitles | ✓ | | | | ✓ | | | | | | | ✓ |
+| HUD Core | | ✓ | ✓ | ✓ | | | ✓ | | | | ✓ | ✓ |
+| HUD State Signaling | ✓ | ✓ | | | ✓ | ✓ | ✓ | | | | | |
+| Cutscenes & Mission Cards | | | | | | ✓ | | | | | | ✓ |
+| Save / Load | | | | | | ✓ | | | | | | |
+| Settings & Accessibility | | | | | | | | | | | | |
+| Outline Pipeline | | | | | | | | | | | ✓ | |
 
 > Subscribers of any domain marked **"Has Node payloads? Yes"** (AI/Stealth, Combat, Civilian) MUST implement the Rule 4 validity guard for every Node-typed handler. The Player domain's `player_interacted(target: Node3D)` also carries a Node payload (target may be null per PC GDD E.5) and is subject to the same validity guard.
 
@@ -134,7 +136,7 @@ Godot 4.6 autoload system + typed signal declarations + callable-based connectio
 
 ### ADR contracts
 
-- **ADR-0002**: implementation contract for Signal Bus (autoload structure, 34 signal declarations, naming, lifecycle, anti-patterns).
+- **ADR-0002**: implementation contract for Signal Bus (autoload structure, 38 signal declarations, naming, lifecycle, anti-patterns).
 - **ADR-0001**: independent — no interaction.
 - **ADR-0003**: uses 3 Persistence signals defined here.
 - **ADR-0004**: UI surfaces subscribe to many signals here; if `ui_context_changed` is ever needed, it must be added to ADR-0002's taxonomy (not implemented as a local InputContext signal — per ADR-0004).
@@ -162,7 +164,7 @@ Future signals added to the bus may introduce tuning knobs in their owning syste
 
 | This Document References | Target | Specific Element | Nature |
 |---|---|---|---|
-| ADR-0002 implementation contract | `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` | Full 34-signal taxonomy across 9 gameplay domains + Persistence + Settings, autoload structure, naming, anti-patterns | Implementation contract — this GDD inherits all decisions |
+| ADR-0002 implementation contract | `docs/architecture/adr-0002-signal-bus-event-taxonomy.md` | Full 40-signal taxonomy across 9 gameplay domains + Persistence + Settings + UI, autoload structure, naming, anti-patterns | Implementation contract — this GDD inherits all decisions |
 | ADR-0001 stencil tier markers | `docs/architecture/adr-0001-stencil-id-contract.md` | None — independent contracts | No interaction |
 | ADR-0003 save signals | `docs/architecture/adr-0003-save-format-contract.md` | `Events.game_saved`, `Events.game_loaded`, `Events.save_failed` defined here | Data dependency (Save/Load publishes these signals) |
 | ADR-0004 UI signal subscriptions | `docs/architecture/adr-0004-ui-framework.md` | UI surfaces subscribe to Documents, Combat, Inventory, Mission, Failure, Settings domains | Data dependency (UI consumes these signals) |
@@ -176,7 +178,7 @@ Future signals added to the bus may introduce tuning knobs in their owning syste
 
 1. **GIVEN** the project is launched, **WHEN** the autoload list is inspected via `get_tree().root.get_children()`, **THEN** `Events` and `EventLogger` are present in the order declared by ADR-0007 (Autoload Load Order Registry) — `Events` precedes `EventLogger`. `EventLogger` is present in debug builds and absent in release builds.
 2. **GIVEN** `Events.gd` source file, **WHEN** linted/grepped for `func `, `var `, or `const ` declarations (excluding the `class_name` and `extends` header), **THEN** zero matches (per ADR-0002 forbidden_pattern `events_with_state_or_methods`).
-3. **GIVEN** the 36 signals defined in ADR-0002, **WHEN** `Events.gd` is parsed, **THEN** every signal in ADR-0002's Key Interfaces is declared with the exact signature (name, parameter types, parameter order). The Player domain (`player_interacted`, `player_footstep`) is included in this count per the 2026-04-19 ADR-0002 amendment; the 2 AI/Stealth additions (`guard_incapacitated`, `guard_woke_up`) are included per the 2026-04-22 4th-pass amendment; `section_entered` / `section_exited` signatures MUST include the `reason: LevelStreamingService.TransitionReason` 2nd param.
+3. **GIVEN** the 40 signals defined in ADR-0002, **WHEN** `Events.gd` is parsed, **THEN** every signal in ADR-0002's Key Interfaces is declared with the exact signature (name, parameter types, parameter order). The Player domain (`player_interacted`, `player_footstep`) is included in this count per the 2026-04-19 ADR-0002 amendment; the 2 AI/Stealth additions (`guard_incapacitated`, `guard_woke_up`) are included per the 2026-04-22 4th-pass amendment; `section_entered` / `section_exited` signatures MUST include the `reason: LevelStreamingService.TransitionReason` 2nd param; the 2 Inventory-domain additions (`gadget_activation_rejected`, `weapon_dry_fire_click`) and the `guard_incapacitated` `cause: int` 2nd-param extension are included per the 2026-04-24 Inventory amendment; the Settings-domain `settings_loaded()` and the new UI-domain `ui_context_changed(new: InputContext.Context, old: InputContext.Context)` are included per the 2026-04-28 `/review-all-gdds` amendment.
 
 ### Dispatch behavior
 
@@ -217,5 +219,5 @@ Future signals added to the bus may introduce tuning knobs in their owning syste
 | Question | Owner | Deadline | Resolution |
 |---|---|---|---|
 | Should `ui_context_changed` be added to the taxonomy when InputContext (ADR-0004) needs cross-system reactions? | UI Framework GDD authors | Resolved during Document Overlay UI / Menu System GDD authoring | Per ADR-0004: add to ADR-0002 + this GDD's Section C.3 if any non-UI system needs to react to context shifts. Currently no such consumer is identified. |
-| What's the canonical workflow to add a new signal to the taxonomy post-MVP? | Lead-programmer | Before first signal addition post-MVP | **Settled 2026-04-19/2026-04-20** via the ADR-0002 Player-domain amendment + Signal Bus GDD 2026-04-20 propagation fix: (1) author a Revision History block in ADR-0002 with the new signals' signatures; (2) update this GDD's Section C.3 domain table + consumer matrix + count in Overview; (3) update AC-3 (current count, now 34); (4) update every subscribing system GDD's subscription list + registry. All four updates MUST land in the same PR as the new signal's first use. |
+| What's the canonical workflow to add a new signal to the taxonomy post-MVP? | Lead-programmer | Before first signal addition post-MVP | **Settled 2026-04-19/2026-04-20** via the ADR-0002 Player-domain amendment + Signal Bus GDD 2026-04-20 propagation fix: (1) author a Revision History block in ADR-0002 with the new signals' signatures; (2) update this GDD's Section C.3 domain table + consumer matrix + count in Overview; (3) update AC-3 (current count, now 38 — canonicalized by /review-all-gdds 2026-04-27 sweep closing B1); (4) update every subscribing system GDD's subscription list + registry. All four updates MUST land in the same PR as the new signal's first use. |
 | Should the lint-style Acceptance Criteria (#2, #10, #13, #14) be wired into CI as automated grep checks? | QA Lead + DevOps | Tier 0 prototype phase | Recommend: yes — these are cheap to automate and catch regressions in seconds. Add to `/test-setup` work. |

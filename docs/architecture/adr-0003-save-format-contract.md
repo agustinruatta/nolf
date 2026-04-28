@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-23 (Amendment A3: Gate 3 scope refined to explicitly exercise `Dictionary[StringName, GuardRecord]` duplicate_deep isolation per godot-specialist 2026-04-22 §5; also supersedes "load order 3" statements with "per ADR-0007" references)
+2026-04-27 (Amendment A4: SaveGame schema growth — adds `failure_respawn: FailureRespawnState`; splits `InventoryState.ammo` into `ammo_magazine` + `ammo_reserve`; adds `MissionState.fired_beats: Dictionary[StringName, bool]`. Resolves `/review-all-gdds 2026-04-27` Blockers B8 + B9 + Warning W6. See Revision History below.)
 
 ## Decision Makers
 
@@ -18,7 +18,26 @@ User (project owner) · godot-gdscript-specialist (technical validation) · `/ar
 
 ## Summary
 
-The game persists state via binary `Resource` saves (`.res`) using `ResourceSaver`/`ResourceLoader`, scoped to the current section only (NOLF1-style sectional checkpoints). A top-level `SaveGame extends Resource` holds typed per-system state Resources (player, inventory, stealth AI, civilian AI, documents, mission). `SaveLoadService` is an autoload that owns the persistence domain — it writes/reads files only, holds no scene-system references, and accepts pre-assembled `SaveGame` objects from callers. Versioning is refuse-load-on-mismatch. Per-actor state uses stable `actor_id: StringName` set on scene authoring, not NodePaths.
+The game persists state via binary `Resource` saves (`.res`) using `ResourceSaver`/`ResourceLoader`, scoped to the current section only (NOLF1-style sectional checkpoints). A top-level `SaveGame extends Resource` holds typed per-system state Resources (player, inventory, stealth AI, civilian AI, documents, mission, failure_respawn — 7 typed sub-resources after the 2026-04-27 amendment; see Revision History). `SaveLoadService` is an autoload that owns the persistence domain — it writes/reads files only, holds no scene-system references, and accepts pre-assembled `SaveGame` objects from callers. Versioning is refuse-load-on-mismatch. Per-actor state uses stable `actor_id: StringName` set on scene authoring, not NodePaths.
+
+### Revision History
+
+- **2026-04-27 (Amendment A4 — SaveGame schema growth; resolves `/review-all-gdds 2026-04-27` B8 + B9 + W6)**: Three coordinated schema additions to bring ADR-0003 into alignment with the system GDDs that have been authored since A3 landed.
+  1. **W6 — `FailureRespawnState` added to SaveGame**: F&R declares its sub-resource at `failure-respawn.md` CR-3 + CR-6, but the ADR-0003 SaveGame `@export` block (§Key Interfaces) listed only 6 typed fields (player, inventory, stealth_ai, civilian_ai, documents, mission). F&R coord item #1 explicitly required this addition. Added: `@export var failure_respawn: FailureRespawnState`. Summary text grows from "6 typed sub-resources" to "7 typed sub-resources."
+  2. **B9 — `InventoryState` ammo schema split**: A3 documented `@export var ammo: Dictionary` as the canonical Inventory state shape. Inventory's revision pass split this into two dicts to track magazine vs reserve separately (ammo accounting + dry-fire vs reserve-empty distinction at `inventory-gadgets.md:249–250`; `save-load.md:102` already reflects the split). ADR-0003's GDD Requirements Addressed table row (Inventory & Gadgets) updated to cite both fields. Implementation Guidelines row added: `@export var ammo_magazine: Dictionary` + `@export var ammo_reserve: Dictionary` (both `Dictionary[StringName, int]` keyed by weapon-id).
+  3. **B8 — `MissionState.fired_beats` added**: MLS CR-7 declares the savepoint-persistent-beats invariant (`MissionState.fired_beats` records each beat's `beat_id` before the body runs); the ADR-0003 GDD Requirements Addressed table listed only `objectives_completed` + `triggers_fired` for Mission state. MLS makes `fired_beats` load-bearing across CR-7 + 9 other sites. Added: `@export var fired_beats: Dictionary[StringName, bool]` on `MissionState` (Dictionary type matches MLS CR-6 + OQ-MLS-12 type-lock for `triggers_fired` per the same convention).
+
+  **Format-version impact**: this amendment is the first save-schema change after A3. **`SaveGame.FORMAT_VERSION` is bumped from `1` to `2`**. Per the refuse-load-on-mismatch policy locked in the original Decision (§Decision + Implementation Guideline 1), any save written under FORMAT_VERSION=1 will be rejected at load time on or after this amendment landing — but this is pre-production; no real saves exist yet. The bump is bookkeeping; the validation gates 1–3 remain in force unchanged.
+
+  **Registry impact**: `docs/registry/architecture.yaml` — `save_format_contract` api_decisions row revised to v2 (FORMAT_VERSION bumped); per-system save-shape rows for InventoryState + MissionState updated; new row for FailureRespawnState. Entity registry (`design/registry/entities.yaml`): `InventoryState.ammo` → `InventoryState.ammo_magazine` + `InventoryState.ammo_reserve`; `MissionState` schema row gains `fired_beats`; `FailureRespawnState` registered with its referencing GDDs.
+
+  **Rules unchanged**: §Architecture diagram, §Atomic Write pattern, §Implementation Guidelines 1–10, §Anti-Pattern fences, §Performance budgets, §Verification Gates 1–3 (the `Dictionary[StringName, bool]` shape is structurally identical to `Dictionary[StringName, GuardRecord]` for `duplicate_deep()` purposes; Gate 3 implicitly covers `fired_beats` isolation by the same property).
+
+  **Status unchanged**: this ADR remains **Proposed**. Amendment does not retire any of the three pending verification gates.
+
+  **Cross-document closure**: this amendment closes `/review-all-gdds 2026-04-27` Blockers B8 + B9 and Warning W6. Paired GDD touch-ups land in this amendment's PR: `save-load.md` `MissionState` schema gains `fired_beats`; `save-load.md` reflects the InventoryState two-dict shape (already aligned per L102); `save-load.md` SaveGame schema gains a `failure_respawn` line. F&R coord item #1 ("FailureRespawnState in SaveGame schema") closes on landing.
+
+- **2026-04-23 (Amendment A3)**: Gate 3 scope refined to explicitly exercise `Dictionary[StringName, GuardRecord]` `duplicate_deep` isolation per godot-specialist 2026-04-22 §5; "load order 3" statements superseded with "per ADR-0007" references.
 
 ## Engine Compatibility
 
@@ -134,7 +153,7 @@ Project is in pre-production. No source code exists. No prior save system to mig
 class_name SaveGame extends Resource
 
 # In-code sentinel (NOT @export — const cannot be exported in GDScript)
-const FORMAT_VERSION: int = 1   # increment on any schema change
+const FORMAT_VERSION: int = 2   # bumped 2026-04-27 amendment A4 (SaveGame schema growth — added failure_respawn; split InventoryState.ammo; added MissionState.fired_beats). Increment on any schema change.
 
 # Serialized fields
 @export var save_format_version: int = FORMAT_VERSION  # written at save, checked at load
@@ -143,12 +162,14 @@ const FORMAT_VERSION: int = 1   # increment on any schema change
 @export var elapsed_seconds: float = 0.0
 
 # Per-system state (each is a typed Resource — see save_load/states/)
+# 7 typed sub-resources as of 2026-04-27 amendment A4 (failure_respawn added per F&R coord item #1).
 @export var player: PlayerState
 @export var inventory: InventoryState
 @export var stealth_ai: StealthAIState
 @export var civilian_ai: CivilianAIState
 @export var documents: DocumentCollectionState
 @export var mission: MissionState
+@export var failure_respawn: FailureRespawnState  # added 2026-04-27 amendment A4 (W6 from /review-all-gdds 2026-04-27)
 ```
 
 ```gdscript
@@ -358,10 +379,11 @@ This is the project's third ADR. No existing code or saves to migrate. Implement
 |---|---|---|---|
 | `design/gdd/systems-index.md` | Save/Load (system 6) | "Sectional checkpoints, NOLF-style, save data serialization" | This contract IS the implementation: sectional scope, atomic write, typed Resource serialization, `Events.game_saved` notification. |
 | `design/gdd/systems-index.md` | Failure & Respawn (system 14) | "Sectional restart contract" | `Events.respawn_triggered(section_id)` triggers a load from autosave (slot 0); SaveLoadService restores SaveGame; `duplicate_deep()` isolates state. |
-| `design/gdd/systems-index.md` | Inventory & Gadgets (system 12) | "Equipped state, ammo per weapon" | `InventoryState extends Resource` is the typed shape; `@export var ammo: Dictionary` (StringName→int) serializes cleanly. |
+| `design/gdd/systems-index.md` | Inventory & Gadgets (system 12) | "Equipped state, ammo per weapon (magazine vs reserve split)" | `InventoryState extends Resource` is the typed shape. **Ammo is split into two `Dictionary[StringName, int]` fields** (revised 2026-04-27 amendment A4 — B9 from /review-all-gdds 2026-04-27): `@export var ammo_magazine: Dictionary` (per-weapon current loaded magazine count) + `@export var ammo_reserve: Dictionary` (per-weapon reserve carried). Both keyed by weapon-id (`StringName`). Serialize cleanly via `Resource` + `@export`. Inventory's revision pass introduced the split to support dry-fire (mag empty, reserve >0) vs reserve-empty (both 0) distinctions; `inventory-gadgets.md:249–250` is the GDD-side declaration; `save-load.md:102` reflects the same shape. |
 | `design/gdd/systems-index.md` | Stealth AI (system 10) | "Per-guard alert state, patrol index, last-known-target" | `StealthAIState.guards: Dictionary[StringName, GuardRecord]` keyed by `actor_id`. Survives scene reload via stable IDs. |
 | `design/gdd/systems-index.md` | Document Collection (system 17) | "Per-save collection state" | `DocumentCollectionState.collected: Array[StringName]` of document IDs. |
-| `design/gdd/systems-index.md` | Mission & Level Scripting (system 13) | "Mission state, objective tracking, scripted-event triggers fired" | `MissionState` Resource with `current_section`, `objectives_completed: Array[StringName]`, `triggers_fired: Array[StringName]`. |
+| `design/gdd/systems-index.md` | Mission & Level Scripting (system 13) | "Mission state, objective tracking, scripted-event triggers fired, savepoint-persistent beats" | `MissionState` Resource with `section_id`, `objectives_completed: Array[StringName]`, `triggers_fired: Dictionary[StringName, bool]` (per MLS CR-6 type-lock + OQ-MLS-12), and **`fired_beats: Dictionary[StringName, bool]`** (added 2026-04-27 amendment A4 — B8 from /review-all-gdds 2026-04-27). `fired_beats` records each beat's `beat_id` before the beat body runs, enforcing MLS CR-7 savepoint-persistent-beats invariant; without this field, beats restored from save would lose their fired status and could re-trigger on section reload. |
+| `design/gdd/systems-index.md` | Failure & Respawn (system 14) — sub-resource | "Per-checkpoint floor-applied flag, mission-fail trigger metadata, queued-respawn coordination" | `FailureRespawnState` Resource (added 2026-04-27 amendment A4 — W6 from /review-all-gdds 2026-04-27, F&R coord item #1) with the live↔save fields F&R needs to survive a section reload. F&R's CR-3 + CR-6 declare the live state vs the saved snapshot relationship; this amendment formally registers `failure_respawn: FailureRespawnState` on `SaveGame` so that the `_floor_applied_this_checkpoint` discipline survives autosave write/restore. F&R is the sole writer of this field (per CR-3); MLS does NOT touch it during SaveGame assembly (per CR-15's per-owning-system `capture()` chain). |
 | `design/gdd/systems-index.md` | Settings & Accessibility (system 23) | "Graphics/audio/input options, subtitle toggle, text scaling" | Settings explicitly NOT part of SaveGame — uses separate `user://settings.cfg` ConfigFile. Prevents settings loss on new game. |
 | `design/art/art-bible.md` | Section 7D | "Save/load = period mission-dossier card" | Save metadata sidecar (`slot_N_meta.cfg`) provides the fields the Menu System needs to render the dossier card without loading the full SaveGame Resource. |
 
@@ -370,5 +392,9 @@ This is the project's third ADR. No existing code or saves to migrate. Implement
 - **ADR-0001** (Stencil ID Contract) — independent; no interaction.
 - **ADR-0002** (Signal Bus + Event Taxonomy) — soft dependency. Save/Load publishes `game_saved`, `game_loaded`, `save_failed` defined there. The `SaveLoad.FailureReason` enum is OWNED by `SaveLoadService` (per ADR-0002's enum-ownership rule).
 - **ADR-0004** (UI Framework — pending) — Menu System will consume `slot_metadata()` to render the mission-dossier card per Art Bible 7D. Must NOT call `load_from_slot()` directly during menu rendering (use the sidecar).
-- **`docs/registry/architecture.yaml`** — new entries: `state_ownership` for save data ownership, `interfaces` for SaveLoadService API contract, `api_decisions` for binary `.res` format choice, `forbidden_patterns` for save-system anti-patterns.
+- **`docs/registry/architecture.yaml`** — new entries: `state_ownership` for save data ownership, `interfaces` for SaveLoadService API contract, `api_decisions` for binary `.res` format choice, `forbidden_patterns` for save-system anti-patterns. Revised 2026-04-27 amendment A4: `save_format_contract` row bumped to FORMAT_VERSION=2; per-system rows for InventoryState (split ammo) + MissionState (added fired_beats) + FailureRespawnState (new).
 - **Future system GDDs**: every system that contributes to save state will define its own `*_State extends Resource` shape in its GDD's "Save State" subsection.
+- **`design/gdd/gdd-cross-review-2026-04-27.md` Blockers B8 + B9 + Warning W6** — surfaced the schema gaps (MissionState missing `fired_beats`; ADR-0003 InventoryState ammo schema obsolete; SaveGame missing `FailureRespawnState`); closed by amendment A4 2026-04-27.
+- **`design/gdd/failure-respawn.md` (CR-3 + CR-6 + coord item #1)** — declares `FailureRespawnState` Resource and the live↔save discipline; this amendment formally registers it on `SaveGame`. Closes F&R coord item #1.
+- **`design/gdd/mission-level-scripting.md` (CR-6 + CR-7 + OQ-MLS-12)** — declares `MissionState.fired_beats` and the savepoint-persistent-beats invariant; this amendment adds the field to the schema.
+- **`design/gdd/inventory-gadgets.md` (lines 249–250)** — declares the `ammo_magazine` + `ammo_reserve` two-dict shape; this amendment supersedes A1's single-dict declaration.

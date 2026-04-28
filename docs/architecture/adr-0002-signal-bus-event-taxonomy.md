@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-22 (OQ-CD-1 SAI amendment bundle + 4th-pass LS + SAI amendment bundle — two Revision History entries dated 2026-04-22)
+2026-04-28 (`/review-all-gdds` 2026-04-28 amendment — adds `settings_loaded` to Settings domain + `ui_context_changed` to NEW UI domain; closes W4 carryforward and HUD-Overlay coordination gap). Prior: 2026-04-22 (OQ-CD-1 SAI amendment bundle + 4th-pass LS + SAI amendment bundle — two Revision History entries dated 2026-04-22).
 
 ## Decision Makers
 
@@ -18,7 +18,7 @@ User (project owner) · godot-gdscript-specialist (technical validation) · `/ar
 
 ## Summary
 
-All cross-system events in *The Paris Affair* flow through a single typed-signal autoload (`Events.gd`, flat namespace, `subject_verb_past` naming) — **38 events organized in 9 domains** (a Player domain was added 2026-04-19 during Session B of the Player Character GDD revision; 5 signal signatures were revised 2026-04-22 for the OQ-CD-1 Stealth AI amendment bundle; a 4th-pass 2026-04-22 amendment grew `section_entered` / `section_exited` with a `reason: LevelStreamingService.TransitionReason` 2nd param and added 2 new AI/Stealth signals (`guard_incapacitated`, `guard_woke_up`); a 2026-04-24 amendment for Inventory & Gadgets added 2 new Inventory-domain signals (`gadget_activation_rejected`, `weapon_dry_fire_click`), extended `guard_incapacitated` with a `cause: int` 2nd param, and added `MELEE_PARFUM` to `CombatSystemNode.DamageType`; see Revision History below). Publishers emit directly (`Events.player_damaged.emit(args)`), subscribers connect/disconnect via the `_ready`/`_exit_tree` lifecycle pattern, and enum types live on the system that owns the concept (not on the bus). The bus contains only signal declarations — no methods, no state, no node references — to prevent the autoload-singleton-coupling anti-pattern.
+All cross-system events in *The Paris Affair* flow through a single typed-signal autoload (`Events.gd`, flat namespace, `subject_verb_past` naming) — **40 events organized in 9 gameplay domains plus 3 infrastructure domains (Persistence, Settings, UI)** (a Player domain was added 2026-04-19 during Session B of the Player Character GDD revision; 5 signal signatures were revised 2026-04-22 for the OQ-CD-1 Stealth AI amendment bundle; a 4th-pass 2026-04-22 amendment grew `section_entered` / `section_exited` with a `reason: LevelStreamingService.TransitionReason` 2nd param and added 2 new AI/Stealth signals (`guard_incapacitated`, `guard_woke_up`); a 2026-04-24 amendment for Inventory & Gadgets added 2 new Inventory-domain signals (`gadget_activation_rejected`, `weapon_dry_fire_click`), extended `guard_incapacitated` with a `cause: int` 2nd param, and added `MELEE_PARFUM` to `CombatSystemNode.DamageType`; a 2026-04-28 amendment for `/review-all-gdds` 2026-04-28 added `settings_loaded()` to the Settings domain (closes W4 carryforward — Settings GDD CR-9 declared this signal) and `ui_context_changed(new: InputContext.Context, old: InputContext.Context)` to a new UI domain (closes the HUD-Overlay coordination gap — HUD CR-10 declares this as a 9th subscription); see Revision History below). Publishers emit directly (`Events.player_damaged.emit(args)`), subscribers connect/disconnect via the `_ready`/`_exit_tree` lifecycle pattern, and enum types live on the system that owns the concept (not on the bus). The bus contains only signal declarations — no methods, no state, no node references — to prevent the autoload-singleton-coupling anti-pattern.
 
 A companion **Accessor Conventions (SAI → Combat)** subsection (added 2026-04-22) carves out a narrow, principled exception for read-only cross-system state queries that the fire-and-forget bus cannot satisfy. The carve-out is fenced by four exemption criteria and a no-new-accessors-without-amendment rule.
 
@@ -94,6 +94,29 @@ A companion **Accessor Conventions (SAI → Combat)** subsection (added 2026-04-
   - `design/gdd/input.md` L91 `use_gadget`/`takedown` mutex language: revise from "Both systems check their own gate" to "Dispatched by Combat's single `_unhandled_input` handler per Inventory CR-4" (inventory-gadgets.md Coord item #9). Input-owned edit, not ADR scope.
   - `design/gdd/save-load.md` line 102 Inventory schema: update from single `ammo: Dictionary[StringName, int]` to two-dict split (`ammo_magazine` + `ammo_reserve`) per inventory-gadgets.md CR-11 (Coord item #10); also clarify that Inventory registers via `LevelStreamingService.register_restore_callback`, not `SaveLoad.*`. Save/Load-owned edit, not ADR scope.
 
+- **2026-04-28 (`/review-all-gdds` 2026-04-28 amendment bundle — closes W4 carryforward + HUD-Overlay coordination gap)**: Two coordinated additions land atomically. Signal count grows **38 → 40** (1 new Settings-domain signal + 1 new UI-domain signal); domain count grows **11 → 12** (new UI domain); enum-ownership list grows by 1 (`InputContext.Context`).
+
+  1. **NEW signal `settings_loaded()`** added to Settings domain. No payload. Fires once per save/default-load completion from `SettingsService` (autoload registered in ADR-0007 line order — slot 10 per the 2026-04-27 amendment). Subscribers: any system that needs to wait for setting hydration before initial render. HUD Core subscribes to gate the damage-flash visual until `damage_flash_enabled` is hydrated; Audio subscribes to apply persisted bus levels before the first `weapon_fired`; Outline Pipeline subscribes to apply persisted resolution scale before the first frame; Combat subscribes to apply photosensitivity rate-gate constants. Cadence: **at most one emission per session** under normal operation; if Settings is hot-reloaded (developer workflow only), one re-emission per reload. Trivially within Implementation Guideline 5's per-physics-frame budget. Emitted from `SettingsService` after `_load_from_disk_or_defaults()` returns and the in-memory store is populated; consumers that connect *after* `_ready` MUST query the live values directly (Consumer Default Strategy per Settings CR-3) — `settings_loaded` is a one-shot hand-off signal, not a polling source.
+
+  2. **NEW signal `ui_context_changed(new_ctx: InputContext.Context, old_ctx: InputContext.Context)`** added to a new **UI domain**. Fires from `InputContextStack` autoload on every push or pop of the InputContext stack — i.e., whenever the active context transitions between `GAMEPLAY`, `MENU`, `DOCUMENT_OVERLAY`, `PAUSE`, `SETTINGS`, `MODAL`, or `LOADING` (the latter two are added by the parallel ADR-0004 amendment). Subscribers: HUD Core (CR-10 — hide `hud_root` when `new_ctx != GAMEPLAY`); Audio (overlay/menu BGM duck routing per audio.md §State table); Cutscenes & Mission Cards (suppress UI overlap during letterbox state — pending GDD #22); Subtitles (auto-suppress per ADR-0004 IG5). The signal is owner-published by the autoload that owns the stack; downstream systems MUST NOT call `InputContext.push/pop` themselves outside their declared push/pop authority (per ADR-0004 IG3). Cadence: bounded by player input rate — push on overlay open, pop on close, push on menu open, etc. Worst case during the single 30-second core loop is ~2 Hz (open document overlay → close → press Esc to menu → close = 4 emissions). Far within IG5 budget.
+
+  **New UI domain in Key Interfaces.** A new section `# ─── UI domain ────` is added to `Events.gd`, between Settings and Persistence. Currently contains a single signal: `ui_context_changed`. Future UI-state cross-system signals (e.g., a `ui_focus_lost` for accessibility, or `gamepad_connected_changed`) would join this domain.
+
+  **Enum-ownership list grows** (Implementation Guideline 2): `InputContext.Context { GAMEPLAY, MENU, DOCUMENT_OVERLAY, PAUSE, SETTINGS, MODAL, LOADING }` is now owned by the `InputContextStack` autoload class (`class_name InputContextStack` per ADR-0004; autoload line order per ADR-0007 — slot 4 per the 2026-04-27 amendment). The MODAL and LOADING enum values are added by the parallel ADR-0004 amendment landing in the same PR (closes B4 carryforward — Menu System / F&R / LS / Input GDDs already use these literals freely).
+
+  **Cadence guarantees** (Implementation Guideline 5): both new signals are bounded as described above. Total signal count grows to 40; per-frame budget impact remains negligible.
+
+  **New Risks row**: the `ui_context_changed` declaration in `events.gd` references `InputContext.Context`, which the parallel ADR-0004 amendment introduces as the `MODAL` + `LOADING` extension to the existing enum. Atomic-commit requirement applies per the 2026-04-22 and 2026-04-24 Risks rows. A partial PR where `events.gd` references `InputContext.Context.MODAL` (or `.LOADING`) before `InputContext.gd` declares them produces a GDScript parse failure on project load. Mitigation: bundle the ADR-0002 amendment, the ADR-0004 amendment, the `InputContextStack` source update, the `events.gd` update, and downstream HUD/Settings/Menu sweep edits in a single PR. CI guard recommended: AST check that every enum literal in `events.gd` resolves to a declared enum on the named class in the same commit.
+
+  **Registry impact**: `docs/registry/architecture.yaml` `gameplay_event_dispatch.signal_signature` refreshed (**40 signals**, 2026-04-28 additions documented inline) with `revised: 2026-04-28`. New domain `ui` added to the domains list. `InputContext.Context` added to the enum-ownership list with class owner `InputContextStack`.
+
+  **Downstream scope flagged but out of this amendment** (producer-tracked):
+  - `design/gdd/signal-bus.md:17` — count 38 → 40; §54 domain table grows by `UI` row + Settings row gains `settings_loaded`; §117 cross-system table — Settings row gains `settings_loaded` publisher; §179 AC-3 count 38 → 40. Signal Bus-owned edit, not ADR scope.
+  - `docs/architecture/adr-0007-autoload-load-order-registry.md` line 10 footnote — close W4 reference once this ADR amendment lands. ADR-0007-owned edit.
+  - `design/gdd/hud-core.md` — drop `ui_context_changed` "ADR-0002 amendment pending" qualifier per HUD CR-10. HUD-owned edit, not ADR scope.
+  - `design/gdd/settings-accessibility.md:91, :221` — drop `settings_loaded` "ADR-0002 amendment pending" qualifier per Settings CR-9. Settings-owned edit, not ADR scope.
+  - `design/gdd/document-overlay-ui.md:13, :77` — drop "pending OQ-HUD-3 verification" qualifier on the HUD-hides-on-non-GAMEPLAY rule (HUD CR-10 is now load-bearing on a declared signal). Overlay-owned edit, not ADR scope.
+
 ## Engine Compatibility
 
 | Field | Value |
@@ -152,7 +175,7 @@ Project is in pre-production. No source code exists. No existing event-dispatch 
 
 ## Decision
 
-**Establish a single autoload `Events.gd` containing only typed signal declarations**, organized in a flat namespace using `subject_verb_past` naming. Define **36 events across 9 gameplay domains** (Player domain added 2026-04-19 via revision B-2; 5 signal signatures revised + 2 new AI/Stealth signals added + 2 Mission-domain signatures grew via two coordinated 2026-04-22 amendments — the OQ-CD-1 Stealth AI bundle and the 4th-pass LS + SAI bundle — see Revision History). Enum types used in signal payloads are defined as inner enums on the **system that owns the concept** (e.g., `StealthAI.AlertState`, `StealthAI.Severity`, `CombatSystemNode.DeathCause`, `LevelStreamingService.TransitionReason`), not on the bus. A narrow `Accessor Conventions` carve-out (added 2026-04-22) governs the read-only method-accessor pattern for state queries the fire-and-forget bus cannot satisfy.
+**Establish a single autoload `Events.gd` containing only typed signal declarations**, organized in a flat namespace using `subject_verb_past` naming. Define **40 events across 9 gameplay domains plus 3 infrastructure domains (Persistence, Settings, UI)** (Player domain added 2026-04-19 via revision B-2; 5 signal signatures revised + 2 new AI/Stealth signals added + 2 Mission-domain signatures grew via two coordinated 2026-04-22 amendments — the OQ-CD-1 Stealth AI bundle and the 4th-pass LS + SAI bundle; 2 new Inventory-domain signals + `guard_incapacitated` cause-param extension via the 2026-04-24 amendment; 1 new Settings-domain signal (`settings_loaded`) + 1 new UI-domain signal (`ui_context_changed`) via the 2026-04-28 `/review-all-gdds` amendment — see Revision History). Enum types used in signal payloads are defined as inner enums on the **system that owns the concept** (e.g., `StealthAI.AlertState`, `StealthAI.Severity`, `CombatSystemNode.DeathCause`, `LevelStreamingService.TransitionReason`, `InputContext.Context`), not on the bus. A narrow `Accessor Conventions` carve-out (added 2026-04-22) governs the read-only method-accessor pattern for state queries the fire-and-forget bus cannot satisfy.
 
 ### Architecture
 
@@ -291,6 +314,31 @@ signal save_failed(reason: SaveLoad.FailureReason)
 # Variant payload is the SOLE intentional Variant in the entire taxonomy —
 # settings values are genuinely heterogeneous (bool, int, float, String).
 signal setting_changed(category: StringName, name: StringName, value: Variant)
+# NEW 2026-04-28 amendment (`/review-all-gdds`): one-shot per session — fires
+# from SettingsService after _load_from_disk_or_defaults() returns and the
+# in-memory store is populated. Subscribers that need persisted setting values
+# before initial render (HUD damage-flash gate, Audio bus levels, Outline
+# resolution scale, Combat photosensitivity rate-gate) MUST subscribe in
+# _ready() BEFORE SettingsService's _ready() (autoload load-order driven via
+# ADR-0007 — slot 10) AND apply Consumer Default Strategy per Settings CR-3
+# until this signal fires. Closes W4 carryforward (Settings CR-9).
+signal settings_loaded()
+
+# ─── UI domain ───────────────────────────────────────────────────────
+# Added 2026-04-28 amendment (`/review-all-gdds`) — closes the HUD-Overlay
+# coordination gap. Fires from InputContextStack autoload on every push or pop
+# of the InputContext stack. Subscribers branch on `new_ctx`: HUD Core hides
+# `hud_root` when new_ctx != GAMEPLAY (CR-10); Audio routes overlay/menu BGM
+# duck per audio.md §State table; Cutscenes & Mission Cards suppresses UI
+# overlap during letterbox state (pending GDD #22); Subtitles auto-suppresses
+# per ADR-0004 IG5. The signal is owner-published by the autoload that owns
+# the stack; downstream systems MUST NOT call InputContext.push/pop themselves
+# outside their declared push/pop authority (per ADR-0004 IG3). Cadence
+# bounded by player input rate (~2 Hz worst case during the 30-s core loop).
+# `InputContext.Context` is owned by InputContextStack class per ADR-0004;
+# the MODAL and LOADING enum values are added by the parallel ADR-0004
+# amendment landing in the same PR.
+signal ui_context_changed(new_ctx: InputContext.Context, old_ctx: InputContext.Context)
 ```
 
 ```gdscript
@@ -356,10 +404,10 @@ func takedown_prompt_active(attacker: Node) -> bool
 ### Implementation Guidelines
 
 1. **Autoload registration in `project.godot`**: `Events` and `EventLogger` are registered per the canonical line order in **ADR-0007 (Autoload Load Order Registry)** — Events at line 1 with path `res://src/core/signal_bus/events.gd`, EventLogger at line 2 with path `res://src/core/signal_bus/event_logger.gd` (self-removes in non-debug builds via `OS.is_debug_build()`). ADR-0007 is authoritative; do not restate line numbers elsewhere.
-2. **Enum ownership**: every enum used in a signal payload is defined as an inner enum on the system class that owns the concept. The signal declaration uses the qualified name (`StealthAI.AlertState`). Do NOT define enums on `Events.gd`. Do NOT create a shared `Types.gd` autoload. **Current owners** (as of 2026-04-22): `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity` (added 2026-04-22), `StealthAI.TakedownType` (added 2026-04-22), `LevelStreamingService.TransitionReason` (added 2026-04-22 via 4th-pass LS + SAI amendment; class_name `LevelStreamingService`; autoload line order per ADR-0007), `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause` (note: class_name `CombatSystemNode`, autoload key `Combat` — intentional split per combat-damage.md §350), `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`.
+2. **Enum ownership**: every enum used in a signal payload is defined as an inner enum on the system class that owns the concept. The signal declaration uses the qualified name (`StealthAI.AlertState`). Do NOT define enums on `Events.gd`. Do NOT create a shared `Types.gd` autoload. **Current owners** (as of 2026-04-28): `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity` (added 2026-04-22), `StealthAI.TakedownType` (added 2026-04-22), `LevelStreamingService.TransitionReason` (added 2026-04-22 via 4th-pass LS + SAI amendment; class_name `LevelStreamingService`; autoload line order per ADR-0007), `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause` (note: class_name `CombatSystemNode`, autoload key `Combat` — intentional split per combat-damage.md §350), `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`, `InputContext.Context` (added 2026-04-28 via `/review-all-gdds` amendment — owner class_name `InputContextStack`; autoload line order per ADR-0007 slot 4; enum values `{GAMEPLAY, MENU, DOCUMENT_OVERLAY, PAUSE, SETTINGS, MODAL, LOADING}`, with MODAL + LOADING added by the parallel ADR-0004 amendment landing in the same PR).
 3. **Subscriber lifecycle**: every subscriber MUST connect in `_ready` and disconnect in `_exit_tree` with `is_connected` guards. This is non-negotiable for memory-leak prevention and Godot signal hygiene.
 4. **Node payload validity**: any subscriber receiving a `Node`-typed parameter MUST call `is_instance_valid(node)` before dereferencing it. Signals can be queued and the source node may be freed before the subscriber runs.
-5. **High-frequency events**: all 38 events in this taxonomy are safe to route through the bus at their expected frequencies (per godot-gdscript-specialist analysis: weapon_fired at full-auto rate × 4 subscribers ≈ 0.02 ms/frame; `player_footstep` peaks at ~3.5 Hz during Sprint × typical 2–3 subscribers ≈ negligible; `gadget_activation_rejected` and `weapon_dry_fire_click` added 2026-04-24 are bounded by player input rate and trivially within budget). No event in this taxonomy is per-physics-frame.
+5. **High-frequency events**: all 40 events in this taxonomy are safe to route through the bus at their expected frequencies (per godot-gdscript-specialist analysis: weapon_fired at full-auto rate × 4 subscribers ≈ 0.02 ms/frame; `player_footstep` peaks at ~3.5 Hz during Sprint × typical 2–3 subscribers ≈ negligible; `gadget_activation_rejected` and `weapon_dry_fire_click` added 2026-04-24 are bounded by player input rate and trivially within budget; `settings_loaded` added 2026-04-28 is one-shot per session; `ui_context_changed` added 2026-04-28 is bounded by player input rate at ~2 Hz worst case during the 30-second core loop). No event in this taxonomy is per-physics-frame.
 6. **Engine signals**: do NOT re-emit built-in Godot signals (`SceneTree.node_added`, etc.) through the bus. Systems that need engine signals connect to them directly via `get_tree()`.
 7. **`setting_changed` Variant exception**: this is the only Variant payload in the taxonomy. Settings values are genuinely heterogeneous. Future ADRs introducing new signals MUST use explicit types unless they can document an equivalently strong justification.
 8. **Debug logger pattern**: `EventLogger.gd` connects to every signal at startup and prints emit timestamps via `print()`. It removes itself in non-debug builds. Do not let production code call `EventLogger` methods.
@@ -436,6 +484,7 @@ func takedown_prompt_active(attacker: Node) -> bool
 | Inner enums added to an existing owning class (e.g., new `StealthAI.*` enum) after `Events.gd` is first compiled may require a manual editor reimport / full-project recompile cycle to resolve correctly (godot-specialist validation 2026-04-22). | LOW | LOW | Editor workflow nuance, not a runtime defect. Mitigation: after adding a new inner enum that a signal declaration references, reimport the project (Project → Tools → Reload Current Project, or close/reopen) before relying on the signal dispatch. Headless CI does a clean recompile and is unaffected. |
 | Accessor Conventions subsection drifts toward service-locator (methods accumulate via "just one more getter" PRs) | MEDIUM | HIGH | Fence clause: no new accessors without an ADR amendment. Code review every PR adding a public cross-system read method on any system class. Current list (2026-04-22): 2 accessors on `StealthAI` for `combat-and-damage-system` consumption. |
 | Inner-enum additions + new signal declarations MUST commit atomically across SAI, LS, and `Events.gd`. A partial PR where `Events.gd` references a qualified enum type (e.g., `LevelStreamingService.TransitionReason`) before the owning script declares it produces a **GDScript parse failure on project load** — the script fails to compile, the `Events` autoload is not registered, and every subscriber that references `Events.*` also fails to parse. The inverse direction (owning script adds enum first, `Events.gd` not yet updated) is harmless — the enum simply goes unreferenced. (godot-specialist validation 2026-04-22 during 4th-pass LS + SAI amendment bundle.) | LOW | HIGH | Bundle all enum declarations and signal references in a single PR. Optional CI guard: static grep / AST check that every `signal ...(...: X.Y)` token in `events.gd` resolves to a declared enum on class X in the same commit. |
+| 2026-04-28 amendment introduces `ui_context_changed(new_ctx: InputContext.Context, old_ctx: InputContext.Context)` referencing `InputContext.Context` — an enum whose owner class_name `InputContextStack` AND whose values `MODAL` + `LOADING` are added by the parallel ADR-0004 amendment landing in the same PR. A partial PR where `events.gd` references `InputContext.Context.MODAL` before `InputContextStack.gd` declares the value produces a GDScript parse failure on project load. | LOW | HIGH | Single-PR bundle: ADR-0002 amendment + ADR-0004 amendment + `InputContextStack` source update + `events.gd` update + downstream HUD CR-10 / Settings CR-9 / Menu System / DC OQ-DC-7 sweeps. CI guard recommended: AST check that every enum literal in `events.gd` resolves to a declared enum value on the named class in the same commit. |
 
 ## Performance Implications
 
@@ -452,8 +501,8 @@ func takedown_prompt_active(attacker: Node) -> bool
 
 This is the project's second ADR. No existing code to migrate. Implementation order:
 
-1. Create `res://src/core/signal_bus/events.gd` with the 34 typed signal declarations.
-2. Define stub enum classes for the systems that own them (`StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`) so the signal declarations compile. Stubs may be empty enum bodies until the owning system's GDD is authored — they serve as type placeholders. **Post-amendment note (2026-04-22)**: adding a new inner enum to an already-compiled owner class may require an editor reimport cycle for the signal dispatch to resolve correctly (see Risks).
+1. Create `res://src/core/signal_bus/events.gd` with the 40 typed signal declarations.
+2. Define stub enum classes for the systems that own them (`StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`, `InputContext.Context`) so the signal declarations compile. Stubs may be empty enum bodies until the owning system's GDD is authored — they serve as type placeholders. **Post-amendment note (2026-04-22)**: adding a new inner enum to an already-compiled owner class may require an editor reimport cycle for the signal dispatch to resolve correctly (see Risks).
 3. Register `Events` as autoload in `project.godot` at the line position declared by ADR-0007.
 4. Create `res://src/core/signal_bus/event_logger.gd` with self-removal logic. Register as autoload at the line position declared by ADR-0007.
 5. Smoke test: emit one signal from a debug script, confirm `EventLogger` prints it, confirm a subscriber receives it.
@@ -465,8 +514,8 @@ This is the project's second ADR. No existing code to migrate. Implementation or
 ## Validation Criteria
 
 - [ ] `Events.gd` autoload registered in `project.godot` at the line position declared by ADR-0007 (Autoload Load Order Registry).
-- [ ] All 38 typed signals declared with qualified enum-type parameters (where applicable).
-- [ ] Stub enum classes exist for `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason` — they may be empty enum bodies until the owning system is designed.
+- [ ] All 40 typed signals declared with qualified enum-type parameters (where applicable).
+- [ ] Stub enum classes exist for `StealthAI.AlertState`, `StealthAI.AlertCause`, `StealthAI.Severity`, `StealthAI.TakedownType`, `LevelStreamingService.TransitionReason`, `CombatSystemNode.DamageType`, `CombatSystemNode.DeathCause`, `CivilianAI.WitnessEventType`, `SaveLoad.FailureReason`, `InputContext.Context` — they may be empty enum bodies until the owning system is designed.
 - [ ] `Accessor Conventions (SAI → Combat)` subsection's two accessors are implemented on `StealthAI`: `has_los_to_player() -> bool` (F.1 cache-hit path, 10 Hz stale-safe) and `takedown_prompt_active(attacker: Node) -> bool` (state + rear-arc + range + no-LOS predicate, read-only).
 - [ ] `EventLogger.gd` autoload registered at the line position declared by ADR-0007; self-removes in non-debug build (verify with a release export).
 - [ ] One smoke test: emit one signal, confirm subscriber receives it AND `EventLogger` prints it.

@@ -35,7 +35,7 @@ This library is the canonical catalog of **interaction patterns** used across *T
 
 The catalog below indexes every pattern in this library, grouped by category. **ID** is the stable kebab-case reference UX specs and stories cite. **Pillar fit** lists the pillar(s) the pattern serves; "Engineering primitive" means the pattern is an architecture/correctness rule with no direct pillar tie. **Used in** is non-exhaustive — full dependency lists live in each pattern's specification below.
 
-**Totals**: 33 patterns across 9 categories.
+**Totals**: 34 patterns across 9 categories.
 
 ### Input Routing (5)
 
@@ -47,7 +47,7 @@ The catalog below indexes every pattern in this library, grouped by category. **
 | `set-handled-before-pop` | `set_input_as_handled()` MUST run before `InputContext.pop()` to prevent silent-swallow propagation. | Every dismiss handler. | Engineering primitive |
 | `held-key-flush-after-rebind` | Settings calls `Input.action_release()` immediately after `action_erase_events` + `action_add_event` to avoid a stuck "pressed" state. | Settings rebinding flow. | Engineering primitive |
 
-### Modal & Dialog (4)
+### Modal & Dialog (5)
 
 | ID | One-line | Used in | Pillar fit |
 |---|---|---|---|
@@ -55,6 +55,7 @@ The catalog below indexes every pattern in this library, grouped by category. **
 | `stage-manager-carve-out` | Settings-gated opt-in (default `false`) that lets accessibility unlock a Pillar-5 absolute. The project's signature Pillar-5 vs WCAG resolution. | Cutscenes (cinematic skip + text summary), HUD Core (damage flash off), any future Pillar-5 vs WCAG conflict. | Pillar 5 (load-bearing) + Accessibility |
 | `photosensitivity-boot-warning` | First-launch persistent-flag modal warning + opt-out toggle, before any cinematic or chromatic flash plays. | Settings boot, before Main Menu. Anchors `hud_damage_flash_enabled` + Cutscenes CT-03 chromatic flash. | Accessibility (Basic+, project-elevated) |
 | `save-failed-advisory` | PHANTOM-Red header band + Retry/Abandon buttons + assertive screen-reader announce; non-destructive (player choice, not auto-retry). | Save/Load (autosave failure, manual save failure, quicksave failure). | Pillar 5 (dossier register) + Accessibility |
+| `case-file-destructive-button` | Ink Black fill + Parchment text styling for the destructive button in any Case File register modal. Distinct from the default BQA Blue safe-action button. Position is button-row left (paired with default-focus safe-action button on the right). Added 2026-04-29 per `design/ux/quit-confirm.md` OQ #3. | Quit-Confirm (Close File), Return-to-Registry (Return to Registry), Re-Brief Operation (Re-Brief), New-Game-Overwrite (Confirm). 4 known consumers via [CANONICAL] inheritance from `quit-confirm.md`. | Pillar 5 (Case File destructive register) + Standard-tier accessibility (color-independence via 4-signal redundancy) |
 
 ### Cinematic & Card (5)
 
@@ -395,6 +396,57 @@ The name comes from "Stage Manager" register — the Settings panel's authorial 
 - Settings save failures — Settings persists silently with a margin-note on next launch if the prior save was lost.
 
 **Accessibility notes**. Assertive announce is mandatory — players who don't see the modal must learn of the failure. The cause copy must be plain-language (not error codes) so cognitive-accessibility players can act on it. PHANTOM Red header is a color signal; the header text ("SAVE FAILED") is the non-color backup.
+
+---
+
+#### `case-file-destructive-button`
+
+**Category**: Modal & Dialog
+**Pillar fit**: Pillar 5 (Case File destructive register) + Standard-tier accessibility
+**Owner of contract**: `design/ux/quit-confirm.md` Section C.3 (canonical instance) + `interaction-patterns.md` (this entry)
+**Used In**: Quit-Confirm (Close File button), Return-to-Registry (Return to Registry button) [VS], Re-Brief Operation (Re-Brief button) [VS], New-Game-Overwrite (Confirm button). 4 known consumers via [CANONICAL] inheritance from `quit-confirm.md`.
+
+**Description**. The destructive button in a Case File register modal uses a distinct visual styling — Ink Black `#1A1A1A` fill with Parchment `#E8DCC4` text — that contrasts with the default safe-action button (BQA Blue `#1B3A6B` fill with Parchment text). The Ink Black fill mirrors the modal's header band (which renders as a stamped classification on a manila folder per art-bible §7D), reinforcing the visual association between the stamp and the destructive consequence. Position is always button-row left, paired with the default-focus safe-action button on the right (per `quit-confirm.md` [CANONICAL] decision). The destructive button is NEVER the default focus — players must explicitly Tab or click to it.
+
+**Specification**.
+
+1. **Default state fill**: Ink Black `#1A1A1A` fill, Parchment `#E8DCC4` text, hard-edged rectangle (no rounded corners, no drop shadow per art-bible §3.3).
+2. **Focus state fill (inverted)**: Parchment fill, Ink Black text, with a 4 px BQA Blue `#1B3A6B` border. The inversion preserves the destructive identity (Ink Black/Parchment palette) while making focus unambiguous.
+3. **Button position within button row**: ALWAYS left of the default-focus safe-action button. Right-side placement is forbidden (it would compete for the player's first-Tab attention with the safe button).
+4. **Button hit-target**: minimum 280 × 56 px at 100% ui_scale (matches WCAG SC 2.5.5 + general project button floor).
+5. **Activate feedback**: 1-frame fill-invert visual + rubber-stamp thud SFX on UI bus (per Player Fantasy "rubber-stamp thud on destructive actions"). The SFX is the load-bearing audio cue for destructive actions in the Case File register — distinct from the paper-shuffle SFX used for safe-action button activations.
+6. **AccessKit**: `accessibility_role = "button"` + non-empty `accessibility_name` (the localized button label) + non-empty `accessibility_description` (plain-language clarification of what the destructive action does — e.g., "Quit the application without saving" for Close File). The description is mandatory because Case File register button labels ("Close File", "Return to Registry", "Re-Brief") are bureaucratic-register and AT users benefit from the plain-language safety net.
+7. **Keyboard activation**: Enter / Space when focused. Single-press only — no hold-to-confirm. The modal-scaffold pattern's confirm gate (default focus on safe button, explicit Tab to destructive button) is the friction layer; the button itself activates immediately.
+8. **No color-only signaling**: destructive nature is conveyed by **fill color** (Ink Black) + **position** (left of safe button) + **label text** (action verb implies finality) + **focus indicator** (4 px BQA Blue border on focus). 4-signal redundancy ensures color-blind players can identify the destructive button.
+
+**Pattern data flow**:
+
+```
+[Player presses destructive button]
+         │
+         ▼
+[Fill snap-inverts (Parchment / Ink Black) for 1 frame]
+[Rubber-stamp thud SFX queued on UI bus]
+         │
+         ▼
+[Destructive action fires synchronously]
+   (e.g., get_tree().quit() for Close File,
+          change_scene_to_file() for Return to Registry,
+          FailureRespawn.restart_from_checkpoint() for Re-Brief,
+          LS.transition_to_section(NEW_GAME) for New-Game-Overwrite)
+```
+
+**When to Use**. ANY destructive-action confirm modal in the Case File register. The pattern is [CANONICAL] for the 4 sibling Case File modals and any future Case File register modal that includes a destructive choice.
+
+**When NOT to Use**.
+
+- Non-destructive Case File modals (e.g., a hypothetical informational dialog with only an "Acknowledge" button — no destructive action) — use the default safe-action styling instead.
+- Modals OUTSIDE the Case File register (e.g., the photosensitivity boot-warning modal which is non-diegetic per its own carve-out — no Ink Black fill needed; standard ADR-0004 Theme button styling applies).
+- Save grids or Load grids where destructive actions (e.g., Delete Save) might appear in the future — those would need their own pattern (e.g., `case-file-card-destructive-action`) since they're not a 2-button confirm modal.
+
+**Accessibility notes**. The 4-signal redundancy (color + position + text + focus) is the load-bearing accessibility claim — it satisfies WCAG SC 1.4.1 (color-independence) without requiring color-blind variants of the Ink Black palette. Default focus on the safe button (per `modal-scaffold`) means motor-accessibility players who accidentally press Enter immediately on modal mount will trigger the safe path, not the destructive path. The mandatory `accessibility_description` provides plain-language clarification for cognitive accessibility.
+
+**Reference**: `design/ux/quit-confirm.md` Section C.3 + Section C.4 ASCII Wireframe (default state + Tab-to-Close-File focus state) is the canonical visual reference. Sibling modals (`return-to-registry.md`, `re-brief-operation.md`, `new-game-overwrite.md`) inherit verbatim per [CANONICAL] flag.
 
 ---
 

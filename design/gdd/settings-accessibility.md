@@ -1077,6 +1077,30 @@ SettingsService._boot_warning_pending: bool  # Read-only after _ready() complete
 # Signals (Settings is sole publisher per ADR-0002)
 Events.setting_changed(category: StringName, name: StringName, value: Variant)
 Events.settings_loaded()  # one-shot; no payload; emitted once after boot burst
+
+# Public methods (Settings panel mount/dismiss + pre-navigation)
+SettingsService.open_panel(pre_navigate: StringName = &"") -> void
+# Mounts the Settings modal panel and pushes Context.SETTINGS per ADR-0004.
+# Called by Menu System's Personnel File button (Menu CR-7) and by the
+# photosensitivity boot-warning modal's "Go to Settings" button (Menu CR-8 +
+# `design/ux/photosensitivity-boot-warning.md` Section B3).
+#
+# `pre_navigate` parameter format (LOCKED 2026-04-29 per `design/ux/photo-
+# sensitivity-boot-warning.md` OQ #10): a dotted-string of the form
+# "category.key" matching the §C.2 category-key namespace (e.g.,
+# "accessibility.damage_flash_enabled" navigates to the Accessibility
+# sub-screen with focus on the damage_flash_enabled toggle). Empty string
+# (default) opens the Settings panel at its top-level entry without
+# pre-navigation. The pre_navigate parameter is informational — the panel
+# mounts even if the key is unknown (in which case it falls back to the
+# top-level entry and logs a warning in debug builds).
+
+SettingsService.dismiss_warning() -> bool
+# Sets accessibility.photosensitivity_warning_dismissed = true and writes
+# to disk synchronously. Returns true on success, false on disk-full or
+# other I/O failure (per Menu System AC-MENU-6.4). Called by the photo-
+# sensitivity boot-warning modal's Continue and Go-to-Settings button
+# handlers (Menu CR-8). Idempotent — safe to call multiple times.
 ```
 
 No other public methods exposed at MVP. Future additions (e.g., `reset_to_defaults()`, `export_settings()`, `import_settings()`) are deferred to post-VS.

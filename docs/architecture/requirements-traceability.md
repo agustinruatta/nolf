@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Last Updated** | 2026-04-24 (fifth run — post-`/design-system inventory-gadgets` + ADR-0002 2026-04-24 amendment) |
+| **Last Updated** | 2026-04-29 (seventh run — post-`/review-all-gdds` 2026-04-28 + 11 new MVP/VS GDDs + 4 ADR amendments) |
 | **Engine** | Godot 4.6 |
 | **Populated by** | `/architecture-review` (full mode) |
 
@@ -12,12 +12,12 @@
 
 | | Count | % |
 |---|-------|---|
-| Total TRs registered | **175** | 100% |
-| ✅ Covered (ADR-addressed) | ~171 | ~98% |
-| ⚠️ Partial (ADR coverage exists but some details live GDD-only by design) | ~3 | ~2% |
+| Total TRs registered | **348** | 100% |
+| ✅ Covered (ADR-addressed) | ~344 | ~99% |
+| ⚠️ Partial (ADR coverage exists but some details live GDD-only by design) | ~3 | ~1% |
 | ❌ Gap (no ADR addresses) | **0** | — |
 
-*The ~ figures reflect that coverage is reported at system-level granularity; individual TR-level coverage may shift slightly when stories are authored. The two ⚠️ Partials are intentional GDD-scope decisions (Audio internals, Post-Process Stack internals) — not architectural gaps. **2026-04-24 delta**: +15 Inventory TRs (TR-INV-001..015) all mapped to existing ADRs + ADR-0002 2026-04-24 amendment; 2 new engine-verification gates (Inventory Coord #11 SkeletonModifier3D + #12 autoload `_unhandled_input`) are Tech Setup scope, not architectural gaps.*
+*The ~ figures reflect that coverage is reported at system-level granularity; individual TR-level coverage may shift slightly when stories are authored. The ⚠️ Partials are intentional GDD-scope decisions (Audio internals, Post-Process Stack internals, Input GDD-scope action catalog) — not architectural gaps. **2026-04-29 delta**: +173 new TRs across 11 systems (TR-MLS-* / TR-FR-* / TR-CAI-* / TR-DC-* / TR-HUD-* / TR-HSS-* / TR-DOU-* / TR-MENU-* / TR-DLG-* / TR-CMC-* / TR-SET-*); all mapped to existing ADRs + 4 ADR amendments (ADR-0002 ×3 / ADR-0003 A4 / ADR-0004 A5+A6 / ADR-0007 / ADR-0008). Engine-verification gates from 5th-run inherited; new Gate 5 (BBCode→AccessKit plain-text) added for Document Overlay UI.*
 
 ---
 
@@ -205,6 +205,104 @@ Downstream coordination gap (NOT an ADR gap): Combat's dedicated `takedown` inpu
 
 ---
 
+### System 13 — Mission & Level Scripting (TR-MLS-*)
+
+All 19 TRs: ✅ Covered. Touches 5 ADRs:
+- ADR-0002 (Mission domain signals: mission_started, mission_completed, objective_started, objective_completed; section_entered subscriber)
+- ADR-0003 (split-write authority with F&R; FORMAT_VERSION=2 A4 amendment; MissionState.fired_beats + triggers_fired)
+- ADR-0006 (MLSTrigger Area3D collision-layer; engine-verification gate for trigger-layer assignment pending)
+- ADR-0007 (autoload line 9; MLS-after-F&R hard edge per 2026-04-27 amendment)
+- ADR-0008 (Slot #8 sub-claim 0.1 ms steady + 0.3 ms peak)
+
+### System 14 — Failure & Respawn (TR-FR-*)
+
+All 14 TRs: ✅ Covered. Touches 6 ADRs:
+- ADR-0002 (player_died subscriber, respawn_triggered sole publisher)
+- ADR-0003 (FailureRespawnState sub-resource; A4 amendment)
+- ADR-0004 (InputContext.LOADING push/pop; A6 amendment)
+- ADR-0006 (player_respawn_point Marker3D; layer-neutral)
+- ADR-0007 (autoload line 8)
+- ADR-0008 (mechanical flow ~0.58 s; LS swap budget; watchdog 2.5 s)
+
+### System 15 — Civilian AI (TR-CAI-*)
+
+All 15 TRs: ✅ Covered. Touches 5 ADRs:
+- ADR-0001 (BQA contact outline tier upgrade Tier 3 → Tier 1 at 3.0 m pickup)
+- ADR-0002 (civilian_panicked, civilian_witnessed_event; WitnessEventType enum atomic-commit)
+- ADR-0003 (CivilianAIState capture/restore; LSS callback registration)
+- ADR-0006 (LAYER_AI = 3; group tag 'civilian')
+- ADR-0008 (Slot #8 sub-claim 0.30 ms p95; 0.6 ms reserve carve-out for panic-onset 8-civilian Restaurant frame per 2026-04-28 amendment)
+
+### System 16 — HUD Core (TR-HUD-*)
+
+All 15 TRs: ✅ Covered. Touches 4 ADRs:
+- ADR-0002 (9 subscriptions including ui_context_changed; subscriber-only; FP-1 no emit)
+- ADR-0004 (Theme.fallback_theme inheritance; FontRegistry.hud_numeral; AccessKit; mouse_filter IGNORE; CR-22 Tween.kill on context-leave)
+- ADR-0007 (NOT autoload — per-main-scene CanvasLayer)
+- ADR-0008 (Slot 7 0.3 ms; F.5 worst-case C_frame=0.259ms with 41µs headroom; photosensitivity 333ms rate-gate)
+
+### System 17 — Document Collection (TR-DC-*)
+
+All 15 TRs: ✅ Covered. Touches 7 ADRs:
+- ADR-0001 (Stencil Tier 1 heaviest)
+- ADR-0002 (document_collected/_opened/_closed sole publisher; player_interacted subscriber)
+- ADR-0003 (Document Resource schema; DocumentCollectionState capture/restore via MLS orchestration)
+- ADR-0004 (translation keys only — no resolved strings)
+- ADR-0006 (DocumentBody on LAYER_INTERACTABLES)
+- ADR-0007 (NOT autoload)
+- ADR-0008 (Slot #8 sub-claim ≤0.05 ms peak)
+
+### System 18 — Document Overlay UI (TR-DOU-*)
+
+All 19 TRs: ✅ Covered. Touches 4 ADRs:
+- ADR-0002 (subscriber-only document_opened/_closed; FP-OV-1 no emit)
+- ADR-0004 (CanvasLayer index 5; InputContext.DOCUMENT_OVERLAY push/pop; ui_cancel modal dismiss; Theme.fallback_theme A5; FontRegistry.document_header/_body; AccessKit Gate 1 + Gate 5 BBCode→AT; PostProcessStack.enable_sepia_dim/disable lifecycle; dual-focus Tab/focus consumption; reduced-motion)
+- ADR-0007 (per-section instantiation, NOT autoload)
+- ADR-0008 (Slot 7 sole-occupant when READING; depends on HUD CR-22 Tween.kill — closed 2026-04-28)
+
+### System 19 — Menu System (TR-MENU-*)
+
+All 15 TRs: ✅ Covered. Touches 3 ADRs:
+- ADR-0003 (SaveLoad.slot_metadata; LOAD_FROM_SAVE flow)
+- ADR-0004 (InputContext.MENU/PAUSE/SETTINGS/MODAL push/pop; Theme.fallback_theme; FontRegistry compliance; AccessKit; reduced-motion)
+- ADR-0007 (LS-allowlisted call-site for change_scene_to_file; LSS step-9 restore callback)
+
+### System 20 — Settings & Accessibility (TR-SET-*)
+
+All 18 TRs: ✅ Covered. Touches 5 ADRs:
+- ADR-0002 (SettingsService sole publisher of setting_changed + settings_loaded — added 2026-04-28; boot-burst pattern)
+- ADR-0003 (sole reader/writer of user://settings.cfg; separation from SaveGame)
+- ADR-0004 (InputContext.SETTINGS push/pop; Theme.fallback_theme A5; AccessKit Gate 1; modal dismiss via ui_cancel)
+- ADR-0007 (autoload line 10 — last in canonical table; consumers use settings_loaded one-shot pattern)
+- ADR-0008 (333 ms WCAG 2.3.1 photosensitivity floor; UI debouncing)
+
+### System 21 — Dialogue & Subtitles (TR-DLG-*)
+
+All 15 TRs: ✅ Covered. Touches 5 ADRs:
+- ADR-0002 (Dialogue domain dialogue_line_started + dialogue_line_finished sole publisher; ui_context_changed subscriber for self-suppression)
+- ADR-0003 (subtitle_speaker_labels persists via settings.cfg)
+- ADR-0004 (subtitle_size_scale 200% WCAG SC 1.4.4; tr() Localization compliance)
+- ADR-0007 (NOT autoload — per-section instantiation)
+- ADR-0008 (Slot #8 sub-claim 0.10 ms peak event-frame — registered 2026-04-28 night)
+
+### System 22 — Cutscenes & Mission Cards (TR-CMC-*)
+
+All 15 TRs: ✅ Covered (pending ADR-0002 2026-04-29 amendment commit). Touches 5 ADRs:
+- ADR-0001 (Outline escape-hatch via OutlineTier.set_tier for cinematic emphasis)
+- ADR-0002 (NEW Cutscenes domain: cutscene_started + cutscene_ended — uncommitted 2026-04-29 amendment; Audio + MLS subscribers)
+- ADR-0003 (read-only access to MissionState.triggers_fired; MLS sole writer per CR-CMC-21)
+- ADR-0004 (InputContext.CUTSCENE A6 amendment; CanvasLayer 10 mutually-exclusive with Settings via lazy-instance + InputContext gate; PostProcessStack lifecycle)
+- ADR-0008 (Slot 7 sub-claim ≤0.20 ms when card/letterbox renders; Slot #8 trigger-evaluation; cadence ≤7 cinematic activations per first-watch)
+
+### System 23 — HUD State Signaling (TR-HSS-*)
+
+All 13 TRs: ✅ Covered. Touches 3 ADRs:
+- ADR-0002 (alert_state_changed subscriber; subscriber-only)
+- ADR-0004 (FontRegistry — BQA Blue strip + Parchment text; Theme.fallback_theme; AccessKit assertive priority for alarm-state cue; CR-9 rate-gate exempts upward-severity transitions; HUD CR-22 Tween cleanup; tr() locale-change re-resolve via NOTIFICATION_TRANSLATION_CHANGED 4.5+)
+- ADR-0008 (Slot 7 shared cap with HUD Core: ≤0.05 ms steady-state, ≤0.15 ms peak; SaveLoad.FailureReason enum advisory line)
+
+---
+
 ## Known Gaps (❌ only)
 
 **None at ADR level.** ADR architecture coverage is complete:
@@ -268,6 +366,7 @@ These are story-level and production-level concerns that do not block `/architec
 | 2026-04-23 (fourth — post-ADR-0007 Combat amendment + 3 GDD closures) | 160 | ~99% | Fourth delta verification. ADR-0007 amended in-place to add Combat at line 7 (closes TD-ARCHITECTURE Concern 1 from `/create-architecture` session). 3 GDD coordination items all CLOSED in-session: PC `CombatSystem.*` → `CombatSystemNode.*` rename (10 sites); Audio LS-Gate-3 (2-param `section_entered`/`section_exited` with 4-way reason branching); Input takedown split (29 → 30 actions). 13 surgical straggler edits across 5 files bring narrative in sync with amended 7-entry canonical table. Zero cross-ADR conflicts; zero ADR-level gaps. Verdict: **PASS** (re-affirmed; upgrades `/create-architecture` verdict from APPROVED WITH CONCERNS to APPROVED). |
 | 2026-04-24 (fifth — post-Inventory GDD + ADR-0002 amendment) | **175** | **~98%** | **Fifth delta verification after `/design-system inventory-gadgets` + `/architecture-decision adr-0002-amendment` landed 2026-04-24.** 15 new TR-INV-001..015 appended; all map to existing ADRs + ADR-0002 2026-04-24 amendment. ADR-0002 signal count 36 → 38 (`gadget_activation_rejected`, `weapon_dry_fire_click`); `guard_incapacitated` signature extended 1→2 params (`cause: int`); `CombatSystemNode.DamageType` gains `MELEE_PARFUM`. Atomic-commit guard documented in amendment Risks row. Zero cross-ADR conflicts introduced. Registry Phase 5b landed (`guard_drop_pistol_rounds` stale-fix 8→3; 6 new entries + `guard_drop_dart_on_parfum_ko = 0 LOCKED`). Verification gate count 24 → **26** with +2 new godot-specialist engine-verification gates (Coord #11 `SkeletonModifier3D` scene-graph + #12 autoload `_unhandled_input` ordering) — Tech Setup scope, not architectural. 2 producer-tracked GDD coordination items surface as pre-sprint BLOCKING (Input GDD L91 single-dispatch clarification + save-load.md L102 two-dict InventoryState schema) — equivalent scale to 4th-run closures. Verdict: **PASS** (re-affirmed). |
 | 2026-04-27 evening (sixth — post-`/propagate-design-change` from Document Overlay UI design-review) | 175 (no new TRs) | ~98% | **/propagate-design-change against `design/gdd/document-overlay-ui.md`** following the same-day design-review revision pass (verdict: MAJOR REVISION NEEDED → 46 items resolved in-session). **ADR-0004 Amendment A5 applied in-place**: `base_theme` corrected to `fallback_theme` in 9 locations (Gate 2 closure); Gate 4 (`Node.AUTO_TRANSLATE_MODE_*` enum names) closed; **new Gate 5** added (BBCode → AccessKit plain-text serialization, BLOCKING for SC 1.3.1 conformance on formatted Document Overlay UI bodies). **Architectural decision unchanged** — ADR-0004's core contracts (single `project_theme.tres` + per-surface inherited Themes, `InputContext` autoload, `FontRegistry` static class, modal dismiss via `_unhandled_input()` + `ui_cancel`, sepia dim as PPS lifecycle call) all stand. ADR-0004 verification gates: 3 BLOCKING (Gate 1 AccessKit property names + Gate 3 modal dismiss + new Gate 5 BBCode-to-AT) + 2 CLOSED (Gate 2 + Gate 4). Document Overlay UI status: NEEDS REVISION (revisions applied, awaiting re-review). 3 NEW BLOCKING **GDD-coordination** items emerged (OQ-DOV-COORD-12 Settings text_scale_multiplier for WCAG SC 1.4.4 / COORD-13 call-order recorder helper / COORD-14 HUD Tween-on-InputContext-change) — these are GDD-to-GDD coord items, not ADR-level gaps. Verdict: **PASS** (re-affirmed; ADR-0004's "Proposed" status preserved with refined gate list). |
+| 2026-04-29 (seventh — post-`/review-all-gdds` 2026-04-28 + 11 new MVP/VS GDDs + 4 ADR amendments) | **348** | ~99% | **Seventh delta verification — first multi-system delta since the 2026-04-24 baseline.** **23/23 systems designed.** 11 new system GDDs landed (MLS, F&R, CAI, DC, HUD Core, Document Overlay UI, Menu System, Dialogue & Subtitles, Cutscenes & Mission Cards, Settings & Accessibility, HUD State Signaling): **+173 new TR-* entries appended**; all map to existing ADR-0001..0008. **Four ADR amendments** since 2026-04-24: ADR-0002 ×3 (settings_loaded + ui_context_changed 2026-04-28; cutscene_started + cutscene_ended 2026-04-29 uncommitted; signal count 38 → 41 → 43; domain count 9+3 → 9+3+UI → 10+3 = 13); ADR-0003 A4 (FailureRespawnState + ammo two-dict split + fired_beats + FORMAT_VERSION 1→2); ADR-0004 A5+A6 (`base_theme`→`fallback_theme`; InputContext MODAL+LOADING values); ADR-0007 (10-entry canonical table: F&R=8, MLS=9, SettingsService=10); ADR-0008 (Slot-8 panic-onset 0.6 ms reserve carve-out + autoload-cascade row 7→10 + Slot-8 sub-claims). **All 9 BLOCKING + 13 WARNINGS from `/review-all-gdds` 2026-04-28 confirmed CLOSED** by `6f08bae` + `a9bc7d4` resolution batch (verified by grep: 0 occurrences of stale strings). **Zero hard ADR-level gaps; zero cross-ADR conflicts.** Engine consistent (Godot 4.6 across 8 ADRs; no deprecated APIs). Architecture.md L13 GDDs-Covered metadata line is stale (says 10/23; reality 23/23) — minor doc-hygiene only. Verdict: **PASS** (re-affirmed). |
 
 ---
 
@@ -281,11 +380,18 @@ TR-IDs are stable across review runs. When a GDD requirement's text is reworded 
 
 ## Related
 
-- `docs/architecture/architecture-review-2026-04-24.md` — **latest** review (fifth run — post-Inventory GDD + ADR-0002 2026-04-24 amendment); verdict PASS
-- `docs/architecture/architecture-review-2026-04-23.md` — prior review (fourth run — post-ADR-0007 Combat amendment + 3 GDD closures); verdict PASS
+- `docs/architecture/architecture-review-2026-04-29.md` — **latest** review (seventh run — post-`/review-all-gdds` 2026-04-28 + 11 new MVP/VS GDDs + 4 ADR amendments); verdict PASS
+- `docs/architecture/change-impact-2026-04-27-document-overlay-ui.md` — sixth run (change-impact only — ADR-0004 A5 fallback_theme); verdict PASS
+- `docs/architecture/architecture-review-2026-04-24.md` — fifth run (post-Inventory GDD + ADR-0002 2026-04-24 amendment); verdict PASS
+- `docs/architecture/architecture-review-2026-04-23.md` — fourth run (post-ADR-0007 Combat amendment + 3 GDD closures); verdict PASS
 - `docs/architecture/architecture-review-2026-04-22.md` — initial full-matrix baseline + engine specialist findings
-- `docs/architecture/tr-registry.yaml` — authoritative TR-ID source (175 entries as of 2026-04-24)
-- `docs/architecture/adr-0001-*.md` through `adr-0008-*.md` — architectural decisions (ADR-0002 amended 2026-04-24; ADR-0007 amended 2026-04-23; ADR-0008 added 2026-04-23)
-- `docs/registry/architecture.yaml` — performance_budgets / api_decisions / forbidden_patterns registry (last_updated 2026-04-24: `gameplay_event_dispatch` 38 signals; `guard_drop_dart_on_parfum_ko = 0 LOCKED` added)
-- `design/gdd/systems-index.md` — system enumeration + status (11/16 MVP designed)
-- `design/gdd/inventory-gadgets.md` — **NEW 2026-04-24** (1608 lines; Approved pending Coord items)
+- `docs/architecture/tr-registry.yaml` — authoritative TR-ID source (348 entries as of 2026-04-29)
+- `docs/architecture/adr-0001-*.md` through `adr-0008-*.md` — architectural decisions:
+  - ADR-0002 amended 2026-04-22 / -24 / -28 / **-29 (uncommitted)** — 43 signals, 13 domains
+  - ADR-0003 amended 2026-04-27 (A4: FailureRespawnState + ammo split + fired_beats + FORMAT_VERSION 1→2)
+  - ADR-0004 amended 2026-04-27 (A5: fallback_theme) + 2026-04-28 (A6: MODAL + LOADING InputContext)
+  - ADR-0007 amended 2026-04-23 (Combat=7) + 2026-04-27 (10-entry table; F&R=8, MLS=9, SettingsService=10)
+  - ADR-0008 amended 2026-04-23 (added) + 2026-04-28 (Slot-8 panic-onset 0.6 ms reserve + autoload-cascade row 7→10 + Slot-8 sub-claims)
+- `docs/registry/architecture.yaml` — performance_budgets / api_decisions / forbidden_patterns registry
+- `design/gdd/systems-index.md` — system enumeration + status (**23/23 designed**)
+- `design/gdd/gdd-cross-review-2026-04-28.md` — concentrated synthesis of 9 BLOCKING + 13 WARNINGS, all closed

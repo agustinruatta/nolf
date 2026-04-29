@@ -1286,6 +1286,1239 @@ requirements:
     revised: ""
     status: active
 
+  # ─── Mission & Level Scripting (TR-MLS-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-MLS-001
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Publishes four Mission-domain signals: mission_started, mission_completed, objective_started, objective_completed (sole publisher per ADR-0002)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-002
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Subscribes to section_entered(reason) with FORWARD/RESPAWN/NEW_GAME/LOAD_FROM_SAVE branching; synchronous transition routing per ADR-0002 4th-pass amendment."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-003
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Assembles SaveGame synchronously on section_entered(FORWARD); calls capture() on each owning system without await per ADR-0003."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-004
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Sole SaveGame writer on FORWARD transitions; F&R writes independently on player_died (split-write authority per ADR-0003 A4)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-005
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Suppresses objective_started re-emit on LOAD_FROM_SAVE; HUD rebuilds from get_active_objectives() query (ADR-0002 + ADR-0003)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-006
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Registers as autoload MissionLevelScripting at ADR-0007 line 9 (after FailureRespawn=8, before SettingsService=10); 2026-04-27 ADR-0007 amendment."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-007
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Must NOT reference other autoloads in _init(); all setup deferred to _ready() per ADR-0007 Cross-Autoload Reference Safety rule 3."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-008
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Trigger volumes (MLSTrigger extends Area3D) use body_entered single-fire; forbidden: body_exited subscription. Collision layer per ADR-0006 (TBD trigger-layer amendment pending)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-009
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Trigger collision layer assignment is engine-verification gate item; ADR-0006 amendment may be required pre-MVP sprint."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-010
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Scripted beats persisted via MissionState.fired_beats (Dictionary[StringName, bool]); reload suppresses re-fire on RESPAWN per ADR-0003 A4."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-011
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Objective completion filter method resolved by string name at runtime; NOT serialized Callable per ADR-0003 (Callable serialization forbidden)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-012
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Autosave gate: slot 0 only on FORWARD reason; RESPAWN/NEW_GAME/LOAD_FROM_SAVE perform no save write per ADR-0003 A4 + LSS step-9 contract."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-013
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Mission-card/cutscene dispatch via ADR-0002 signals only; subscribes to cutscene_ended (CR-CMC-21) to write scene_id into MissionState.triggers_fired (sole writer)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-014
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Claims 0.1 ms steady-state + 0.3 ms peak from ADR-0008 Slot #8 residual pool (0.8 ms shared with CAI/DC/F&R/D&S)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-015
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Every section must contain player_respawn_point: Marker3D as direct child for F&R consumption (section authoring contract; ADR-0006 layer-neutral)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-016
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Surface tags (peek_surface, placeable_surface) authored via set_meta() on CollisionShape3D per Level Streaming CR-10 surface-metadata convention."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-017
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Section-authoring contract requires @export discovery_surface_ids for sections 1-4 (Pillar 4 enforcement; CR-21 Discovery Surface Guarantee)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-018
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Forbidden patterns: body_exited, call_deferred/await in save path, Events.emit from respawn_triggered handler (ADR-0002 IG3 lifecycle compliance)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MLS-019
+    system: mission-level-scripting
+    gdd: design/gdd/mission-level-scripting.md
+    requirement: "Objective supersedes chain: emits objective_completed for each sibling in same frame on completion (ADR-0002 IG5 cadence: bounded by mission graph fan-out, ≤10 emits/frame worst-case)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Failure & Respawn (TR-FR-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-FR-001
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Subscribes to Events.player_died(cause: DeathCause); sole entry point to respawn flow per ADR-0002."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-002
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Publishes respawn_triggered(section_id: StringName); sole publisher of Failure/Respawn domain per ADR-0002."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-003
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Writes fresh slot-0 save at death time; passes in-memory SaveGame to LS without re-read per ADR-0003 A4 split-write authority."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-004
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "FailureRespawnState sub-resource added to SaveGame schema 2026-04-27 A4: forward-extensible (Resource additivity) without FORMAT_VERSION bump per ADR-0003 amendment."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-005
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Respawn floor applied via live-authoritative read at LS step-9; NOT from restored save (prevents cheese exploit per CR-6)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-006
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Flag reset gated by _flow_state == IDLE; prevents checkpoint overwrite during RESTORING per ADR-0003 atomicity."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-007
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Checkpoint assembled at section entry (IDLE only); read from player_respawn_point Marker3D (per MLS authoring contract)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-008
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "respawn_triggered emitted BEFORE reload_current_section call; subscriber re-entrancy forbidden per ADR-0002 IG3."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-009
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Pushes InputContext.LOADING on player_died; pops after reset_for_respawn per ADR-0004 A6 (LOADING enum value added 2026-04-28)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-010
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Registers as autoload FailureRespawn at ADR-0007 line 8 (after Combat=7, before MissionLevelScripting=9); MLS-after-F&R hard edge per 2026-04-27 amendment."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-011
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Queued-respawn tolerates passive queueing; respawn_triggered fires exactly ONCE at initial death per ADR-0002 idempotency."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-012
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Watchdog: push_error if _flow_state == RESTORING > 2.5 s; indicates LS queue violation per ADR-0008 non-frame budget LS ≤0.57 s p90."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-013
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Mechanical flow ~0.58 s dominated by LS swap (≤0.57 s); perceived ~2.2 s with Audio fade per ADR-0008 non-frame budget."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-FR-014
+    system: failure-respawn
+    gdd: design/gdd/failure-respawn.md
+    requirement: "Sting suppression: Audio player_died handler checks no-op condition when respawn_triggered fires ≤100 ms later (ADR-0002 cross-handler convention)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Civilian AI (TR-CAI-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-CAI-001
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Publishes civilian_panicked(civilian: Node, cause_position: Vector3) per ADR-0002 locked signature."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-002
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "VS-only: publishes civilian_witnessed_event(civilian, event_type: CivilianAI.WitnessEventType, position) for SAI ALERTED_BY_OTHER propagation per ADR-0002."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-003
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Per-actor scene pattern (NOT autoload); CharacterBody3D with LAYER_AI = 3 per ADR-0006 collision-layer contract."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-004
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Group tag 'civilian' only; forbidden in player/dead_guard/alive_guard groups (ADR-0006 mask-disjoint enforcement)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-005
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "NavigationAgent3D must set avoidance_enabled = true in _ready(); RVO velocity_computed callback required (Jolt-default per ADR-0006 + ADR-0008 Slot 4)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-006
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Panics on weapon_fired (distance ≤ 12 m) or enemy_killed (distance ≤ 8 m); idempotency via _panic_state latch per ADR-0002 IG3."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-007
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Panic emits signal exactly once per civilian per section; re-target re-evaluates flee target without re-emit per ADR-0002 idempotency."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-008
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Flee uses velocity_computed callback for RVO avoidance; move_and_slide() not called from _physics_process directly (ADR-0008 Slot 4 Jolt budget compliance)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-009
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Cower exits on threat-leave (cause_position > COWER_RADIUS) sampled ~1 Hz via Timer; not frame-polled (ADR-0008 Slot 8 budget hygiene)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-010
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Implements capture()/restore contract per ADR-0003; registers LSS restore callback per LS CR-2; unregisters in _exit_tree (or per-section orchestration via MLS — pending W2 design call)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-011
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "VS-only: BQA contact outline tier upgrade from Tier 3 LIGHT to Tier 1 HEAVIEST at 3.0 m pickup distance per ADR-0001 stencil contract."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-012
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Claims 0.30 ms p95 of ADR-0008 Slot #8 pooled residual; panic-onset spike (~896 µs at 8-civilian Restaurant frame) absorbed by 0.6 ms reserve carve-out per 2026-04-28 amendment."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-013
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "WitnessEventType enum stub must exist before Events.gd compiles per ADR-0002 atomic-commit rule (qualified-enum forward-reference protection)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-014
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "LOAD_FROM_SAVE restores panicked state; recomputes flee target but suppresses civilian_panicked re-emit per ADR-0002 + ADR-0003 restore semantics."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CAI-015
+    system: civilian-ai
+    gdd: design/gdd/civilian-ai.md
+    requirement: "Receives damage no-op; triggers panic but forbids HP subtraction, enemy_killed emit, or death (ADR-0002 invariant: civilians cannot enter Combat damage path)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Document Collection (TR-DC-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-DC-001
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Publishes document_collected, document_opened, document_closed signals per ADR-0002 sole-publisher discipline."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-002
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Document Resource schema with id, title_key, body_key, section_id, interact_label_key, tier_override fields per ADR-0003 schema additivity."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-003
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "DocumentBody extends StaticBody3D on LAYER_INTERACTABLES per ADR-0006; no other layer bits."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-004
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Stencil Tier 1 (heaviest, 4 px @ 1080p) per ADR-0001 for off-path readability at distance (Pillar 2 Discovery)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-005
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Pickup lifecycle: raycast hit → validation → idempotency check → append to _collected → emit signal → deferred queue_free per ADR-0002 IG3 lifecycle."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-006
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Does NOT register LSS step-9 callback; MLS orchestrates DC.restore() within MLS's registered LS callback per LS CR-2."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-007
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Restore spawns-gates collected bodies synchronously before LS emits section_entered (ADR-0003 atomicity + LSS step-9 ordering)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-008
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "DocumentCollectionState captured and restored with Array[StringName] defensive duplicate at boundary per ADR-0003 deep-clone discipline."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-009
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Stores ONLY translation keys (title_key, body_key); never calls tr() or holds resolved strings (ADR-0004 Localization separation)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-010
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Full roster 21 documents: Plaza 3, Lower 4, Restaurant 6, Upper 5, Bomb 3 (VS scope) per content-design CR-9 Discovery Surface Guarantee."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-011
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Off-path ratio ≥75% / on-path ≤25%; minimum 2 per section, maximum 6; interact_min_separation 0.15 m (CR-9 + Pillar 2 enforcement)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-012
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "NOT autoload per ADR-0007; ephemeral per-section node at Section/Systems/DocumentCollection."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-013
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Subscribes to Events.player_interacted with handler discipline per ADR-0002 IG4 (validity + type guard)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-014
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Claims ≤0.05 ms peak event-frame from ADR-0008 Slot #8 pooled residual (shared with CAI 0.30, MLS 0.1+0.3, F&R ~0, D&S 0.10)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DC-015
+    system: document-collection
+    gdd: design/gdd/document-collection.md
+    requirement: "Handler validates is_instance_valid(target), then DocumentBody type-check, then idempotency via _collected.has() per ADR-0002 subscriber lifecycle."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── HUD Core (TR-HUD-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-HUD-001
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "CanvasLayer rooted at layer=1 within ADR-0004 [0..3] HUD range; session-persistent across section transitions."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-002
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Subscribes to 9 Events signals: player_health_changed, player_damaged, player_died, player_interacted, ammo_changed, weapon_switched, gadget_equipped, gadget_activation_rejected, ui_context_changed (CR-10 — 9th subscription declared in HUD; ADR-0002 2026-04-28 amendment)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-003
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Emits zero signals; subscriber-only per ADR-0002 contract; never polls state beyond 2 PC accessors."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-004
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Renderable only when InputContext.current() == GAMEPLAY; crosshair opt-out by default per Pillar 5 / ADR-0004 IG2."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-005
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Theme inheritance via project_theme.tres with HUD-specific overrides in hud_theme.tres per ADR-0004 (fallback_theme — Amendment A5)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-006
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "FontRegistry.hud_numeral() encapsulates Futura Condensed Bold → DIN 1451 substitution at 18px floor per ADR-0004 §FontRegistry."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-007
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "All visible strings routed through tr() (Localization Scaffold); static labels cached at _ready() (ADR-0004 Localization compliance)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-008
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "All HUD widgets set mouse_filter = MOUSE_FILTER_IGNORE; exempt from Godot 4.6 dual-focus split per ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-009
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Photosensitivity rate-gate: hud_damage_flash_cooldown_ms=333ms (3Hz WCAG 2.3.1 ceiling); single-deferred-flash coalescing per ADR-0008 + WCAG."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-010
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Slot 7 (0.3ms UI frame budget) caps HUD per-frame cost; F.5 worst-case C_frame=0.259ms with 41µs headroom per ADR-0008."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-011
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Settings.setting_changed subscription; dispatch by (category, key) for accessibility toggles on crosshair_enabled, damage_flash_enabled (Settings sole publisher per ADR-0002)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-012
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Damage-flash coroutine: add_theme_color_override for 1-frame white flash; freed-self guard + re-entry guard mandated per ADR-0002 IG4."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-013
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "No tr() calls in _process/_physics_process (FP-8); no polling of Inventory/Combat/SAI/F&R (FP-3) per ADR-0008 Slot 7 budget."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-014
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "CR-22: Tween.kill() on every active widget tween when ui_context_changed leaves GAMEPLAY (added 2026-04-28 closure of OQ-DOV-COORD-14)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HUD-015
+    system: hud-core
+    gdd: design/gdd/hud-core.md
+    requirement: "Forbidden patterns: FP-1 no Events.*.emit() (subscriber-only); FP-13 NOT autoload (per-main-scene CanvasLayer per ADR-0007)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── HUD State Signaling (TR-HSS-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-HSS-001
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "MVP-Day-1 minimal slice: HoH/deaf alert-cue (tr('HUD_GUARD_ALERTED'), ~2s auto-dismiss) mandatory for HUD Core MVP per WCAG SC 1.1.1."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-002
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "Subscribes to alert_state_changed signal; emits zero signals (subscriber-only per ADR-0002)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-003
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "HSS claims ≤0.05ms steady-state, ≤0.15ms peak within shared Slot 7 (0.3ms cap with HUD Core) per ADR-0008."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-004
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "Renders in NOLF1 typographic register: BQA Blue strip + Parchment text via FontRegistry per ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-005
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "Theme inheritance via project_theme.tres; HSS-specific overrides in dedicated theme file per ADR-0004 (fallback_theme)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-006
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "All strings routed through tr() per Localization Scaffold; AlertCue re-resolves on NOTIFICATION_TRANSLATION_CHANGED (Godot 4.5+)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-007
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "Tweens killed on ui_context_changed != GAMEPLAY per HUD Core CR-22 (added 2026-04-28)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-008
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "CR-9 rate-gate exempts upward-severity alert transitions (SC 1.1.1/1.3.3 closure per accessibility-specialist)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-009
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "AccessKit promotion: alarm-state cue at assertive priority; oneshot live-region clear deferred (CR-Gate-A) per ADR-0004 Gate 1."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-010
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "WCAG 2.2.1 timing-adjustable mechanism promoted to BLOCKING Day-1; WCAG 2.2.2 opt-out promoted to BLOCKING VS scope."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-011
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "VS scope: MEMO_NOTIFICATION (document pickup toast, ~3s), alarm-stinger (single-Label, ~5s), respawn beat (~1.5s) — all subscriber-only patterns."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-012
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "Critical-health clock-tick visual: parchment-tone text pulse synced to Audio's tick (pure visual layer; subscriber to Audio cue)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-HSS-013
+    system: hud-state-signaling
+    gdd: design/gdd/hud-state-signaling.md
+    requirement: "Save-failed advisory line on IO_ERROR per F&R OQ-FR-4; rendered via same prompt-strip slot as alerts (ADR-0002 SaveLoad.FailureReason enum)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Document Overlay UI (TR-DOU-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-DOU-001
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "CanvasLayer scene at index 5 (locked by ADR-0004 §IG7) between Post-Process sepia (4) and Pause Menu (8)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-002
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Modal lifecycle: push InputContext.DOCUMENT_OVERLAY on open per ADR-0004 §IG2."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-003
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "On open: call PostProcessStack.enable_sepia_dim() per ADR-0004 §IG4; set Input.mouse_mode = VISIBLE (restore on close)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-004
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Subscriber-only: document_opened, document_closed signals from Document Collection via ADR-0002 (DC sole publisher)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-005
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Never emits document_opened/closed/collected; Document Collection sole publisher per DC CR-7/CR-11 + ADR-0002 IG1."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-006
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Close lifecycle: get_viewport().set_input_as_handled() BEFORE InputContext.pop() per Input CR-7 (silent-swallow prevention)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-007
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Modal dismiss: only ui_cancel via _unhandled_input() at root; NO focused Close button (FP-OV-9 — ADR-0004 IG3 modal pattern)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-008
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Theme inheritance via project_theme.tres; document-specific overrides in document_overlay_theme.tres per ADR-0004 Amendment A5 (fallback_theme)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-009
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "FontRegistry.document_header() (American Typewriter Bold) and document_body() per ADR-0004 §FontRegistry."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-010
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Title/body: tr(title_key)/tr(body_key) at render time; cached keys for locale-change re-resolve (CR-7/CR-8) — Godot 4.5+ NOTIFICATION_TRANSLATION_CHANGED."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-011
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Per-section instantiation (NOT autoload per ADR-0007); lifetime=section lifetime; queue_free() at section unload."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-012
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Slot 7 sub-claim: when READING, holds full 0.3ms cap; when IDLE (closed), contributes 0ms per ADR-0008 (CR-14 sole-occupant claim depends on HUD Core CR-22 Tween cleanup)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-013
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "No _process/_physics_process while open; process_mode=PROCESS_MODE_ALWAYS for _unhandled_input per ADR-0008 budget hygiene."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-014
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Tab/focus consumption (CR-16): ui_focus_next/prev absorbed when DOCUMENT_OVERLAY active (SC 2.1.1/2.1.2 per ADR-0004 dual-focus)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-015
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Scroll grammar: mouse wheel, arrow keys, Page Up/Down, gamepad right-stick (18px/frame max, 0.15 deadzone) — Input GDD action consumption."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-016
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "AccessKit: body text reachable via screen-reader virtual buffer OR arrow-key focus chain (ADR-0004 Gate 1 + Gate 5 BBCode→AT)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-017
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Reduced-motion: sepia fade instant (0s); card-snap already instant; audio duck NOT suppressed per Settings accessibility opt-in."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-018
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Forbidden pattern FP-OV-1: no Events.document_*.emit() from Overlay (DC sole publisher per ADR-0002 IG1)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DOU-019
+    system: document-overlay-ui
+    gdd: design/gdd/document-overlay-ui.md
+    requirement: "Forbidden pattern FP-OV-12: no smooth_scroll_enabled=true (mobile inertia violates Pillar 5/Lectern Pause)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Menu System (TR-MENU-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-MENU-001
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "MainMenu.tscn loaded via get_tree().change_scene_to_file() at app start (Level Streaming CR-7); LS-allowlisted call-site."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-002
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "InputContext.MENU/PAUSE/SETTINGS push/pop lifecycle per ADR-0004 (MODAL added 2026-04-28 A6)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-003
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "MVP-Day-1: photosensitivity boot-warning modal scaffold; polls SettingsService._boot_warning_pending in _ready() per Settings CR-9."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-004
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Save-card grid reads metadata via SaveLoad.slot_metadata(N) per ADR-0003 (Menu never opens .res directly)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-005
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "LS-allowlisted call-site for LevelStreaming.transition_to_section() per LS CR-4."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-006
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Load Game flow: SaveLoad.load_from_slot(N) → transition_to_section(loaded.section_id, loaded, LOAD_FROM_SAVE) per ADR-0003 + LS reason enum."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-007
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Step-9 restore callback registered per Level Streaming (LS L55) for post-transition cleanup; one of 4 LSS-registered callers."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-008
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "All surfaces staged in BQA dossier register (Art Bible §7D): Mission Dossier case-file aesthetic, not modern chrome."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-009
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Theme inheritance via project_theme.tres; menu-specific overrides in dedicated menu theme file per ADR-0004 (fallback_theme — A5)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-010
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "All visible strings routed through tr() per Localization Scaffold; locale-aware string key resolution at render time."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-011
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "FontRegistry compliance for all menu typography (typeface substitution at platform floors per ADR-0004 §FontRegistry)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-012
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Pause Menu / Main Menu owned sections with modal scoping per ADR-0004 input-context stack semantics."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-013
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Bootstrap blocking: Settings & Accessibility (#23) Day-1 minimal UI must ship before Menu MVP (HUD Core REV D2 dependency)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-014
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "AccessKit integration for all interactive elements (buttons, grids, dialogs) per ADR-0004 accessibility mandate (Gate 1 verification)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-MENU-015
+    system: menu-system
+    gdd: design/gdd/menu-system.md
+    requirement: "Reduced-motion: skip all menu transition Tweens when accessibility.reduced_motion_enabled==true per Settings + ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Settings & Accessibility (TR-SET-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-SET-001
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "SettingsService is sole publisher of Events.setting_changed(category, name, value) per CR-1 (ADR-0002 sole-publisher)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-002
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "settings_loaded() signal added to Settings domain (no payload; one-shot per session per CR-9; ADR-0002 amendment 2026-04-28)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-003
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "SettingsService is sole reader/writer of user://settings.cfg (ConfigFile, separate from SaveGame per ADR-0003)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-004
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "SettingsService registered as autoload at ADR-0007 line 10 (consumers use settings_loaded one-shot pattern, not _ready() reads — 2026-04-27 amendment)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-005
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Boot-time burst (CR-9): SettingsService emits setting_changed synchronously for all stored triples, then emits settings_loaded one-shot."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-006
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Settings panel pushes InputContext.SETTINGS on open, pops on close per ADR-0004 IG3 + CR-3."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-007
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "accessibility.damage_flash_cooldown_ms slider has 333 ms hard floor (WCAG 2.3.1 ceiling, 3 Hz) per CR-17."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-008
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "accessibility.damage_flash_enabled boolean toggle + photosensitivity_warning_dismissed persistent flag per ADR-0003 (settings.cfg, not SaveGame)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-009
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "accessibility.subtitle_enabled, subtitle_size_scale, subtitle_background, subtitle_speaker_labels, subtitle_line_spacing_scale, subtitle_letter_spacing_em all persist via user://settings.cfg per ADR-0003."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-010
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "clock_tick_enabled moved from Audio category to Accessibility category (per Audio GDD alignment) — sole emitter is SettingsService."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-011
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Theme inheritance: Settings sub-screens set fallback_theme = preload(project_theme.tres) per ADR-0004 Gate 2 closure (A5)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-012
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "AccessKit screen-reader integration for all settings widgets (Day-1 mandate per ADR-0004 IG10; gates on Gate 1 property-name verification)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-013
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Modal dismiss via _unhandled_input() + ui_cancel action (Esc / B / Circle per Art Bible 7D + ADR-0004 IG3)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-014
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Settings do NOT reset on new-game (saved to separate user://settings.cfg, not SaveGame per ADR-0003 separation)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-015
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Photosensitivity cluster (3 keys) survives Restore Defaults; only settings.cfg deletion triggers re-warning (safety invariant)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-016
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Keyboard rebinding captures one InputEventKey/MouseButton + one InputEventJoypadButton/Motion per action (no two-key bind) per CR-20."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-017
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Settings owns UI debouncing on slider/spinner changes via InputEvent.is_released() gate per CR-14 (ADR-0004 + ADR-0008 budget compliance)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-SET-018
+    system: settings-accessibility
+    gdd: design/gdd/settings-accessibility.md
+    requirement: "Dead-end navigation announces two distinct tr() keys (SETTINGS_NAV_DEAD_END_TOP / _BOTTOM) for grammatical correctness per Localization Scaffold."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Dialogue & Subtitles (TR-DLG-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-DLG-001
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Sole publisher of Dialogue domain signals: dialogue_line_started(speaker, line_id) + dialogue_line_finished() per ADR-0002."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-002
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Subtitle visibility suppressed when InputContext.current() != GAMEPLAY (DOCUMENT_OVERLAY, MODAL, LOADING gates per ADR-0004 A6)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-003
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Subtitle renderer consumes Localization Scaffold tr() keys; no hardcoded English strings per ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-004
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Dialogue suppression rule: when InputContext.is_active(DOCUMENT_OVERLAY), ambient VO subtitles are suppressed (Lectern Pause Pillar)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-005
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "D&S claims sub-slot of ADR-0008 Slot 8 pooled residual: 0.10 ms peak event-frame (registered 2026-04-28 night per D&S Phase 2 propagation)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-006
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "D&S subscribes to Events.ui_context_changed(new_ctx, old_ctx) for self-suppression on context switch per ADR-0002 2026-04-28."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-007
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "D&S is NOT autoload (per-section instantiation); per ADR-0007 10-entry table is full with no dialogue slot."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-008
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Dialogue scheduler emits dialogue_line_started with speaker: StringName + line_id: StringName payloads per ADR-0002."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-009
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Audio subscribes to Dialogue domain for VO ducking per Audio CR-F.1; D&S is subscriber-only / publisher-only split per ADR-0002 IG1."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-010
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Subtitle size scaling supports WCAG SC 1.4.4 (200% XL preset via subtitle_size_scale = 2.0) per Settings CR-9 + ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-011
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Subtitle speaker labels toggleable via Settings accessibility.subtitle_speaker_labels per ADR-0003 (settings.cfg)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-012
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Caption timeout follows Formula F.1 (clear-time predicate bounded by diegetic time + safety margin) per Slot 8 budget."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-013
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Per-actor rate-gate: Formula F.2 prevents >2 lines/second per speaker using state dict in Dialogue cache (ADR-0008 budget hygiene)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-014
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Frame-cost composition (F.4): audio_play_call + dictionary_write + queue_eviction + dialogue_line_started_emit ≈ 0.075 ms typical + 0.001 ms unconditional flag guard."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-DLG-015
+    system: dialogue-subtitles
+    gdd: design/gdd/dialogue-subtitles.md
+    requirement: "Three-way priority-resolver eviction may burst to ~0.13 ms (non-recurring, acceptable exceedance per Slot 8 reserve carve-out)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
+  # ─── Cutscenes & Mission Cards (TR-CMC-*) — added 2026-04-29 (seventh review run) ───
+  - id: TR-CMC-001
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Cutscenes uses InputContext.CUTSCENE enum value (added 2026-04-28) with push at start, pop at end per ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-002
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "CanvasLayer index 10 mutually exclusive with Settings via lazy-instance discipline + InputContext gate per ADR-0004 §253."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-003
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Cutscenes is subscriber-only to Mission domain (mission_started, mission_completed, objective_started, objective_completed, section_entered) per ADR-0002."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-004
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "NEW signal cutscene_started(scene_id: StringName) added to Cutscenes domain (ADR-0002 amendment 2026-04-29 — uncommitted, pending atomic-PR landing)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-005
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "NEW signal cutscene_ended(scene_id: StringName) added to Cutscenes domain (ADR-0002 amendment 2026-04-29 — uncommitted, pending atomic-PR landing)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-006
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Replay-suppression via MissionState.triggers_fired: Array[StringName] (read-only from Cutscenes; owned by MLS — sole writer per CR-CMC-21 + ADR-0003)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-007
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Audio subscribes to cutscene_started/_ended for silence-cut + 2.0 s crossfade restore (Audio Crossfade Rule 6 per CR-CMC-11)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-008
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "MLS subscribes to cutscene_ended to write scene_id into MissionState.triggers_fired (CR-CMC-21 — sole writer; closes Save/Load L107 + L162 forward-dep)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-009
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Outline escape-hatch via OutlineTier.set_tier for cinematic emphasis (rare case; restoration on exit) per ADR-0001 stencil contract."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-010
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "PostProcessStack lifecycle calls enable_sepia_dim()/disable_sepia_dim() for narrative dim per ADR-0004 §IG4 (PPS API)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-011
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Cutscenes claims sub-slot of ADR-0008 Slot 7 (UI 0.3 ms when card/letterbox rendering); peak event-frame ≤0.20 ms per CMC perf table."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-012
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Cutscenes claims sub-slot of ADR-0008 Slot 8 (residual 0.8 ms for trigger-evaluation logic; cadence ≤7 cinematic activations per first-watch play-through)."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-013
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Localization: all visible card text uses tr() keys; auto_translate_mode = AUTO_TRANSLATE_MODE_DISABLED per CR-CMC-15 + ADR-0004."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-014
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Input action for cutscene-skip (cutscene_dismiss; owned by Input GDD per CR-CMC-18); 4.0/5.0/3.0s dismiss-gate trio per InputContext_CUTSCENE."
+    created: 2026-04-29
+    revised: ""
+    status: active
+  - id: TR-CMC-015
+    system: cutscenes-and-mission-cards
+    gdd: design/gdd/cutscenes-and-mission-cards.md
+    requirement: "Save/Load CR-6: F5 silent-drop during InputContext.CUTSCENE per ADR-0003 + ADR-0004 modal-dismiss precondition."
+    created: 2026-04-29
+    revised: ""
+    status: active
+
 # --- EXAMPLE ENTRIES (legacy — retain for documentation value) ---
 #
 # - id: TR-combat-001

@@ -10,9 +10,9 @@
 | **Engine** | Godot 4.6 · GDScript · Forward+ (Vulkan Linux / D3D12 Windows) · Jolt 3D default |
 | **Platform** | PC — Linux + Windows (Steam). Single-player, no networking. |
 | **Performance Contract** | 60 fps · 16.6 ms · ≤1500 draw calls · ≤4 GB (technical-preferences.md; allocated by ADR-0008). |
-| **GDDs Covered** | 10 authored (PC, FC, Audio, Level Streaming, Stealth AI, Combat & Damage — Approved; Signal Bus, Input, Outline Pipeline, Post-Process Stack, Save/Load, Localization Scaffold — Designed pending re-review). 13 not yet authored (Inventory & Gadgets, Mission & Level Scripting, Failure & Respawn, Civilian AI, HUD Core, Document Collection, Dialogue & Subtitles, HUD State Signaling, Document Overlay UI, Menu System, Cutscenes & Mission Cards, Settings & Accessibility). |
-| **ADRs Referenced** | ADR-0001 · ADR-0002 · ADR-0003 · ADR-0004 · ADR-0005 · ADR-0006 · ADR-0007 · ADR-0008 (all Proposed; 21 verification gates outstanding). |
-| **TR Registry** | `docs/architecture/tr-registry.yaml` (158 TRs across 12 system-slugs, ~99% ADR-covered per `requirements-traceability.md`). |
+| **GDDs Covered** | **23 / 23 authored** — all MVP + VS systems designed (last metadata refresh 2026-04-29 post-`/architecture-review` seventh run). Per-system status tracked in `design/gdd/systems-index.md`. |
+| **ADRs Referenced** | ADR-0001 · ADR-0002 · ADR-0003 · ADR-0004 · ADR-0005 · ADR-0006 · ADR-0007 · ADR-0008 (all Proposed; 30+ verification gates outstanding as of 2026-04-29). |
+| **TR Registry** | `docs/architecture/tr-registry.yaml` (**348 TRs** across 23 system-slugs, ~99% ADR-covered per `requirements-traceability.md`). |
 | **Review Mode** | `solo` (LP-FEASIBILITY step of Phase 7b skipped per skill rules). |
 | **Technical Director Sign-Off** | **APPROVED WITH CONCERNS** — 2026-04-23 (self-review, solo mode). Gate TD-ARCHITECTURE against 4 criteria: TR coverage ✅ PASS (~99%), HIGH-risk engine domains ✅ PASS (all fenced), API boundaries ⚠ PASS WITH CONCERN (ADR-0007 amendment required for Combat autoload inclusion — Path A per godot-specialist 2026-04-23; see §6.3 + §7.2.1), Foundation ADR gaps ✅ PASS (all 8 authored and Proposed; 24 verification gates are normal Tech Setup path, not architectural gaps). |
 | **Lead Programmer Feasibility** | SKIPPED — Solo mode per `production/review-mode.txt`. LP-FEASIBILITY gate does not run. |

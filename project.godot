@@ -1,0 +1,88 @@
+; Engine configuration file.
+;
+; This file was hand-authored as part of Sprint 01 — Technical Verification Spike.
+; It contains only the values mandated by Accepted-pending ADRs:
+;   - [autoload] block per ADR-0007 §Key Interfaces (verbatim, 10 entries)
+;   - [layer_names]/3d_physics/layer_1..5 per ADR-0006 §Decision
+;   - [rendering] Forward+ per .claude/docs/technical-preferences.md
+;   - [physics] Jolt 3D per .claude/docs/technical-preferences.md (Godot 4.6 default)
+;
+; The first time this project is opened in the Godot 4.6 editor, the editor will
+; populate engine-version-dependent default values (input map defaults, accessibility
+; settings, run-mode flags, etc.). Save the project once Godot has populated it.
+;
+; KNOWN: 9 of the 10 autoload entries point to scripts that do not yet exist
+; (only events.gd is scaffolded). Godot will log "Script not found" errors at
+; startup until the stub scripts are added. This is intentional for the spike —
+; ADR-0007 G(a) is a byte-match check against the full §Key Interfaces table; the
+; smoke test G(b) only requires Events + a manual EventLogger stub when the
+; signal_bus_smoke prototype runs.
+
+config_version=5
+
+[application]
+
+config/name="The Paris Affair"
+config/description="A 1960s spy thriller — pre-production verification spike build."
+run/main_scene=""
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[autoload]
+
+; Autoload registration order — MUST match ADR-0007 §Key Interfaces verbatim.
+; Line order is the engine's sole authoritative declaration of init order
+; (per godot-specialist 2026-04-22 §1). The `*` prefix declares scene-mode
+; (Node added to root; _ready() fires; tree lifecycle active).
+;
+; Cross-autoload reference safety: an autoload's _ready() may reference
+; autoloads at earlier line numbers only. Per ADR-0007 §Cross-Autoload
+; Reference Safety rules 1-5.
+;
+; Adding/removing/reordering an entry REQUIRES a paired ADR-0007 amendment.
+; Forbidden pattern: `unregistered_autoload`.
+
+Events="*res://src/core/signal_bus/events.gd"
+EventLogger="*res://src/core/signal_bus/event_logger.gd"
+SaveLoad="*res://src/core/save_load/save_load_service.gd"
+InputContext="*res://src/core/ui/input_context.gd"
+LevelStreamingService="*res://src/core/level_streaming/level_streaming_service.gd"
+PostProcessStack="*res://src/core/rendering/post_process_stack.gd"
+Combat="*res://src/gameplay/combat/combat_system.gd"
+FailureRespawn="*res://src/gameplay/failure_respawn/failure_respawn_service.gd"
+MissionLevelScripting="*res://src/gameplay/mission_level_scripting/mission_level_scripting.gd"
+SettingsService="*res://src/core/settings/settings_service.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[layer_names]
+
+; 3D physics layers — names MUST match the constants in
+; src/core/physics_layers.gd per ADR-0006. Inspector dropdowns surface these
+; names on every CollisionObject3D.collision_layer / collision_mask.
+;
+; Adding a new layer REQUIRES paired updates to physics_layers.gd and an
+; ADR-0006 amendment. Forbidden pattern: `hardcoded_physics_layer_number`.
+
+3d_physics/layer_1="World"
+3d_physics/layer_2="Player"
+3d_physics/layer_3="AI"
+3d_physics/layer_4="Interactables"
+3d_physics/layer_5="Projectiles"
+
+[physics]
+
+; Jolt is the Godot 4.6 default 3D physics engine. Pinned by
+; .claude/docs/technical-preferences.md. ADR-0006 confirms collision-layer
+; API parity between Jolt and GodotPhysics.
+3d/physics_engine="Jolt"
+
+[rendering]
+
+; Forward+ rendering method, per .claude/docs/technical-preferences.md.
+; D3D12 is Godot 4.6 default on Windows; Vulkan on Linux.
+renderer/rendering_method="forward_plus"

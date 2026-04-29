@@ -111,6 +111,43 @@ Each scripted beat authored in a MissionResource is one of these types. The tabl
 
 **T6 same-frame burst bound** (closes ai-programmer finding #5): when SAI propagation flips N guards from UNAWARE→SUSPICIOUS in a single physics frame, T6 fires AT MOST ONCE per frame regardless of N. The handler maintains `_t6_fired_this_frame: bool`, set on first fire, reset by a deferred call at end-of-frame. The per-section budget (default 2) and per-frame burst limit (1) compose: 2 separate alert events across separate frames burn the budget normally; a single propagation event firing N guards uses 1 budget point.
 
+#### C.4.1 — `scripted_dialogue_trigger` Authoring Contract *(NEW 2026-04-28 night — D&S Phase 2 propagation per dialogue-subtitles.md §F.6 P3 + §C.5 row 7 SCRIPTED_SCENE)*
+
+Mission & Level Scripting is the **sole publisher** of `Events.scripted_dialogue_trigger(scene_id: StringName)` (registered in ADR-0002 2026-04-28 night amendment, Mission domain). Dialogue & Subtitles is the **sole subscriber**. This signal carries the StringName lookup-key into D&S's per-section dialogue-scene roster and is the **only way** for MLS to drive Dialogue domain category 7 (SCRIPTED_SCENE) lines per D&S §C.5 — MLS does NOT publish DialogueLine IDs or AudioStreamPlayer references; MLS owns *triggers*, D&S owns *playback orchestration*.
+
+**Per-section scene_id roster** (canonical names; D&S validates each `scene_id` against its roster on receipt and silently drops unknown keys with a debug log per D&S CR-DS-19):
+
+| Section | scene_id (StringName) | Trigger primitive | Lifecycle | Notes |
+|---------|-----------------------|-------------------|-----------|-------|
+| Plaza | `&"plaza_bqa_briefing_intro"` | `section_entered(plaza, FORWARD)` synchronous after `_player_ready` (D&S CR-DS-9 boot-window guard) | T7 Section Threshold Beat (one-shot, fired_beats-persisted) | MVP-Day-1 — single 3-line BQA radio briefing scene `[STERLING.]` register; subscribes to `Events.scripted_dialogue_trigger` exactly once at section enter |
+| Plaza | `&"plaza_radiator_curiosity_bait"` | MLSTrigger Area3D body_entered on radiator-near volume (1.5 m radius) | T1 Overheard Banter (one-shot, fired_beats-persisted) | MVP-Day-1 — single CURIOSITY_BAIT line. Vocal-completion protected per D&S CR-DS-6 (only SCRIPTED interrupts) |
+| Lower | `&"lower_construction_chatter"` | Timer on `section_entered(lower, FORWARD)` + 4 s delay | T3 Comedic Choreography (one-shot, fired_beats-persisted) | VS — biscuit-tin construction worker exchange (3 lines) |
+| Lower | `&"lower_scaffolding_radio"` | MLSTrigger on stairwell landing | T1 Overheard Banter (one-shot, fired_beats-persisted) | VS — guard pair Radio sub-register banter (2 lines) |
+| Restaurant | `&"restaurant_vogel_phone_call"` | MLSTrigger on private-dining-room hallway | T5 Mission-Gadget Beat (one-shot, fired_beats-persisted) | VS — PHANTOM courier one-sided phone call (5 lines) establishes Parfum satchel narrative |
+| Restaurant | `&"restaurant_kitchen_chefs"` | MLSTrigger on kitchen door volume | T1 Overheard Banter (one-shot, fired_beats-persisted) | VS — chef-vs-cook walk-in-freezer dispute (3 lines) |
+| Restaurant | `&"restaurant_dining_couple"` | MLSTrigger on dining-floor center | T1 Overheard Banter (one-shot, fired_beats-persisted) | VS — Marguerite/husband following bit (2 lines) |
+| Restaurant | `&"restaurant_clerks_smoke_break"` | MLSTrigger on terrace door | T1 Overheard Banter (one-shot, fired_beats-persisted) | VS — two PHANTOM clerks debate office printer politics (2 lines) |
+| Upper | `&"upper_klaxon_radio"` | T4 Objective Reveal Beat: `objective_started(disable_bomb_lights)` | T4 (one-shot, fired_beats-persisted) | VS — guard radio "Christ, not the fire-drill bell again" (1 line) |
+| Upper | `&"upper_lattice_patrol"` | MLSTrigger on lattice catwalk | T1 Overheard Banter (one-shot, fired_beats-persisted) | VS — patrol pair lattice-paint history bit (3 lines) |
+| Upper | `&"upper_lt_moreau_inspection"` | T7 Section Threshold Beat: `section_entered(upper, FORWARD)` | T7 (one-shot, fired_beats-persisted) | VS — Lt Moreau Named-NPC inspection narrative scene (4 lines incl. `[LT.MOREAU]` register) |
+| Bomb | `&"bomb_chamber_entry_silence"` | T7 Section Threshold Beat: `section_entered(bomb, FORWARD)` | T7 (one-shot, fired_beats-persisted) — emits empty / no lines | VS — explicitly emits trigger but D&S roster maps to ZERO lines (per D&S §B.5 anchor vignette: bomb entry is silent — the absence is the beat) |
+| Bomb | `&"bomb_handler_extraction_radio"` | T4 Objective Reveal Beat: `objective_completed(disarm_bomb)` | T4 (one-shot, fired_beats-persisted) | VS — `[HANDLER]` BQA extraction acknowledgment (2 lines + Eve `[STERLING.]` 1-word reply) |
+
+**Total scripted scenes**: 13 (1 MVP-Day-1 + 12 VS) producing 31 lines (3 MVP + 28 VS) — within the D&S §C.5 per-section line-count distribution targets.
+
+**Authoring rules** (CI lint via `tools/ci/lint_mission_scripted_dialogue.sh` — NEW BLOCKING coord item, Tools-Programmer scope):
+
+1. Every `MissionResource.scripted_scenes: Array[ScriptedSceneEntry]` entry MUST have a non-empty `scene_id: StringName` matching the roster above (lint fails on unrecognised IDs).
+2. Each `scene_id` MUST appear in **exactly one** section's roster (no cross-section reuse — duplicate keys break the per-section authoring assumption).
+3. The trigger primitive MUST be one of {`MLSTrigger`, `Timer-on-section_entered`, `objective_started`, `objective_completed`, `section_entered(id, FORWARD)`} — the same set as Scripted-Moment Taxonomy types T1/T3/T4/T5/T7. T6 (Alert-State Comedy) is forbidden as a `scripted_dialogue_trigger` source — T6 is emergent and lives outside the SCRIPTED priority bucket.
+4. Each scripted-scene entry MUST be `fired_beats`-persisted (one-shot per save-game). The roster does NOT support repeating scripted dialogue — repeated lines are PATROL_AMBIENT category in D&S, not SCRIPTED.
+5. Emission form: `Events.scripted_dialogue_trigger.emit(scene_id)` from MLS's beat-handler after the `fired_beats` latch is set. NEVER emit before the latch (re-emission on RESPAWN would replay the beat). Same-frame `dialogue_line_started` arrival from D&S is normal (D&S enqueues with SCRIPTED priority and resolves per its own resolver).
+6. D&S's roster file at `design/narrative/dialogue-writer-brief.md` (per D&S §F.6 P7) MUST have a 1:1 entry for each `scene_id` above — Tools-Programmer CI joins the two rosters and fails the build on any orphaned scene_id (MLS-side or D&S-side).
+
+**Why the indirection** (publish a key, not a line ID): keeps MLS as the canonical authoring location for *what fires when* and D&S as the canonical authoring location for *what is said*. The decoupling lets the writer revise dialogue content without touching mission scripts, and lets level designers re-time scripted beats without touching dialogue files.
+
+**Closes BLOCKING coord item §F.6 P3** from `dialogue-subtitles.md` v0.3.
+
 ### C.5 Section Authoring Contract
 
 Every section scene in `res://scenes/sections/` must satisfy this contract. CI fails the build on any BLOCKING violation.

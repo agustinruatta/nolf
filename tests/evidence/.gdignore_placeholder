@@ -1,0 +1,5 @@
+# Manual test evidence goes here.
+# - Screenshots for [Visual/Feel] story types (PNG, named [story-id]-[date].png).
+# - Walkthrough docs for [UI] story types (Markdown, named [story-id]-walkthrough.md).
+# - Lead sign-off records for [Visual/UI] gate items.
+# See tests/README.md "Story Type → Test Evidence" for required-evidence rules.

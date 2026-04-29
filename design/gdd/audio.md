@@ -28,7 +28,7 @@ Architecturally, Audio is a **subscriber-only** system. It listens to the Signal
 - **Documents** — `document_collected` drives pickup SFX; `document_opened` / `document_closed` drive overlay music duck
 - **Persistence** — `game_saved` / `save_failed` drive confirm/error chimes on save
 
-Audio does NOT publish cross-system events. Audio does NOT know about individual systems — it reacts to typed signals. **VO playback clarification (2026-04-20 re-review)**: Audio plays VO audio files but does not own dialogue-timing semantics. `dialogue_line_started` and `dialogue_line_finished` are both emitted by Dialogue & Subtitles GDD (VS-tier, unwritten) using VO-metadata duration fields — NOT by Audio via `AudioStreamPlayer.finished` callback. Audio stays strictly subscriber-only; the two systems react to the same signals independently.
+Audio does NOT publish cross-system events. Audio does NOT know about individual systems — it reacts to typed signals. **VO ownership clarification (D&S v0.3 §F.6 #5 amendment 2026-04-28; supersedes 2026-04-20 B8 clarification):** Dialogue & Subtitles owns the AudioStreamPlayer that plays VO files (per D&S §C.3); Audio is **subscriber-only ducking** on `dialogue_line_started` / `_finished` (Music + Ambient via Formula 1; Voice bus via CR-DS-17 on `document_opened`). Audio does NOT load or play VO files. Both systems react to the same signals independently.
 
 At the bus level, Audio defines five named `AudioServer` buses (Music, SFX, Ambient, Voice, UI) so Settings & Accessibility can expose per-category volume sliders. Spatial 3D audio (guard footsteps, gunfire, civilian chatter) uses pooled `AudioStreamPlayer3D` nodes with inverse-distance attenuation. Music and UI sounds use non-spatial `AudioStreamPlayer`. Crossfades between music tracks use Tweens on `volume_db`. Godot 4.6 introduced no breaking changes to the audio API — this GDD uses the stable 4.0+ pattern.
 
@@ -64,14 +64,22 @@ Reference touchstones, per the Art Bible: Mancini (*Peter Gunn*, *Pink Panther*,
    - **Mission (6)**: `section_entered`, `section_exited`, `objective_started`, `objective_completed`, `mission_started`, `mission_completed` — `section_exited` is 2026-04-21 addition; AudioManager uses it to clear the dominant-guard dict before the new section's `section_entered` fires (see §Concurrency Policies)
    - **Failure/Respawn (1)** *(moved from Mission 2026-04-21 — ADR-0002:183 places `respawn_triggered` in this domain)*: `respawn_triggered`
    - **Civilian (2)**: `civilian_panicked`, `civilian_witnessed_event`
-   - **Dialogue (2)**: `dialogue_line_started`, `dialogue_line_finished` *(subscribed-only — Audio plays the VO file; Dialogue & Subtitles GDD owns emission timing via VO-metadata duration fields, not via `AudioStreamPlayer.finished`. Audio remains subscriber-only.)*
+   - **Dialogue (2)**: `dialogue_line_started`, `dialogue_line_finished` *(subscriber-only ducking — Dialogue & Subtitles owns the AudioStreamPlayer and plays VO files itself per D&S §C.3; Audio applies VO duck per Formula 1 on receipt and restores on `dialogue_line_finished`. **Audio does NOT load or play VO files.** Per D&S v0.3 §F.6 #5 amendment 2026-04-28.)*
    - **Documents (3)**: `document_collected`, `document_opened`, `document_closed`
    - **Persistence (3)**: `game_saved`, `game_loaded`, `save_failed`
    - **Settings (1)**: `setting_changed`
 4. **Music is two simultaneous layers, not one track.** The Music bus carries three persistent `AudioStreamPlayer` nodes: `MusicDiegetic` (in-world source — quartet, combo, city hum), `MusicNonDiegetic` (non-diegetic score — upright bass, brushed snare, stealth cool), and `MusicSting` (one-shot alert stabs and victory stings). The `MusicDiegetic` and `MusicNonDiegetic` volume_db values are driven independently by the state machine (below). `MusicSting` is fire-and-forget and returns to silence on `finished`.
 5. **Spatial SFX uses one global pool of 16 `AudioStreamPlayer3D` nodes.** Pre-created in `_ready()`, all routed to `SFX` bus. A single global pool (not per-category) — this game's SFX density does not stress 16 slots. Anti-starvation: if all slots are occupied, the new request steals the oldest-started slot that is not gameplay-critical (voice and UI are exempt; they use non-spatial `AudioStreamPlayer`).
 6. **Music crossfade rule: Tween on `volume_db`, never stop-and-start.** All music transitions use `create_tween().tween_property(player, "volume_db", target_db, duration)`. In-coming layer fades up; out-going layer fades down in parallel. **Default crossfade: 2.0 s ease-in-out** for non-alert transitions (section changes, document-overlay restores). Silence-cut only for mission-complete sting and cutscene track swap. Alert-state crossfades use the table in C.2.
-7. **Voice (VO) ducking.** When `dialogue_line_started` fires, `AudioManager` ducks the two music layers independently per Formula 1's state-keyed per-layer table — `MusicDiegetic` ducks deeper during calm states (comedy priority when jazz is loud), `MusicNonDiegetic` ducks lighter during combat states (signal preservation when the score IS the alert cue). `Ambient` bus ducks a flat −6 dB. Attack 0.3 s, release 0.5 s (tuning knobs). On `dialogue_line_finished` all three restore to stored setting values over 0.5 s. The `Voice` bus is not ducked (it is the source). The `UI` bus is not ducked.
+7. **Voice (VO) ducking.** When `dialogue_line_started` fires, `AudioManager` ducks the two music layers independently per Formula 1's state-keyed per-layer table — `MusicDiegetic` ducks deeper during calm states (comedy priority when jazz is loud), `MusicNonDiegetic` ducks lighter during combat states (signal preservation when the score IS the alert cue). `Ambient` bus ducks a flat −6 dB. Attack 0.3 s, release 0.5 s (tuning knobs). On `dialogue_line_finished` all three restore to stored setting values over 0.5 s. The `Voice` bus is **not ducked by VO itself** (it is the source). The `UI` bus is not ducked.
+
+   **Voice-bus duck-exception table (D&S v0.3 §F.6 #5 amendment 2026-04-28):** the Voice bus IS ducked on the following exception, separate from VO ducking:
+
+   | Trigger | Voice bus duck | Attack | Release | Source |
+   |---|---|---|---|---|
+   | `document_opened` | **−12 dB** *(was −6 dB pre-v0.3 of D&S; deepened to broadcast intelligibility floor)* | 0.3 s | 0.5 s (on `document_closed`) | D&S CR-DS-17 v0.3; tuning knob `voice_overlay_duck_db = -12.0` |
+
+   Rationale: a player reading a document while VO continues at native pace (worst case: fast localized German/French BQA briefing) cannot read and listen simultaneously at −6 dB Voice. −12 dB recedes VO substantially while preserving Pillar 3 stealth-as-theatre (audio-director's recommendation against stopping VO mid-line). Playtest-tunable; deepen toward −18 dB if VS playtest finds VO still competes for cognitive bandwidth.
 8. **Music is preloaded per section, not streamed.** Both music layers (diegetic + non-diegetic) for the current section are fully loaded into memory when `section_entered` fires. Total budget: ~8–12 MB per section, two stereo OGG layers. Rationale: tight crossfades are load-bearing for Pillar 3 (music signals alert state); a 30–80 ms seek-latency gap undermines the design promise. Memory cost is negligible on PC.
 9. **Anti-pattern fences.**
    - NEVER call `AudioStreamPlayer.new()` at runtime for SFX — all SFX nodes are pre-allocated.
@@ -107,8 +115,8 @@ Music state is `[location]_[alert_level]`. Location ∈ `{plaza, scaffolds, rest
 | `alert_state_changed` | `new == StealthAI.AlertState.COMBAT` | `*_combat` | 0.3 s cut |
 | `alert_state_changed` | `new == StealthAI.AlertState.UNAWARE` | `*_calm` | 3.0 s ease-in-out |
 | `actor_became_alerted` | `severity == MAJOR AND cause != SCRIPTED` (else no-op) | sting plays on next downbeat | additive, ~4 s |
-| `document_opened` | — | `DOCUMENT_OVERLAY` | 0.5 s linear |
-| `document_closed` | — | restore prior state | 0.5 s linear |
+| `document_opened` | — | `DOCUMENT_OVERLAY` + **Voice bus duck −12 dB** *(v0.3 — D&S CR-DS-17)* | 0.5 s linear (music) / 0.3 s attack (Voice) |
+| `document_closed` | — | restore prior state + **restore Voice bus** | 0.5 s linear (music) / 0.5 s release (Voice) |
 | `mission_completed` | — | `MISSION_COMPLETE` | instant cut + sting |
 | `respawn_triggered` | — | cut to silence for ~200 ms, then `*_calm` for current section | **2.0 s ease-in from silence** (matches `section_entered` — 2026-04-21 revision: short linear fade read as cinema hard-cut and violated Pillar 3's theatre-not-punishment. 2.0 s from silence reads as scene reset, not game-punishes-you). Also clears the dominant-guard dict — see §Concurrency Policies. |
 | `dialogue_line_started` | — | VO duck (not a state change — see Rule 7) | 0.3 s |
@@ -131,6 +139,8 @@ Signals arrive in bursts. An open-plan area can send 3+ `actor_became_alerted(MA
 4. **Dominant-guard dict clear on section transitions.** On `section_exited`, `AudioManager` clears the entire dominant-guard dict. Rationale: guards from the exited section are about to be freed (or are already freed by Stealth AI's lifecycle); retaining their Node keys produces stale references that crash on the next iteration ("Invalid get index on base Null instance"). `section_entered` then arrives with an empty dict and resolves to `*_calm` for the new section — matching the intended behavior. This also naturally handles the `respawn_triggered` case (section re-entry): the dict is cleared via the paired `section_exited`/`section_entered` that Failure & Respawn owns on sectional respawn, or via the explicit clear documented in the respawn trigger table row.
 
 5. **Bedlam tween mid-decrement policy.** Civilian de-panic (civilian transitions from panic back to calm) decrements `panic_count`; any in-progress bedlam tween on either music layer is cancelled and a new tween from the current `volume_db` to the freshly computed target starts immediately. No chained tweens in opposite directions; no audible "pump."
+
+6. **Document Overlay suspends alert-music transitions.** *(NEW 2026-04-28 per `/review-all-gdds` 2026-04-28 finding 1c-W12 — Document-overlay duck vs alert-state escalation interaction was previously undefined.)* While `InputContext.current() == DOCUMENT_OVERLAY` (Document Overlay UI #20 has pushed its context per its CR-7 lifecycle), `AudioManager` continues to update its dominant-guard dict on incoming `alert_state_changed` / `actor_became_alerted` signals BUT does NOT issue a music-state tween or a brass-stinger schedule. The dominant-state computation is performed and cached as `_pending_dominant_state`; if it differs from the currently-playing music layer state when the overlay closes (`ui_context_changed(GAMEPLAY, DOCUMENT_OVERLAY)` arrives at `AudioManager`'s subscriber), the standard music tween fires at that frame using the cached value (no replay of the queued events; only the *current ground-truth* state at close time is applied). **Stinger queue during overlay**: brass stabs from MAJOR escalations are NOT scheduled while overlay is open — they would compete with the document-room ambience that owns the soundscape during Lectern Pause (Pillar 1: theatrical-mode refusal per Document Overlay UI §A.3 / Document Collection §A.3). Stingers are not retroactively replayed on close — only state changes; the brass beat is a momentary cue, not a durable artifact. **Rationale**: Document Overlay UI's Lectern Pause owns the entire soundscape during reading (sepia-dim + ducked music + suppressed banter per D&S CR-DS-4 + suppressed HUD per HUD CR-22 Tween.kill). Music transitions firing under the overlay would either bleed through the duck (audible) or schedule against an inaudible bus (queued audio decision drift). Suspension is the only correct policy. **Pairing**: this rule pairs with HUD Core CR-22 (Tween.kill on context change leaving GAMEPLAY) — both systems hold zero residual cost during DOCUMENT_OVERLAY READING, supporting the Slot-7 sole-occupant claim per Document Overlay UI §F.5 / AC-DOV-9.2. **Edge case**: if the player presses Esc to close the overlay and Eve has been spotted while reading, the music transitions to `*_alarmed` immediately on the close frame — there is no grace period. The overlay close itself is the audible cue that the world has changed, not the music. **AC obligation**: AudioManager test must verify that `alert_state_changed` arriving during DOCUMENT_OVERLAY does NOT advance the music tween's elapsed time and does NOT schedule a stinger; on context restore to GAMEPLAY, the transition fires with `_pending_dominant_state`. (Audio §Concurrency rule, AudioManager-owned implementation, depends on `Events.ui_context_changed` subscription per ADR-0002 amendment landed 2026-04-28.)
 
 ### Interactions with Other Systems
 
@@ -207,14 +217,16 @@ Moved from Mission domain 2026-04-21 re-review — ADR-0002:183 places `respawn_
 | `civilian_panicked(civilian, pos)` | Period-appropriate French vocal gasp ("Mon Dieu!") at civilian pos (pooled 3D, Voice bus). Increment `panic_count` → recompute Formula 2 (diegetic recedes up to −3 dB, non-diegetic rises up to +2 dB, both capped; see §Formulas Formula 2) | Always |
 | `civilian_witnessed_event` | Crowd murmur uptick on Ambient bus (non-spatial layer intensification) | Always |
 
-#### Dialogue domain
+#### Dialogue domain *(D&S v0.3 §F.6 #5 amendment applied 2026-04-28)*
 
 | Signal | Audio behavior | Condition |
 |---|---|---|
-| `dialogue_line_started(speaker, line)` | Load and play `vo_[speaker]_[line].ogg` on Voice bus; apply VO duck (Rule 7) | Always |
-| `dialogue_line_finished` | Stop VO player; restore duck | Always |
+| `dialogue_line_started(speaker, line_id)` | Apply VO duck per Formula 1 + Rule 7 (Music + Ambient duck) — **Audio is subscriber-only and does NOT play VO files; D&S owns the AudioStreamPlayer per dialogue-subtitles.md §C.3** | Always |
+| `dialogue_line_finished` | Restore Music + Ambient duck over 0.5 s release | Always |
+| `document_opened` *(v0.3 — D&S CR-DS-17 entry)* | **Voice bus duck −12 dB** (`voice_overlay_duck_db = -12.0`); 0.3 s attack | Always (independent of VO duck) |
+| `document_closed` *(v0.3 — D&S CR-DS-17 entry)* | Restore Voice bus over 0.5 s release | Always |
 
-**VO timing contract (clarified 2026-04-20 re-review, B8):** Dialogue & Subtitles GDD (VS-tier, unwritten) is the **sole publisher** of both `dialogue_line_started` and `dialogue_line_finished`. Emission is driven by VO-metadata duration fields (authored alongside each VO line), NOT by `AudioStreamPlayer.finished` callbacks. Audio is subscriber-only for both signals: on `dialogue_line_started` it loads and plays `vo_[speaker]_[line].ogg`; on `dialogue_line_finished` it stops and restores duck. Subtitle display timing is owned by Dialogue & Subtitles using the same signals. No direct calls between Audio and Dialogue & Subtitles. This preserves Audio's subscriber-only architectural promise (Overview).
+**VO ownership contract (D&S v0.3 §F.6 #5 amendment 2026-04-28; supersedes 2026-04-20 B8 clarification):** Dialogue & Subtitles is the **sole publisher** of `dialogue_line_started` and `dialogue_line_finished` AND **owns the AudioStreamPlayer node** that plays VO files. D&S maintains its own `AudioLinePlayer` (AudioStreamPlayer routed to Voice bus) per `dialogue-subtitles.md` §C.3 scene tree. Audio is **subscriber-only ducking**: on `dialogue_line_started` it ducks Music + Ambient per Rule 7 / Formula 1; on `dialogue_line_finished` it restores. Audio does NOT load or play VO files. The `dialogue-subtitles.md §A.1` VO file naming convention `assets/audio/vo/[speaker_category]/[line_id]_[locale].ogg` is **canonical** — the previous Audio GDD references to `vo_[speaker]_[line].ogg` are obsolete and have been removed. Subtitle display timing is owned by D&S using the same signals. No direct calls between Audio and D&S. This preserves Audio's subscriber-only architectural promise (Overview).
 
 #### Settings & Accessibility
 
@@ -391,7 +403,7 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
 
 | System | Direction | Nature |
 |---|---|---|
-| **Dialogue & Subtitles** (system 18) | Dialogue → Audio | Dialogue publishes `dialogue_line_started` / `_finished`; Audio plays VO on Voice bus. Dialogue does NOT call Audio directly — both subscribe independently to the same signals. |
+| **Dialogue & Subtitles** (system 18) | Dialogue → Audio | D&S publishes `dialogue_line_started` / `_finished` AND owns the AudioStreamPlayer that plays VO files (per D&S §C.3 + v0.3 §F.6 #5 amendment 2026-04-28). Audio is **subscriber-only ducking**: applies Music + Ambient duck per Formula 1 / Rule 7 on `_started` and Voice-bus duck −12 dB on `document_opened` per CR-DS-17. Audio does NOT load or play VO files. D&S does NOT call Audio directly — both subscribe independently to overlay signals. |
 | **Cutscenes & Mission Cards** (system 22) | Cutscenes → Audio | Cutscene SFX and music track swaps triggered by `mission_started` / `section_entered` / custom cutscene signals (to be added to ADR-0002 during Cutscenes GDD authoring). |
 | **Settings & Accessibility** (system 23) | Settings → Audio | Settings persists volume values to `user://settings.cfg` and emits `setting_changed("audio", ...)` events. Audio applies via `AudioServer.set_bus_volume_db`. |
 
@@ -411,7 +423,7 @@ if health_pct >= clock_tick_threshold_pct / 100.0 and tick_playing:
 | Music bus | 0.0 dB | −80.0 to 0.0 | All music layers |
 | SFX bus | 0.0 dB | −80.0 to 0.0 | All spatial + non-spatial SFX |
 | Ambient bus | 0.0 dB | −80.0 to 0.0 | Per-location ambient loops + detail layers |
-| Voice bus | 0.0 dB | −80.0 to 0.0 | VO playback; never ducked |
+| Voice bus | 0.0 dB | −80.0 to 0.0 | VO playback; ducks **−12 dB on `document_opened`** per CR-DS-17 (v0.3 — D&S §F.6 #5 amendment); not ducked by VO itself |
 | UI bus | 0.0 dB | −80.0 to 0.0 | Menu clicks, document overlay SFX, clock-tick |
 
 ### Transition durations (designer-adjustable)
@@ -444,6 +456,7 @@ Revised 2026-04-21 — flat `music_duck_db` replaced by state-keyed per-layer du
 | `nondiegetic_duck_combat_db` | −4.0 | −2.0 to −6.0 | `MusicNonDiegetic` duck during `*_combat` (lightest — score IS the alert signal) |
 | `ambient_duck_db` | −6.0 | −2.0 to −12.0 | Ambient duck (flat across states) |
 | `document_overlay_music_db` | −10.0 | −5.0 to −15.0 | Music level during document reading |
+| `voice_overlay_duck_db` *(v0.3 NEW — D&S CR-DS-17 amendment 2026-04-28)* | **−12.0** | −18.0 to 0.0 | Voice bus duck on `document_opened` so VO recedes while player reads; restores on `document_closed`. v0.3 deepened from initial −6.0 dB target to broadcast intelligibility floor per audio-director re-review. Playtest-tunable. |
 | `document_overlay_ambient_db` | −20.0 | −10.0 to −30.0 | Ambient level during document reading (more suppressed — the world recedes) |
 
 ### Spatial audio parameters

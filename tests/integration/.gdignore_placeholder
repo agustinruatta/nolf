@@ -1,0 +1,5 @@
+# Integration tests go here — one subdirectory per system or cross-system flow.
+# Example: tests/integration/save_load/save_load_round_trip_test.gd
+# File naming: [system]_[feature]_test.gd
+# Function naming: test_[scenario]_[expected_result]
+# See tests/README.md for full conventions.

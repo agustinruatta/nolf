@@ -251,6 +251,8 @@ Settings (volume, input rebindings, accessibility toggles) are persisted in a se
 
 **📌 UX Flag — Save / Load**: The Load Game screen, the Pause Menu Save Game screen, and the save-failed dialog all need UX specs in Phase 4. Run `/ux-design` on these screens before writing Menu System epics. Stories that reference save UX should cite `design/ux/load-game-screen.md`, `design/ux/save-game-screen.md`, and `design/ux/save-failed-dialog.md`, not the save-load GDD directly.
 
+**Indirect UI consumer — Slot 0 destructive guard**: `design/ux/new-game-overwrite.md` (APPROVED 2026-04-29) is the confirm modal that gates `LS.transition_to_section(NEW_GAME)` from Main Menu. Slot 0 is destroyed indirectly via LS's first-autosave trigger on section entry per CR-1 + CR-3 — the modal does NOT call `SaveLoad` directly. Consumes slot 0 metadata semantics (OCCUPIED / EMPTY / CORRUPT state, sidecar schema) for upstream Continue button label-swap logic per Menu System CR-5 / CR-6.
+
 ## Cross-References
 
 | This Document References | Target | Specific Element | Nature |

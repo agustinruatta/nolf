@@ -377,6 +377,13 @@ Player feedback during the 2.5 s flow is entirely aural (Audio's silence + fade)
 
 If **OQ-FR-4** resolves toward a non-blocking "Auto-save failed" HUD warning on IO_ERROR, that widget is owned by HUD State Signaling (system 19, VS scope), not by F&R. Any such widget routes through `Events.save_failed` (Save/Load publishes it) or a new advisory signal that F&R would emit — to be decided by UX at that time.
 
+**UI consumer of F&R API — Re-Brief Operation modal** *(VS scope, conditional per OQ-FR-11 Tier 0 Plaza playtest gate)*: `design/ux/re-brief-operation.md` (APPROVED 2026-04-29) is the Pause-Menu-mounted confirm modal that gates `FailureRespawn.restart_from_checkpoint()` for player-initiated checkpoint reload. The modal is a **UX consumer** of F&R's public API — F&R's UI surface remains "None" by design (Pillar 5), but Menu System's Pause Menu provides the player-facing entry point. **3 BLOCKING F&R-coord OQs surfaced by the spec for VS sprint kickoff**:
+- **OQ-RBO-1** — F&R API name discrepancy: menu-system.md CR-13 specifies `FailureRespawn.has_checkpoint() -> bool` (visibility query for Pause Menu's Re-Brief button); pause-menu.md L592 specifies `MissionLevelScripting.has_checkpoint_in_current_section() -> bool`. Recommended resolution: F&R-owned (per CR-13 [BLOCKING coord] explicit assignment). Adds public query API to F&R.
+- **OQ-RBO-2** — Anti-farm respawn floor on player-initiated re-brief: per F&R CR-5/CR-7, the floor applies on "first death of this checkpoint." Player-initiated re-brief is NOT a death. Recommended resolution: NO floor on player-initiated re-brief (Pillar 3 "stealth is theatre, not punishment" framing). Requires F&R API parameterization, e.g., `restart_from_checkpoint(initiator: Initiator.PLAYER_INITIATED \| Initiator.DEATH)`, OR split into two APIs.
+- **OQ-RBO-3** — Slot 0 autosave behavior on player-initiated re-brief: F&R's death pipeline writes a fresh slot 0 at step 4 per CR-1 (capturing dying state). Recommended resolution: SKIP fresh save on player-initiated re-brief (player explicitly chose to discard recent progress; saving the discarded state is counter-intuitive). Reload existing slot 0 only.
+
+These three OQs touch F&R's CR-1 / CR-5 / CR-6 / CR-7 — pending resolution they may add a new "player-initiated re-brief" branch to the F&R state machine. Coord with technical-director + creative-director before VS sprint kickoff. The UX spec also documents AC-RBO-12.1 [Playtest] [ADVISORY] — Tier 0 Plaza playtest gate on re-brief ship-at-VS-vs-Polish (per OQ-FR-11 + pause-menu.md OQ-PM-1).
+
 ## Acceptance Criteria
 
 Evidence paths base: `tests/unit/failure_respawn/` (Logic), `tests/integration/failure_respawn/` (Integration), `production/qa/evidence/failure_respawn/` (Visual/Feel, UI).

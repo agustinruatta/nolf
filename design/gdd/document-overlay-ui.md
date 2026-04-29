@@ -1055,21 +1055,22 @@ Document Overlay UI **IS** UI — this entire GDD specifies a UI surface. Where 
 
 The UX spec is the production-ready hand-off artifact; this GDD specifies the design contract; the UX spec specifies the implementation visual + interaction details.
 
-### UI-4 Pillar 5 absolute floor (re-stated for UX visibility)
+### UI-4 Anchor-enforced absolute floor (re-stated for UX visibility)
 
-The 9 Pillar 5 absolutes from §G.5 are restated here as UI requirements (so they are visible to UX/UI implementers):
+The **10 anchor-enforced absolutes** from §G.5 are restated here as UI requirements (so they are visible to UX/UI implementers). Note: per the 2026-04-27 anchor relabeling in §G.5, these are **NOT all "Pillar 5 absolutes"** — the anchor mix is Pillar 5 + Lectern Pause + photosensitivity floor + production-economics floor + platform-constraint floor. Refer to §G.5 for per-item anchor labels.
 
-1. No zoom / pan on the card
-2. No auto-dismiss timer
-3. No music swell on open (Audio ducks; never swells)
-4. No "swipe to next page" / horizontal navigation (one document at a time)
-5. No typewriter character-reveal animation
-6. No inline glossary links / clickable terms
-7. No progress percentage / X-of-Y counter visible during read
-8. No voiceover / narrated reading (silent reading model; AccessKit reads body directly)
-9. No smooth-scroll inertia
+1. No zoom / pan on the card *(Lectern Pause + Pillar 5; FP-OV-3)*
+2. No auto-dismiss timer *(Lectern Pause; FP-OV-2)*
+3. No music swell on open *(Lectern Pause anchor — relabeled 2026-04-27 from Pillar 5; Audio ducks, never swells)*
+4. No "swipe to next page" / horizontal navigation *(Lectern Pause + Pillar 5)*
+5. No typewriter character-reveal animation *(Lectern Pause + photosensitivity floor; FP-OV-14)*
+6. No inline glossary links / clickable terms *(Lectern Pause + Pillar 5; FP-OV-13)*
+7. No progress percentage / X-of-Y counter visible during read *(Lectern Pause + Pillar 5; FP-OV-10)*
+8. No recorded voiceover / narrated reading *(Lectern Pause + Pillar 5 + production-economics floor; AccessKit reads body directly; synthesized platform TTS via `DisplayServer.tts_speak()` is permitted as a Settings-owned opt-in per §G.5)*
+9. No smooth-scroll inertia *(Platform-constraint floor — relabeled 2026-04-27 from Pillar 5; FP-OV-12)*
+10. No in-overlay font resize controls *(Pillar 5 + Lectern Pause; system-level `text_scale_multiplier` from Settings is permitted and required for SC 1.4.4 — added 2026-04-27 per game-designer)*
 
-Any UX spec, UI implementation, or future amendment that proposes relaxing any of these triggers a creative-director gate per the Lectern Pause anchor test.
+Any UX spec, UI implementation, or future amendment that proposes relaxing any of these triggers a creative-director gate per the relevant anchor test ("would a 1965 professional reader accept this from the page in front of her?"). Anchor-mislabeling is not allowed: an amendment that wants to add a music swell must justify against the *Lectern Pause* anchor, not Pillar 5.
 
 ### UI-5 Boundary — what this Overlay does NOT render
 

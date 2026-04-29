@@ -2,7 +2,7 @@
 
 > **Status**: In Design
 > **Author**: ux-designer + agustin.ruatta@vdx.tv (solo)
-> **Last Updated**: 2026-04-28
+> **Last Updated**: 2026-04-29
 > **Template**: Interaction Pattern Library
 > **Closes**: `/gate-check pre-production` blocker #5 of 7
 > **Linked Documents**: `design/gdd/systems-index.md` · `design/accessibility-requirements.md` · `design/gdd/input.md` · `design/gdd/menu-system.md` · `design/gdd/hud-core.md` · `design/gdd/hud-state-signaling.md` · `design/gdd/document-overlay-ui.md` · `design/gdd/cutscenes-and-mission-cards.md` · `design/gdd/dialogue-subtitles.md` · `design/gdd/settings-accessibility.md` · `design/gdd/save-load.md` · `design/gdd/failure-respawn.md` · `design/gdd/localization-scaffold.md` · `docs/architecture/adr-0004-ui-framework.md` (Proposed)
@@ -35,9 +35,9 @@ This library is the canonical catalog of **interaction patterns** used across *T
 
 The catalog below indexes every pattern in this library, grouped by category. **ID** is the stable kebab-case reference UX specs and stories cite. **Pillar fit** lists the pillar(s) the pattern serves; "Engineering primitive" means the pattern is an architecture/correctness rule with no direct pillar tie. **Used in** is non-exhaustive — full dependency lists live in each pattern's specification below.
 
-**Totals**: 34 patterns across 9 categories.
+**Totals**: 36 patterns across 9 categories.
 
-### Input Routing (5)
+### Input Routing (6)
 
 | ID | One-line | Used in | Pillar fit |
 |---|---|---|---|
@@ -46,16 +46,18 @@ The catalog below indexes every pattern in this library, grouped by category. **
 | `dual-focus-dismiss` | Modal dismiss must fire from keyboard, gamepad, and (when applicable) mouse-click-outside, regardless of which child element holds focus. | Document Overlay, Quit-Confirm, Save-overwrite, Save-failed, Photosensitivity warning. | Standard-tier accessibility |
 | `set-handled-before-pop` | `set_input_as_handled()` MUST run before `InputContext.pop()` to prevent silent-swallow propagation. | Every dismiss handler. | Engineering primitive |
 | `held-key-flush-after-rebind` | Settings calls `Input.action_release()` immediately after `action_erase_events` + `action_add_event` to avoid a stuck "pressed" state. | Settings rebinding flow. | Engineering primitive |
+| `tab-consume-non-focusable-modal` | Modal-root absorbs `ui_focus_next` / `ui_focus_prev` when the modal subtree has zero secondary focusable Controls, preventing focus escape. Optional polite AT announce on Tab consumption. | Document Overlay (only modal with no secondary focus targets at VS). | Standard-tier accessibility (focus trap correctness) |
 
-### Modal & Dialog (5)
+### Modal & Dialog (6)
 
 | ID | One-line | Used in | Pillar fit |
 |---|---|---|---|
-| `modal-scaffold` | Shared template for every blocking dialog: focus trap + assertive announce + Confirm/Cancel button order + Esc/B dismiss + InputContext push to MODAL. | Quit-Confirm, Return-to-Registry, Re-Brief, New-Game-Overwrite, Save-overwrite, Save-failed. | Engineering primitive + Standard-tier accessibility |
+| `modal-scaffold` | Shared template for every blocking dialog: focus trap + assertive announce + Confirm/Cancel button order + Esc/B dismiss + InputContext push to MODAL. | Quit-Confirm, Return-to-Registry, Re-Brief, New-Game-Overwrite, Save-overwrite, Save-failed, Photosensitivity boot-warning. | Engineering primitive + Standard-tier accessibility |
 | `stage-manager-carve-out` | Settings-gated opt-in (default `false`) that lets accessibility unlock a Pillar-5 absolute. The project's signature Pillar-5 vs WCAG resolution. | Cutscenes (cinematic skip + text summary), HUD Core (damage flash off), any future Pillar-5 vs WCAG conflict. | Pillar 5 (load-bearing) + Accessibility |
 | `photosensitivity-boot-warning` | First-launch persistent-flag modal warning + opt-out toggle, before any cinematic or chromatic flash plays. | Settings boot, before Main Menu. Anchors `hud_damage_flash_enabled` + Cutscenes CT-03 chromatic flash. | Accessibility (Basic+, project-elevated) |
 | `save-failed-advisory` | PHANTOM-Red header band + Retry/Abandon buttons + assertive screen-reader announce; non-destructive (player choice, not auto-retry). | Save/Load (autosave failure, manual save failure, quicksave failure). | Pillar 5 (dossier register) + Accessibility |
 | `case-file-destructive-button` | Ink Black fill + Parchment text styling for the destructive button in any Case File register modal. Distinct from the default BQA Blue safe-action button. Position is button-row left (paired with default-focus safe-action button on the right). Added 2026-04-29 per `design/ux/quit-confirm.md` OQ #3. | Quit-Confirm (Close File), Return-to-Registry (Return to Registry), Re-Brief Operation (Re-Brief), New-Game-Overwrite (Confirm). 4 known consumers via [CANONICAL] inheritance from `quit-confirm.md`. | Pillar 5 (Case File destructive register) + Standard-tier accessibility (color-independence via 4-signal redundancy) |
+| `lectern-pause-card-modal` | Card-UI sister of `lectern-pause-register`: Parchment-on-sepia-dim gameplay-time modal card with no buttons, dismissed only via `ui_cancel`. Added 2026-04-29 per `design/ux/document-overlay.md` `/ux-review` OQ-UX-DOV-1. | Document Overlay UI (sole instance at VS). | Pillar 5 (Period Authenticity) + Pillar 2 (Discovery Rewards Patience) + Standard-tier accessibility |
 
 ### Cinematic & Card (5)
 
@@ -93,7 +95,7 @@ The catalog below indexes every pattern in this library, grouped by category. **
 |---|---|---|---|
 | `rebind-three-state-machine` | `NORMAL_BROWSE → CAPTURING → CONFLICT_RESOLUTION` state machine with cancel-out via Esc, conflict-warning UI, persistence to `user://settings.cfg`. | Settings rebinding screen. | Standard-tier accessibility |
 | `toggle-hold-alternative` | Every "hold [button] to [action]" input offers a Settings-gated toggle alternative. | Sprint, crouch, ADS, gadget-charge (Settings CR-22 Day-1 MVP). | Standard-tier accessibility (motor) |
-| `accessibility-opt-in-toggle` | The pattern shape for any Settings-gated accessibility opt-in: default `false`, persisted, label clarifies the trade-off, anchored to a Pillar-5 carve-out. | `accessibility_allow_cinematic_skip`, `cinematic_text_summary_enabled`, `hud_damage_flash_enabled`, `clock_tick_enabled`, `crosshair_enabled`. | Accessibility + Pillar 5 (carve-out shape) |
+| `accessibility-opt-in-toggle` | The pattern shape for any Settings-gated accessibility opt-in: default `false`, persisted, label clarifies the trade-off, anchored to a Pillar-5 carve-out. | All Settings → Accessibility toggles (see Settings & Accessibility GDD §G.3 for canonical list). | Accessibility + Pillar 5 (carve-out shape) |
 
 ### Menu & Save (3)
 
@@ -261,6 +263,38 @@ The catalog below indexes every pattern in this library, grouped by category. **
 
 ---
 
+#### `tab-consume-non-focusable-modal`
+
+**Category**: Input Routing
+**Pillar fit**: Standard-tier accessibility (focus trap correctness)
+**Owner of contract**: Document Overlay UI GDD §C.8 + CR-16 (canonical instance) + this entry
+**Used In**: Document Overlay UI (sole instance at VS — only modal with zero secondary focusable Controls).
+
+**Description**. When a modal subtree intentionally has zero secondary focusable Controls — i.e., no buttons, only a single scroll region or static text — the modal root must consume `ui_focus_next` and `ui_focus_prev` actions in `_unhandled_input` to prevent focus escape from the modal subtree to underlying gameplay or HUD focus targets. Without consumption, pressing Tab while reading would advance focus into the gameplay tree (where focus targets may not even exist or may be stale), confusing AT users and breaking the modal focus trap. The pattern complements `dual-focus-dismiss` (which governs Esc/B/click-outside dismissal) — together they form the complete input-handling contract for a no-button modal.
+
+**Specification**.
+
+1. **Trigger**. Modal subtree's `_unhandled_input(event)` checks `event.is_action_pressed("ui_focus_next")` and `event.is_action_pressed("ui_focus_prev")` after the `InputContext.is_active(MODAL_X)` gate.
+2. **Consume**. Call `set_input_as_handled()` immediately. Do NOT call `grab_focus()` on any other Control — the focus stays where it is.
+3. **No fallback button focus injection**. The pattern explicitly does NOT inject a synthetic focusable Control to receive Tab — that would require the modal to grow a second focus target (defeating the design intent of a no-button card).
+4. **Optional polite AT announce** (post-VS enhancement). On Tab consumption, fire a polite `accessibility_live` announce: "[Modal name] — use arrow keys to scroll, Escape to close." Default OFF at VS pending Gate A AccessKit API confirmation.
+5. **Pairs with `dual-focus-dismiss`**. The modal still dismisses via Esc/B/click-outside per `dual-focus-dismiss`; this pattern only governs `ui_focus_next` / `ui_focus_prev`.
+6. **Code-review check**. The combination "non-focusable modal + missing Tab-consume" is a defect — the modal will leak focus to gameplay. Pair this pattern's adoption with a code-review verification that no second focusable Control exists in the modal subtree.
+
+**When to Use**. Modals that intentionally have a single (or zero) focusable Control — typically reading surfaces where Tab has no meaningful target. Document Overlay is the canonical instance.
+
+**When NOT to Use**.
+
+- Multi-button modals — use `modal-scaffold`'s built-in focus trap (which cycles Tab among modal-internal focusable Controls).
+- HUD widgets and non-modal surfaces — they don't claim input exclusively, so Tab consumption would be over-broad.
+- Settings rebind capture state — that's a separate `rebind-three-state-machine` capture sub-state with its own focus rules.
+
+**Accessibility notes**. The optional polite AT announce (specification rule 4) addresses a screen-reader UX gap: without the announce, AT users press Tab expecting movement and receive silence, which can read as a broken interaction. The polite-not-assertive choice avoids interrupting an in-progress body read. Mandatory at Comprehensive tier; ADVISORY at Standard tier (this project's commitment).
+
+**Reference**: `design/ux/document-overlay.md` Interaction Map → "Modal interactions" + GDD CR-16 is the canonical specification.
+
+---
+
 ### Modal & Dialog
 
 #### `modal-scaffold`
@@ -277,7 +311,7 @@ The catalog below indexes every pattern in this library, grouped by category. **
 1. **Scene structure**. CanvasLayer (per-surface layer index, see ADR-0004) → modal Control with full-screen scrim → centered modal panel with Theme inheritance from `project_theme.tres`.
 2. **Input contract** (mandatory). On open: push `InputContext.MODAL` (or surface-specific context like `DOCUMENT_OVERLAY`). On close: `set-handled-before-pop`. Dismiss obeys `dual-focus-dismiss` unless the surface is explicitly Pillar-5-locked (Mission Cards).
 3. **Focus contract** (mandatory). On open, focus moves to the safest default button (Cancel for destructive dialogs, Acknowledge for advisory; never the destructive button by default). Focus is trapped within the modal — Tab/Shift+Tab cycles only modal-internal focusable Controls.
-4. **Button order** (locked). Cancel is leftmost, Confirm is rightmost (LTR locales). For RTL locales, the order mirrors. Destructive Confirm uses PHANTOM Red; non-destructive Confirm uses BQA Blue (Art Bible §3 palette).
+4. **Button order** (locked). Cancel is leftmost, Confirm is rightmost (LTR locales). For RTL locales, the order mirrors. Destructive Confirm uses PHANTOM Red `#C8102E` **EXCEPT in Case File register modals**, which use the `case-file-destructive-button` pattern (Ink Black `#1A1A1A` fill, Parchment text — see that pattern). Non-destructive Confirm uses BQA Blue `#1B3A6B` in both registers (Art Bible §3 palette).
 5. **AccessKit contract** (Day-1 mandate per ADR-0004 IG10).
    - `accessibility_role = ROLE_DIALOG`
    - `accessibility_name = tr(title_key)`
@@ -447,6 +481,43 @@ The name comes from "Stage Manager" register — the Settings panel's authorial 
 **Accessibility notes**. The 4-signal redundancy (color + position + text + focus) is the load-bearing accessibility claim — it satisfies WCAG SC 1.4.1 (color-independence) without requiring color-blind variants of the Ink Black palette. Default focus on the safe button (per `modal-scaffold`) means motor-accessibility players who accidentally press Enter immediately on modal mount will trigger the safe path, not the destructive path. The mandatory `accessibility_description` provides plain-language clarification for cognitive accessibility.
 
 **Reference**: `design/ux/quit-confirm.md` Section C.3 + Section C.4 ASCII Wireframe (default state + Tab-to-Close-File focus state) is the canonical visual reference. Sibling modals (`return-to-registry.md`, `re-brief-operation.md`, `new-game-overwrite.md`) inherit verbatim per [CANONICAL] flag.
+
+---
+
+#### `lectern-pause-card-modal`
+
+**Category**: Modal & Dialog
+**Pillar fit**: Pillar 5 (Period Authenticity) + Pillar 2 (Discovery Rewards Patience — load-bearing) + Standard-tier accessibility
+**Owner of contract**: Document Overlay UI GDD §V.1 + §C.2 + this entry; cross-paired with `lectern-pause-register` (HUD & Notification — composite world-state register sister)
+**Used In**: Document Overlay UI (sole instance at VS).
+**Related**: `lectern-pause-register` (HUD & Notification) — the composite world-state register that surrounds this card. The two patterns always co-fire: that entry coordinates the world-state (sepia + audio duck + HUD hide + banter suppression); this entry specifies the readable card surface the player interacts with. Implementers must wire both — the register without the card has no UI; the card without the register has no Lectern Pause framing.
+
+**Description**. The Parchment-on-sepia-dim card UI used by the Document Overlay. Sister to `lectern-pause-register` — the latter is the project-wide composite mode (sepia-dim + ducked music + suppressed banter + suppressed HUD + suspended alert-music) the world enters when the overlay opens; this pattern is the *card itself* (the visible UI surface the player reads). The card is hard-edged BQA Blue header + Parchment body + American Typewriter Bold/Regular, with no buttons and no on-card chrome other than an optional scrollbar; dismissal is exclusively via `ui_cancel`. Distinct from Case File `modal-scaffold` (which has buttons, an Ink Black destructive register, and a manila-folder shell on Pause Menu mount).
+
+**Specification**.
+
+1. **Mount**. The card is instantiated by Mission & Level Scripting per-section (NOT autoload registry-mounted) at `CanvasLayer 5`, between PPS sepia ColorRect (CanvasLayer 4) and HUD Core (CanvasLayer 6). Single-instance invariant per Document Overlay CR-3.
+2. **Visual frame**. PanelContainer 960 × 680 px at 1080p reference (clamps to 800 px min wide); BQA Blue `#1B3A6B` 64 px header band; Parchment `#F2E8C8` body with 32 px T/B + 48 px L/R padding; Parchment continuation footer 30 px (or 44 px when scroll hint visible).
+3. **Typography**. American Typewriter Bold 20 px Parchment for `TitleLabel`; American Typewriter Regular 16 px Ink Black on Parchment for body; American Typewriter Regular 12 px Ink Black for footer hints.
+4. **No buttons**. The card has zero focusable secondary controls (FP-OV-9 — explicit prohibition on Close/Done/Mark-as-read buttons). Dismiss is `ui_cancel` only; focus trap consumes Tab/Shift+Tab via `tab-consume-non-focusable-modal`.
+5. **Scroll behavior**. `ScrollContainer` with `vertical_scroll_mode = SCROLL_MODE_AUTO`; 4 px scrollbar on right edge when overflow detected. No smooth-scroll inertia (FP-OV-12). Scroll hint label ("SCROLL — ↑ ↓ / Right Stick") appears in footer only when overflow detected.
+6. **Open/close transitions**. Card snaps to visible at frame 0 (no fade-in); sepia engages around it via the paired `lectern-pause-register`. On close: card snaps to invisible (Option B "snappy dismiss"); sepia disengages around the now-empty space. Reduced-motion: identical card behavior; sepia transitions use the register's reduced-motion variant (instant engage/disengage).
+7. **AccessKit contract**. `accessibility_role = ROLE_DIALOG` on modal root; `heading` role on `TitleLabel`; `scroll_area` on `BodyScrollContainer`; assertive one-frame announce on mount via the register's contract (post-`grab_focus` on `TitleLabel`).
+8. **Anchor-enforced absolutes**. No swipe-to-next, no zoom/pan, no auto-dismiss, no music swell, no typewriter character-reveal, no inline glossary links, no progress percentage, no in-overlay font controls. Per Document Overlay GDD §G.5 (10 anchor-enforced absolutes; mixed anchors — Pillar 5, Lectern Pause, photosensitivity floor, production-economics floor, platform-constraint floor).
+
+**When to Use**. Single-document gameplay-time read with no decision required from the player; player needs posture to read; dismiss is the only verb.
+
+**When NOT to Use**.
+
+- Modals that require a player decision (Save-overwrite, Quit-Confirm, Re-Brief, New-Game-Overwrite) — use `modal-scaffold` (Case File register) instead.
+- Mission Cards (briefing/closing/objective) — use `mission-card-hard-cut-entry` instead.
+- Pause Menu / Settings / Save grid screens — use `pause-menu-folder-slide-in` ancestry.
+- A "browse a list of documents" screen (post-VS Polish-or-later case-file archive per DC §E.12) — that's a list view, not a single-document read; would need its own pattern.
+- Any new register that wants Parchment + American Typewriter without the sepia-dim composite — the card pattern is paired with `lectern-pause-register` and cannot be invoked standalone.
+
+**Accessibility notes**. The card has only one focusable Control (`BodyScrollContainer` for keyboard scroll); Tab/Shift+Tab consumption is mandatory (`tab-consume-non-focusable-modal`) so AT users don't tab into hidden gameplay focus targets. Body content must be exposed to AccessKit as parsed plain text (BBCode-stripped) — pending Gate G verification per ADR-0004. Scroll hint and dismiss hint use 12 px American Typewriter on Parchment; contrast ratio ~13.5:1 (WCAG AAA). Title contrast on BQA Blue is ~7.2:1 (WCAG AAA).
+
+**Reference**: `design/ux/document-overlay.md` is the canonical UX spec for this pattern; `design/gdd/document-overlay-ui.md` §V.1 is the design contract; `lectern-pause-register` (this catalog, HUD & Notification) is the paired world-state register.
 
 ---
 
@@ -622,6 +693,7 @@ The pattern relies on a strict Pillar 5 absolute (FP-CMC-3): no visible affordan
 **Pillar fit**: Pillar 1 (theatre-mode refusal) + Pillar 2 (reading rewards patience) + Pillar 3 (theatre register)
 **Owner of contract**: Document Overlay UI §A.3 / §C.4 (open lifecycle) + Audio §Concurrency rule 6 + HUD Core CR-22 (Tween.kill on context leave) + D&S CR-DS-4 (banter suppression) + Post-Process Stack `enable_sepia_dim()` API
 **Used In**: Document Overlay UI (sole instance). The pattern is named because it's the project's "suspended parenthesis" register — a complete interruption of gameplay where the game world dims into a backdrop and the document is the entire experience.
+**Related**: `lectern-pause-card-modal` (Modal & Dialog) — the *card-UI surface* that this register surrounds. The two patterns always co-fire: this entry coordinates the world-state (sepia + audio duck + HUD hide + banter suppression); the card-modal entry specifies the readable card the player interacts with. Implementers must wire both — the register without the card has no UI; the card without the register has no Lectern Pause framing.
 
 **Description**. When Document Overlay opens, six systems coordinate to produce a single register: Post-Process Stack applies sepia-dim shader (0.5 s ease-in-out); AudioManager ducks music + suspends alert-music transitions + suppresses banter; HUD Core hides all widgets via `Tween.kill` on context leave; D&S subtitle system self-suppresses; Cutscenes does not fire (CUTSCENE context is incompatible with DOCUMENT_OVERLAY); InputContext pushes DOCUMENT_OVERLAY. The result is a "Lectern Pause" — the world is still running but visually receded; the document is the only thing the player can interact with. On close, the reverse happens; if the world changed during reading (e.g., a guard spotted Eve), the change applies on the close frame as the audible cue.
 
@@ -1011,7 +1083,7 @@ The pattern relies on a strict Pillar 5 absolute (FP-CMC-3): no visible affordan
 **Category**: Settings & Rebinding
 **Pillar fit**: Accessibility + Pillar 5 (carve-out shape)
 **Owner of contract**: Settings & Accessibility G.3 (Accessibility category) + `stage-manager-carve-out` pattern (this library)
-**Used In**: `accessibility_allow_cinematic_skip`, `cinematic_text_summary_enabled`, `hud_damage_flash_enabled`, `clock_tick_enabled`, `crosshair_enabled`, `subtitles_enabled`, `subtitle_speaker_labels`, `reduced_motion`. Every Settings-gated accessibility option in the project.
+**Used In**: All Settings → Accessibility toggles (see Settings & Accessibility GDD §G.3 for canonical list).
 
 **Description**. The pattern shape for any Settings-gated accessibility opt-in. Each toggle has: a concrete default value (most are `false`, but subtitles default `true` per VS commitment); a clear label that names the trade-off rather than the technical implementation ("Allow skipping unwatched cinematics" not "cutscene_dismiss_gate_bypass"); persistence to `user://settings.cfg [accessibility]`; and a one-line description in the Settings panel that surfaces the trade-off (without moralizing). When the toggle relaxes a Pillar 5 absolute, it follows the additional rules of `stage-manager-carve-out`. This pattern's specification covers the universal toggle shape; the carve-out pattern adds Pillar-5-specific rules on top.
 
@@ -1248,7 +1320,7 @@ Patterns identified during authoring as needed but not specified in this MVP lib
 
 | Gap | Triggered by | Why it's a gap | Recommended next step |
 |---|---|---|---|
-| **`settings-slider-pattern`** | `accessibility-opt-in-toggle` Spec rule 7 ("Settings sliders … have their own pattern, not this one") | Continuous-value Settings (subtitle size scale, UI scale, mouse sensitivity, audio bus volumes, brightness) need a slider pattern with live preview semantics, increment behavior on KB+gamepad, AccessKit role + value announce. Toggles are specified; sliders are not. | Author after first Settings UX spec is drafted (`design/ux/settings-accessibility-tab.md`). Pattern likely needs: live preview vs commit-on-release, AccessKit `ROLE_SLIDER` + `accessibility_value` updates, gamepad d-pad fine-tune behavior. |
+| **`settings-slider-pattern`** ⚠ **BLOCKING** | `accessibility-opt-in-toggle` Spec rule 7 ("Settings sliders … have their own pattern, not this one") + `design/ux/settings-and-accessibility.md` (slider widgets referenced throughout: 6 audio sliders, `damage_flash_cooldown_ms`, `subtitle_line_spacing_scale`, `subtitle_letter_spacing_em`, `mouse_sensitivity_x/y`, `gamepad_look_sensitivity`, and VS sliders) | Continuous-value Settings (subtitle size scale, UI scale, mouse sensitivity, audio bus volumes, brightness) need a slider pattern with live preview semantics, increment behavior on KB+gamepad, AccessKit role + value announce. Toggles are specified; sliders are not. `design/ux/settings-and-accessibility.md` references this pattern by name across every slider widget — a blocking dependency for the VS sprint. | Author before VS sprint kickoff (referenced by `design/ux/settings-and-accessibility.md` slider widgets). **Owner: ux-designer. Deadline: Before VS sprint kickoff.** Pattern needs: live preview vs commit-on-release, AccessKit `ROLE_SLIDER` + `accessibility_value` updates, gamepad d-pad fine-tune behavior. |
 | **`section-load-transition`** | Level Streaming GDD §UI Requirements (referenced briefly in `fade-to-black-close` "When NOT to Use") | Inter-section transitions during gameplay use a 2-frame hard-cut per F&R 2026-04-21 ruling, but the pattern around what shows during the cut (loading screen? black? Operations Archive register?) is not specified here. The 2-frame cut itself is in F&R; the player-facing UX of the cut is undefined. | Author when Level Streaming UX spec is drafted. Likely the cut shows nothing (true hard cut to next section); but if there's a multi-second load on slow disk, an Operations-register loading card may be needed. |
 | **`document-archive-browser`** | Document Collection §E.12 (Polish-or-later) — re-read collected documents from Pause Menu | A future "case-file archive" UX where the player can re-read previously collected documents. Polish or post-launch. The archive needs filter / sort / search semantics that don't exist anywhere else in the project. | Author when Polish phase begins. Until then, collected documents are write-only (player reads on collection, then can't re-read). |
 | **`gamepad-rebinding-parity`** | Settings & Accessibility CR-22 + technical-preferences.md (gamepad rebinding parity is post-MVP) | KB+M rebinding flow is specified by `rebind-three-state-machine`. Gamepad rebinding parity is post-MVP per project commitment; when added, it will need its own pattern variant (gamepad-button capture, gamepad-axis capture for analog inputs, conflict detection across both KB+M and gamepad bindings). | Document at the time gamepad rebinding parity is committed (post-MVP). The pattern shape is similar to KB+M; variations are in the capture state's input filtering. |

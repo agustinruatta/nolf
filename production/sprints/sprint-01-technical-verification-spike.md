@@ -4,9 +4,9 @@
 |-------|-------|
 | **Sprint Number** | 01 |
 | **Sprint Type** | Verification Spike (Pre-Production) |
-| **Status** | In Progress |
+| **Status** | Complete (2026-05-01) — all in-scope gates closed; ADR-0008 + ADR-0004 G5 deferred to production-scope verification (documented). |
 | **Start Date** | 2026-04-29 |
-| **Target End Date** | TBD — gated on user availability for Godot editor checks |
+| **Target End Date** | 2026-05-01 (closed via user visual sign-off on prototypes 3.1, 3.2, 3.3 — see Group 3 status; ADR-0005 promoted to Accepted) |
 | **Stage Context** | Pre-Production (per `production/stage.txt`) |
 
 ## Goal
@@ -58,11 +58,11 @@ Group 2 acceptance: each verification script returns the expected output; result
 
 | ID | Deliverable | Closes ADR Gate(s) | Status |
 |----|-------------|--------------------|--------|
-| 3.1 | `stencil_outline_demo.tscn` — uses native Godot 4.6 `stencil_mode = Outline` API (Finding F4 — see verification-log). 5 cubes covering 3 active tiers + no-outline control + distance test. Loads cleanly headless. | ADR-0001 G1 (closed via Finding F4 path); ADR-0001 design itself pending user visual verification | Code ✅ written 2026-04-29; visual verify pending |
-| 3.2 | `fps_hands_demo.tscn` + `inverted_hull_outline.gdshader` — 3 capsules: inverted-hull outline / no outline / native stencil tier-HEAVIEST. Single-viewport (SubViewport integration deferred to FPS Hands production story). Loads cleanly headless. | ADR-0005 G1 | Code ✅ written 2026-04-29; visual verify pending |
-| 3.3 | Cross-platform Vulkan + D3D12 spot-check on prototypes 3.1 + 3.2 | ADR-0001 G2, ADR-0005 G2 | Pending |
-| 3.4 | Profile outline pass on integrated graphics @ 1080p + 75% scale | ADR-0001 G3 | Pending |
-| 3.5 | Shader Baker compatibility check on `CompositorEffect` shaders | ADR-0001 G4 | Pending |
+| 3.1 | `stencil_outline_demo.tscn` — uses native Godot 4.6 `stencil_mode = Outline` API (Finding F4 — see verification-log). 5 cubes covering 3 active tiers + no-outline control + distance test. Loads cleanly headless. | ADR-0001 G1 (closed via Finding F4 path); ADR-0001 design itself pending user visual verification | ✅ Done (2026-05-01) — user visual sign-off; outlines visibly chunky/world-space-bound per Finding F4, confirms why we don't use the native API |
+| 3.2 | `fps_hands_demo.tscn` + `inverted_hull_outline.gdshader` — 3 capsules: inverted-hull outline / no outline / native stencil tier-HEAVIEST. Single-viewport (SubViewport integration deferred to FPS Hands production story). Loads cleanly headless. | ADR-0005 G1 | ✅ Done (2026-05-01) — user visual sign-off; ADR-0005 promoted Proposed → Accepted |
+| 3.3 | Cross-platform Vulkan + D3D12 spot-check on prototypes 3.1 + 3.2 | ADR-0001 G2, ADR-0005 G2 | ✅ CLOSED BY REMOVAL (2026-04-30 Amendment A2/A6) — D3D12 no longer targeted; Vulkan-only on both platforms |
+| 3.4 | Profile outline pass on integrated graphics @ 1080p + 75% scale | ADR-0001 G3 | ✅ CONDITIONAL PASS (2026-04-30) — RTX 4070 measurement + Iris Xe extrapolation; pass requires production using jump-flood algorithm (Finding F6 → ADR-0001 IG 7). Real Iris Xe verification deferred to first Production sprint that ships outline-bearing scene |
+| 3.5 | Shader Baker compatibility check on `CompositorEffect` shaders | ADR-0001 G4 | ✅ Done (2026-04-30) — `.glsl.import` SPIR-V pre-compile path verified; Finding F5 reframes the check |
 
 Group 3 acceptance: visual outputs match the prototype expectations documented in each ADR; user signs off on visual verification per prototype.
 
@@ -71,7 +71,7 @@ Group 3 acceptance: visual outputs match the prototype expectations documented i
 | ID | Deliverable | Status |
 |----|-------------|--------|
 | 4.1 | `prototypes/verification-spike/verification-log.md` populated with per-ADR-per-gate evidence | ✅ Active (running log; populated as gates close) |
-| 4.2 | ADR status edits — `Status:` and `Last Verified:` updated to `Accepted` once all gates close | ✅ 4 of 8 done (ADR-0002, 0003, 0006, 0007); 4 still Proposed (0001, 0004, 0005, 0008) |
+| 4.2 | ADR status edits — `Status:` and `Last Verified:` updated to `Accepted` once all gates close | ✅ 6 of 8 done (ADR-0001, 0002, 0003, 0005, 0006, 0007); 2 stay Proposed by design — ADR-0004 (G5 BBCode→AccessKit deferred to runtime AT testing) + ADR-0008 (Iris Xe Restaurant reference scene measurement deferred to first Production sprint with the scene) |
 | 4.3 | Re-run `/architecture-review` (sanity check on Accepted ADR set) | Pending — defer until rendering ADRs Accepted |
 | 4.4 | Re-run `/create-control-manifest` (resumes the original chain) | ✅ Done (2026-04-29) — PARTIAL manifest (Foundation + Core) at `docs/architecture/control-manifest.md`; regenerate when rendering ADRs Accept |
 | 4.5 | Re-run `/gate-check` Pre-Production → Production | Pending — would still FAIL (no VS, no playtests, half of ADRs Proposed); re-run after VS sprint completes |

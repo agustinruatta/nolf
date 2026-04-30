@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — moves to Accepted once the remaining verification gates pass. **Gate 1 ✅ PASS** (2026-04-29 Sprint 01 spike — `prototypes/verification-spike/fps_hands_demo.tscn`): inverted-hull capsule renders correct outline on Linux Vulkan; thickness tuning is a production concern, not a gate. **Gate 2 ✅ CLOSED BY REMOVAL** (2026-04-30 Amendment A6): D3D12 is no longer a target backend per ADR-0001 Amendment A2 + `project.godot [rendering] rendering_device/driver.windows="vulkan"`; cross-platform parity collapses to single-Vulkan verification. **Gates 3, 4, 5 still pending** — production scope (resolution-scale toggle behavior, animated rigged hand mesh, Shader Baker × `material_overlay`) requires the actual hands rendering production story.
+**Accepted** (2026-05-01) — promoted after user visual sign-off on `prototypes/verification-spike/fps_hands_demo.tscn` confirmed Gate 1's headless result on Linux Vulkan (Arch, Godot 4.6.2 stable; capsule with inverted-hull outline left, no-outline control middle, native stencil tier-HEAVIEST right — all 3 modes visually distinguishable). **Gate 1 ✅ PASS** (2026-04-29 headless + 2026-05-01 user visual sign-off). **Gate 2 ✅ CLOSED BY REMOVAL** (2026-04-30 Amendment A6): D3D12 is no longer a target backend per ADR-0001 Amendment A2 + `project.godot [rendering] rendering_device/driver.windows="vulkan"`; cross-platform parity collapses to single-Vulkan verification. **Gates 3, 4, 5 ⏸️ DEFERRED TO PRODUCTION** — explicit production-scope (resolution-scale toggle behavior, animated rigged hand mesh, Shader Baker × `material_overlay`) per the ADR's own design; these close inside the Player Character epic's FPS hands rendering story as paired ADR amendments. This pattern mirrors ADR-0001's G3 CONDITIONAL acceptance: the structural decision is locked, production-scope gates close incrementally during implementation. Dependent system GDDs (Player Character, future Outline Pipeline FPS integration) may now reference this ADR.
 
 ## Date
 
@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-30 (Amendment A6: Gate 2 — D3D12/Windows parity — closed by removal per project decision to force Vulkan on Windows. Gate 1 also closed via Sprint 01 spike `prototypes/verification-spike/fps_hands_demo.tscn`. Status stays Proposed pending Gates 3, 4, 5 — production-scope. Earlier: 2026-04-23 Amendment A5 added Gate 5 Shader Baker × `material_overlay` compatibility verification.)
+2026-05-01 (Status promoted Proposed → Accepted via user visual sign-off on `fps_hands_demo.tscn`; G3-G5 deferred to Player Character epic production stories per ADR design. Prior: 2026-04-30 Amendment A6 — Gate 2 closed by removal per project decision to force Vulkan on Windows; Gate 1 headless via Sprint 01 spike. Earlier: 2026-04-23 Amendment A5 added Gate 5 Shader Baker × `material_overlay` compatibility verification.)
 
 ## Decision Makers
 

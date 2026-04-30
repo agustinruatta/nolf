@@ -24,8 +24,11 @@ Per-ADR-per-gate evidence trail. Append a new entry every time a gate is verifie
 | 0004 | G1 — `accessibility_description` / `accessibility_role` settability check | ✅ PASS | 2026-04-29 |
 | 0004 | G3 — `_unhandled_input()` modal dismiss on KB/M + gamepad (input grammar) | ✅ PASS | 2026-04-29 (after Finding F3 fix) |
 | 0004 | G5 — `RichTextLabel` BBCode → AccessKit plain-text serialization | ⏸️ DEFERRED | Cannot verify headlessly; requires runtime AT |
-| 0005 | G1 — Inverted-hull hand outline matches tier-HEAVIEST stencil outline | ✅ PASS | 2026-04-29 (visual verify on Linux Vulkan; thickness tuning is a production concern, not a gate) |
+| 0005 | G1 — Inverted-hull hand outline matches tier-HEAVIEST stencil outline | ✅ PASS | 2026-04-29 headless + 2026-05-01 user visual sign-off on Linux Vulkan (Arch, Godot 4.6.2 stable; capsule with subtle thin outline on left, no-outline control middle, native stencil tier-HEAVIEST on right — all 3 modes visually distinguishable per Finding F4 design) |
 | 0005 | G2 — Cross-platform Vulkan + D3D12 render parity | ✅ CLOSED BY REMOVAL | 2026-04-30 (project forces Vulkan on Windows; D3D12 not targeted) |
+| 0005 | G3 — Resolution-scale toggle behavior on hands viewport | ⏸️ DEFERRED TO PRODUCTION | Closes inside Player Character epic hands rendering story (chicken-and-egg per ADR-0005 §Status: requires actual hands production scope) |
+| 0005 | G4 — Animated rigged hand mesh + bone weights | ⏸️ DEFERRED TO PRODUCTION | Same — production-scope story |
+| 0005 | G5 — Shader Baker × `material_overlay` slot | ⏸️ DEFERRED TO PRODUCTION | Same — production-scope story |
 | 0006 | G1 — `physics_layers.gd` exists with all 5 named constants + masks | ✅ PASS | 2026-04-29 |
 | 0006 | G2 — `project.godot` named 3D physics layer slots 1–5 match constants | ✅ PASS | 2026-04-29 |
 | 0006 | G3 — One real gameplay file uses constants end-to-end | ✅ PASS | 2026-04-29 |
@@ -431,15 +434,19 @@ These were uncovered while running verification scripts; they need to fold back 
 
 Append entries here when an ADR moves to a new status. The ADR file's own `Status:` and `Last Verified:` fields are also updated in the same pass.
 
-```markdown
-### ADR-XXXX → Accepted
+### ADR-0005 → Accepted (2026-05-01)
 
-- **Date**: 2026-MM-DD
-- **All gates passed**: G1 ✅ G2 ✅ ...
-- **Verification log entries**: <link refs to evidence above>
-- **ADR file edits**: `docs/architecture/adr-XXXX-*.md` lines: Status (Proposed → Accepted), Last Verified date stamp
-- **Downstream impact**: <which stories / GDDs / other ADRs unblock>
-```
+- **Gates**: G1 ✅ PASS (user visual sign-off 2026-05-01 on Linux Vulkan; image evidence); G2 ✅ CLOSED BY REMOVAL (Amendment A6, 2026-04-30); G3/G4/G5 ⏸️ DEFERRED TO PRODUCTION (production-scope per ADR §Status — close inside Player Character epic hands rendering story)
+- **Visual sign-off prototype**: `prototypes/verification-spike/fps_hands_demo.tscn` — 3 capsules side-by-side: inverted-hull outline (left, subtle/thin), no-outline control (middle), native stencil tier-HEAVIEST (right, thick/dark). All 3 modes visually distinguishable; inverted-hull approach validated as a reasonable substitute for stencil outlines on first-person hands.
+- **ADR file edits**: `docs/architecture/adr-0005-fps-hands-outline-rendering.md` Status (Proposed → Accepted with G3-G5 deferred-to-production notation, mirroring ADR-0001's G3 CONDITIONAL pattern); Last Verified date stamp 2026-05-01.
+- **Downstream impact**: Player Character epic (`production/epics/player-character/`) unblocks for hands rendering stories; Outline Pipeline epic (post-MVP) unblocks for FPS-hands integration; stories that reference ADR-0005 G3/G4/G5 land within the PC epic and close those gates as paired ADR amendments.
+
+### ADR-0001 visual sign-off (already Accepted per Status; this records user confirmation only)
+
+- **Date**: 2026-05-01
+- **Prototype 1 — `stencil_outline_demo.tscn`** (native `stencil_mode = Outline` API): visually demonstrates Finding F4 (the native API is world-space, NOT screen-space stable — outlines appear chunky/incomplete). Confirms why we don't use the native API. ✅ User visually verified.
+- **Prototype 2 — `stencil_compositor_demo.tscn`** (production CompositorEffect path): clean black outlines surrounding cubes; no-outline controls bare. Outlines screen-space stable. ✅ User visually verified — matches G2's headless screenshot evidence.
+- **No ADR status change** — ADR-0001 was already promoted to Accepted on 2026-04-30 via headless verification + extrapolation. This visual sign-off completes the user-confirmation loop documented in sprint items 3.1 + 3.2.
 
 ## Outcome — ADR Amendments / Supersessions
 

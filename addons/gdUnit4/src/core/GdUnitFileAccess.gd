@@ -196,7 +196,11 @@ static func resource_as_string(resource_path :String) -> String:
 	if file == null:
 		push_error("ERROR: Can't read resource '%s'. %s" % [resource_path, error_string(FileAccess.get_open_error())])
 		return ""
-	return file.get_as_text(true)
+	# PATCH 2026-04-30 (Godot 4.6.2 compat): FileAccess.get_as_text() no
+	# longer accepts a skip_cr bool argument in 4.6.2 — removed for upstream
+	# compatibility. Restore the `true` argument if upgrading to a GdUnit4
+	# release that targets a Godot version where the signature is reinstated.
+	return file.get_as_text()
 
 
 static func make_qualified_path(path :String) -> String:

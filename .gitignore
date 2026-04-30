@@ -22,6 +22,9 @@ expansions/
 # Created on first use by /consistency-check and /architecture-review
 docs/consistency-failures.md
 
+# Created by GdUnit4 CLI runs — local test reports (XML + HTML), not source
+reports/
+
 # === Build Output ===
 build/
 builds/

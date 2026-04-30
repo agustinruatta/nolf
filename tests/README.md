@@ -32,14 +32,42 @@ writing the first test:
 then click the green play-arrow gutter icons GdUnit4 injects, or use the GdUnit
 Inspector dock to run the full suite.
 
-**Headless (CLI / CI):**
+**Headless (CLI):**
 
 ```sh
-godot --headless --script tests/gdunit4_runner.gd
+godot -s -d res://addons/gdUnit4/bin/GdUnitCmdTool.gd \
+      -a tests/unit -a tests/integration
 ```
 
-The runner exits 0 on all-pass, non-zero on any failure. CI runs this via
-`MikeSchulze/gdUnit4-action@v1` (see `.github/workflows/tests.yml`).
+This is GdUnit4's official CLI entry point — same call CI's
+`MikeSchulze/gdUnit4-action@v1` makes internally (see
+`.github/workflows/tests.yml`). Exits 0 on all-pass, non-zero on any failure.
+
+> Earlier versions of this project shipped a `tests/gdunit4_runner.gd` wrapper
+> stub. It was removed 2026-04-30 — GdUnit4's own CLI is the canonical entry
+> point and the wrapper added no value.
+
+### GdUnit4 v6.0.0 ↔ Godot 4.6.2 Compatibility Patch
+
+GdUnit4 v6.0.0 (the version installed at `addons/gdUnit4/`) was written
+against an older Godot signature for `FileAccess.get_as_text(skip_cr: bool)`.
+Godot 4.6.2 dropped the optional argument. A 1-line local patch was applied
+on **2026-04-30** at:
+
+```
+addons/gdUnit4/src/core/GdUnitFileAccess.gd:199
+```
+
+The patch is annotated in-line with a `PATCH 2026-04-30` comment. **If you
+reinstall or upgrade GdUnit4, re-apply the patch** until upstream releases a
+4.6-compatible version. To verify post-upgrade:
+
+```sh
+grep -n "PATCH 2026-04-30" addons/gdUnit4/src/core/GdUnitFileAccess.gd
+```
+
+If that grep returns nothing, the patch is missing and the CLI tool will
+crash at parse time with `Too many arguments for "get_as_text()"`.
 
 ## Test Naming
 

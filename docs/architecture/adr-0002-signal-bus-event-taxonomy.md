@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — moves to Accepted once the `Events` autoload skeleton is registered in `project.godot` and at least one publisher/subscriber pair is implemented and verified end-to-end.
+**Accepted** — promoted 2026-04-29 after Sprint 01 Technical Verification Spike: (1) `Events` autoload skeleton registered in `project.godot` per ADR-0007 §Key Interfaces (Group 1.3 + 1.4); (2) at least one publisher/subscriber pair (`Events.smoke_test_pulse` → `EventLogger._on_smoke_test_pulse` + ad-hoc local subscriber on the smoke test scene) implemented and verified end-to-end via `prototypes/verification-spike/signal_bus_smoke.tscn` headless run on Godot 4.6.2 stable. EventLogger's print line (`[EventLogger] smoke_test_pulse received: payload=42`) confirms cross-autoload reference safety: EventLogger at autoload line 2 successfully connected to Events at line 1 from its `_ready()`. Verification log: `prototypes/verification-spike/verification-log.md`. **Skeleton scope note**: the `Events` autoload currently declares only the representative subset of signals needed to verify the autoload mechanism + this smoke test (per `src/core/signal_bus/events.gd` §Skeleton Status). The full 43-signal taxonomy declared in §Key Interfaces lands incrementally as each consumer class (StealthAI, CombatSystemNode, LevelStreamingService, etc.) is implemented; each addition is a paired commit and the skeleton's `smoke_test_pulse` signal is removed when the taxonomy is complete.
 
 ## Date
 
@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-29 (Cutscenes & Mission Cards amendment — adds `cutscene_started` + `cutscene_ended` to NEW Cutscenes domain; closes `cutscenes-and-mission-cards.md` CR-CMC-11 BLOCKING coord + `audio.md` L407 forward-dep). Prior: 2026-04-28 (`/review-all-gdds` 2026-04-28 amendment — adds `settings_loaded` to Settings domain + `ui_context_changed` to NEW UI domain; closes W4 carryforward and HUD-Overlay coordination gap). Prior: 2026-04-22 (OQ-CD-1 SAI amendment bundle + 4th-pass LS + SAI amendment bundle — two Revision History entries dated 2026-04-22).
+2026-04-29 (Sprint 01 Technical Verification Spike — Group 2.4 smoke test PASS; Status flipped Proposed → Accepted; see Revision History entry below). Prior: 2026-04-29 (Cutscenes & Mission Cards amendment — adds `cutscene_started` + `cutscene_ended` to NEW Cutscenes domain; closes `cutscenes-and-mission-cards.md` CR-CMC-11 BLOCKING coord + `audio.md` L407 forward-dep). Prior: 2026-04-28 (`/review-all-gdds` 2026-04-28 amendment — adds `settings_loaded` to Settings domain + `ui_context_changed` to NEW UI domain; closes W4 carryforward and HUD-Overlay coordination gap). Prior: 2026-04-22 (OQ-CD-1 SAI amendment bundle + 4th-pass LS + SAI amendment bundle — two Revision History entries dated 2026-04-22).
 
 ## Decision Makers
 
@@ -23,6 +23,21 @@ All cross-system events in *The Paris Affair* flow through a single typed-signal
 A companion **Accessor Conventions (SAI → Combat)** subsection (added 2026-04-22) carves out a narrow, principled exception for read-only cross-system state queries that the fire-and-forget bus cannot satisfy. The carve-out is fenced by four exemption criteria and a no-new-accessors-without-amendment rule.
 
 ### Revision History
+
+- **2026-04-29 (Verification — Sprint 01 Group 2.4 smoke test PASS; Status: Proposed → Accepted)**: Sprint 01 Technical Verification Spike ran `prototypes/verification-spike/signal_bus_smoke.tscn` headless on Godot 4.6.2 stable (Linux Vulkan). All 4 checks passed:
+  1. **Check 1** — `Events` autoload reachable at `/root/Events` with type `SignalBusEvents` (autoload registration mechanism working).
+  2. **Check 2** — `EventLogger` autoload reachable at `/root/EventLogger`.
+  3. **Check 3** — Cross-autoload reference safety: EventLogger at autoload line 2 successfully connected to `Events.smoke_test_pulse` from its `_ready()` (proves the line-order discipline works in the running engine; ADR-0007 G(b) closed by this same evidence).
+  4. **Check 4** — End-to-end pipeline: `Events.smoke_test_pulse.emit(42)` → EventLogger printed `[EventLogger] smoke_test_pulse received: payload=42` → local subscriber received the same payload. Both subscribers received the emission as expected from a synchronous Godot signal.
+
+  **Skeleton vs full taxonomy**: only a representative subset of the 43-signal taxonomy is declared in `src/core/signal_bus/events.gd` at this point — enough to verify the autoload mechanism + a single emit/receive pair. The full taxonomy lands incrementally with consumer-class implementation (StealthAI / Combat / LevelStreamingService / etc.). The verification gate criterion ("at least one publisher/subscriber pair verified end-to-end") is satisfied. The skeleton's `smoke_test_pulse` signal is verification-only and is removed when the production taxonomy is complete.
+
+  **Forbidden patterns + accessor conventions unchanged**: the §Anti-Pattern fences and §Accessor Conventions (SAI → Combat) carve-out remain in force as written; verification did not exercise those rules but no behavior was observed that contradicts them.
+
+  **Cross-document closure**: closes ADR-0002 G1 (the sole verification gate). ADR-0007 G(b) closes via the same evidence (cross-autoload reference safety incidentally validated).
+
+  **Status flipped**: Proposed → Accepted. Sibling ADRs (ADR-0003 already Accepted as of 2026-04-29 per A5) and ADR-0007 (Accepted same day) form the foundational signal-bus + save + autoload triplet.
+
 
 - **2026-04-19 (Session B of Player Character GDD revision, resolving review finding B-2)**: Added **Player** domain with two signals:
   - `player_interacted(target: Node3D)` — fires on reach-complete of a context-sensitive interact. `target` may be `null` (PC GDD edge case E.5: target destroyed during reach animation). Subscribers MUST call `is_instance_valid(target)` before dereferencing, per Implementation Guideline 4.

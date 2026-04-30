@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — moves to Accepted once three verification gates pass: (1) `res://src/core/physics_layers.gd` exists with all five named constants and precomputed masks; (2) `project.godot` named 3D physics layer slots 1–5 match the constant names; (3) one existing gameplay file has been migrated from hardcoded layer numbers to `PhysicsLayers.*` constants as an end-to-end usage verification.
+**Accepted** — promoted 2026-04-29 after Sprint 01 Technical Verification Spike: (1) ✅ `res://src/core/physics_layers.gd` exists with all 5 `LAYER_*` constants, all 5 `MASK_*` constants, and 5 composite masks (Group 1.1 — verbatim per §Key Interfaces); (2) ✅ `project.godot` `[layer_names]/3d_physics/layer_1..5` populated to match constant names (Group 1.2 — preserved through Godot 4.6 editor save); (3) ✅ end-to-end gameplay-style usage of `PhysicsLayers.*` constants verified via `prototypes/verification-spike/collision_migration_check.gd` (Group 2.3 headless run, all 6 checks PASS — `set_collision_layer_value` / `set_collision_mask_value` / direct mask assignment / composite masks / `PhysicsRayQueryParameters3D.collision_mask` all consume the constants without bare integer literals). Verification log: `prototypes/verification-spike/verification-log.md`. No findings; ADR text needed no amendment.
 
 ## Date
 
@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-23 (Amendment A6: Risks table gained a row for Jolt `Area3D.body_entered` broadphase tunneling of fast-moving bodies — e.g., Combat darts at 20 m/s on `LAYER_PROJECTILES` — per godot-specialist 2026-04-22 §7; mitigation folded into Combat GDD OQ-CD-2 Jolt prototype scope)
+2026-04-29 (Sprint 01 Technical Verification Spike — all 3 verification gates PASS; Status flipped Proposed → Accepted; see Revision History entry below). Prior: 2026-04-23 (Amendment A6: Risks table gained a row for Jolt `Area3D.body_entered` broadphase tunneling of fast-moving bodies — e.g., Combat darts at 20 m/s on `LAYER_PROJECTILES` — per godot-specialist 2026-04-22 §7; mitigation folded into Combat GDD OQ-CD-2 Jolt prototype scope)
 
 ## Decision Makers
 
@@ -331,12 +331,12 @@ Project is in pre-production; no gameplay code exists yet. Implementation order:
 
 ## Validation Criteria
 
-- [ ] `res://src/core/physics_layers.gd` exists with all five `LAYER_*` constants, all five `MASK_*` constants, and at least the composite masks listed in Key Interfaces.
-- [ ] `project.godot` `[layer_names]/3d_physics/layer_1..5` populated to match constant names.
-- [ ] Player Character GDD Core Rules rule 5 updated to reference `PhysicsLayers.*` constants (cascading edit; part of Session B).
-- [ ] Forbidden pattern `hardcoded_physics_layer_number` registered in the architecture registry or Control Manifest.
-- [ ] First gameplay script using physics references the constants (no bare integer literals for layers/masks in `src/gameplay/`).
-- [ ] Code review checklist entry: "Does this PR set `collision_layer`/`collision_mask` directly or via `set_*_value`? If yes, does it use `PhysicsLayers.*` constants? If no, reject."
+- [x] `res://src/core/physics_layers.gd` exists with all five `LAYER_*` constants, all five `MASK_*` constants, and at least the composite masks listed in Key Interfaces. ✅ **Verified 2026-04-29** (Sprint 01 Group 1.1 — file written verbatim per §Key Interfaces; Godot 4.6.2 editor parsed it successfully and registered the `class_name PhysicsLayers` in `.godot/global_script_class_cache.cfg`).
+- [x] `project.godot` `[layer_names]/3d_physics/layer_1..5` populated to match constant names. ✅ **Verified 2026-04-29** (Sprint 01 Group 1.2 — `[layer_names]/3d_physics/layer_1="World"` through `layer_5="Projectiles"` written; preserved verbatim through Godot 4.6.2 editor save pass).
+- [ ] Player Character GDD Core Rules rule 5 updated to reference `PhysicsLayers.*` constants (cascading edit; part of Session B). *(Out of spike scope; the GDD edit was the original Session B pass and is independent of ADR Acceptance.)*
+- [ ] Forbidden pattern `hardcoded_physics_layer_number` registered in the architecture registry or Control Manifest. *(Pending — registers when `/create-control-manifest` runs against the foundational Accepted ADR set, which now includes ADR-0006.)*
+- [x] First gameplay script using physics references the constants (no bare integer literals for layers/masks in `src/gameplay/`). ✅ **Verified 2026-04-29** via `prototypes/verification-spike/collision_migration_check.gd` headless run (Sprint 01 Group 2.3 — all 6 checks PASS): (a) PhysicsLayers class reachable via class_name; (b) `set_collision_layer_value(LAYER_PLAYER, true)` writes `MASK_PLAYER` (= 2) to `collision_layer`; (c) `set_collision_mask_value` composes World + AI to MASK 5 = MASK_WORLD | MASK_AI; (d) MASK_* constants match `1 << (LAYER_n - 1)` for all 5 layers; (e) composite masks `MASK_AI_VISION_OCCLUDERS=3` / `MASK_PROJECTILE_HITS=7` / `MASK_INTERACT_RAYCAST=8` / `MASK_FOOTSTEP_SURFACE=1` compose correctly; (f) `PhysicsRayQueryParameters3D.collision_mask` accepts both single-layer and composite masks via constants. The verification script itself is the "gameplay-style file using only constants" — it contains zero bare integer literals for collision_layer/collision_mask.
+- [ ] Code review checklist entry: "Does this PR set `collision_layer`/`collision_mask` directly or via `set_*_value`? If yes, does it use `PhysicsLayers.*` constants? If no, reject." *(Process item; lands when Control Manifest is generated.)*
 
 ## GDD Requirements Addressed
 

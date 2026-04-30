@@ -2,10 +2,18 @@
 
 ## Status
 
-**Proposed** — moves to Accepted once (a) the `project.godot` `[autoload]` block is
-generated with the line order specified in §Key Interfaces, and (b) ADR-0002 Gate 1
-smoke test passes (emit → EventLogger prints → subscriber receives — incidentally
-validates the cross-autoload reference safety discipline).
+**Accepted** — promoted 2026-04-29 after Sprint 01 Technical Verification Spike:
+(a) `project.godot` `[autoload]` block generated with the 10-entry line order
+specified in §Key Interfaces (Group 1.4 — verbatim match including `*res://`
+prefix on every entry), and (b) ADR-0002 Gate 1 smoke test passed
+(`prototypes/verification-spike/signal_bus_smoke.tscn` headless run on
+Godot 4.6.2 stable; EventLogger at autoload line 2 successfully connected to
+`Events.smoke_test_pulse` declared on the line-1 autoload from its `_ready()`,
+proving the engine's line-order-based cross-autoload reference safety discipline
+specified in §Cross-Autoload Reference Safety holds in practice). All 9
+non-skeleton autoload paths resolve to stub scripts (`extends Node` pass-through)
+created in Sprint 01 Group 1 follow-up; production implementations land in their
+respective system stories. Verification log: `prototypes/verification-spike/verification-log.md`.
 
 ## Date
 
@@ -13,7 +21,7 @@ validates the cross-autoload reference safety discipline).
 
 ## Last Verified
 
-2026-04-27 (Amendment — F&R + MLS + SettingsService autoload inclusion; resolves `/review-all-gdds 2026-04-27` Blocker B2 (3-way slot-#8 conflict). See Revision History below.)
+2026-04-29 (Sprint 01 Technical Verification Spike — both gates passed; Status flipped Proposed → Accepted; see Revision History entry below). Prior: 2026-04-27 (Amendment — F&R + MLS + SettingsService autoload inclusion; resolves `/review-all-gdds 2026-04-27` Blocker B2 (3-way slot-#8 conflict). See Revision History below.)
 
 ## Decision Makers
 
@@ -35,6 +43,13 @@ forbidden pattern (`unregistered_autoload`) fences against ad-hoc registration v
 editor plugins, `@tool` scripts, or `add_autoload_singleton()` runtime calls.
 
 ### Revision History
+
+- **2026-04-29 (Verification — Sprint 01 Gates G(a) + G(b) PASS; Status: Proposed → Accepted)**: Sprint 01 Technical Verification Spike closed both verification gates.
+  - **Gate (a)** — `project.godot [autoload]` block byte-match against §Key Interfaces: ✅ PASS. Group 1.4 wrote the 10-entry block with the exact line order + `*res://` prefix specified in §Key Interfaces; the user opened the project in Godot 4.6.2 editor (which preserved the autoload entries verbatim through its rewrite pass); the 9 non-skeleton autoload paths now resolve to stub scripts (`extends Node` pass-through) created in the Group 1 follow-up so the editor no longer logs "Script not found" for them.
+  - **Gate (b)** — ADR-0002 G1 smoke test (incidentally validates Cross-Autoload Reference Safety): ✅ PASS. `prototypes/verification-spike/signal_bus_smoke.tscn` ran headless on Godot 4.6.2 stable (Linux Vulkan); EventLogger at autoload line 2 successfully connected to `Events.smoke_test_pulse` (declared on the line-1 autoload) from its `_ready()`, proving §Cross-Autoload Reference Safety rule 2 ("an autoload's `_ready()` MAY reference any earlier autoload by name") holds in practice. The smoke test scene's Check 3 explicitly verifies that EventLogger is registered as a subscriber on `Events.smoke_test_pulse` — if the line-order discipline had failed, the connection would have null-derefed and Check 3 would have failed.
+  - **Specialist Claims 1/2/3 status**: godot-specialist 2026-04-23 pre-authoring consultation rated the three claims GREEN/YELLOW/YELLOW. The verification result confirms Claim 1 (line-order authority — GREEN remains GREEN) and Claim 2 (cross-autoload `_ready` reference safety — YELLOW upgraded toward GREEN by empirical confirmation; the framing-correction language about `_init()` vs `_ready()` distinction in §Cross-Autoload Reference Safety remains correct as written). Claim 3 (tooling stability — `@tool` scripts and runtime singleton registration) was not exercised by the spike because no plugins or `@tool` scripts exist; the fence (Implementation Guideline 6 + `unregistered_autoload` forbidden pattern) remains in force as a forward defense.
+  - **Cross-document closure**: closes ADR-0007 verification gates (Validation Criteria items 1 + 2). ADR-0002 G1 closes via the same evidence and is also Accepted as of 2026-04-29.
+  - **Status flipped**: Proposed → Accepted. Together with ADR-0002 (Accepted same day) and ADR-0003 (Accepted same day per A5), the foundational signal-bus + save + autoload triplet is now Accepted.
 
 - **2026-04-27 (F&R + MLS + SettingsService autoload inclusion — `/review-all-gdds 2026-04-27` B2 resolution)**: Canonical autoload count grows **7 → 10**. `FailureRespawn` (`class_name FailureRespawnService`, autoload key `FailureRespawn`) is added at line 8 after `Combat`; `MissionLevelScripting` (autoload key `MissionLevelScripting`) is added at line 9 after `FailureRespawn`; `SettingsService` (autoload key `SettingsService`) is added at line 10 after `MissionLevelScripting`. Trigger: three independent forward-claims on slot #8 across `failure-respawn.md:271/:309/:494`, `settings-accessibility.md:60` (CR-3), and `document-collection.md` (parenthetical) surfaced as Blocker B2 in the cross-GDD review at `design/gdd/gdd-cross-review-2026-04-27.md`. **MLS-after-F&R is the hard edge** (MLS subscribes to `Events.respawn_triggered` per F&R coord item #1; if MLS's `_ready()` connects before F&R is in the tree the reference is `null` per Cross-Autoload Reference Safety rule 3). Settings has no autoload-init-time dependency on F&R/MLS (consumers use the `settings_loaded` one-shot pattern per `settings-accessibility.md` CR-9, not direct `_ready()` reads), so Settings goes last at line 10. The `settings-accessibility.md:60` slot-#8 misclaim is corrected to "per ADR-0007 line 10" in the paired sweep. The `document-collection.md` 6-site "F&R = #8, MLS = #9" parenthetical (W7) is stripped to "per ADR-0007" in the same sweep — DC remains non-autoload regardless of slot ordering downstream.
 

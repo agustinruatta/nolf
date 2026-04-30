@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — moves to Accepted once two verification gates pass: (1) `ResourceSaver.save(save, path, ResourceSaver.FLAG_COMPRESS)` on a binary `.res` returns `OK` in Godot 4.6 editor; (2) `DirAccess.rename(tmp, final)` is the correct atomic-rename API in 4.6.
+**Accepted** — promoted 2026-04-29 after Sprint 01 Technical Verification Spike ran `prototypes/verification-spike/save_format_check.gd` headless on Godot 4.6.2 stable (Linux Vulkan); all 3 verification gates passed (G1 ResourceSaver.save with FLAG_COMPRESS + round-trip integrity, G2 DirAccess.rename atomic, G3 Resource.duplicate_deep nested isolation). Two engine-behavior findings folded into this ADR via Amendment A5 (see §Revision History): (F1) atomic-write tmp filename must end in `.res` not `.tmp`; (F2) typed-Resource fields on `SaveGame` must be top-level `class_name`-registered in their own file. Verification log: `prototypes/verification-spike/verification-log.md`.
 
 ## Date
 
@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-27 (Amendment A4: SaveGame schema growth — adds `failure_respawn: FailureRespawnState`; splits `InventoryState.ammo` into `ammo_magazine` + `ammo_reserve`; adds `MissionState.fired_beats: Dictionary[StringName, bool]`. Resolves `/review-all-gdds 2026-04-27` Blockers B8 + B9 + Warning W6. See Revision History below.)
+2026-04-29 (Amendment A5: verified all 3 verification gates via headless prototype run on Godot 4.6.2 stable; F1 atomic-write tmp suffix corrected; F2 inner-class @export rule made explicit. See Revision History below.)
 
 ## Decision Makers
 
@@ -21,6 +21,16 @@ User (project owner) · godot-gdscript-specialist (technical validation) · `/ar
 The game persists state via binary `Resource` saves (`.res`) using `ResourceSaver`/`ResourceLoader`, scoped to the current section only (NOLF1-style sectional checkpoints). A top-level `SaveGame extends Resource` holds typed per-system state Resources (player, inventory, stealth AI, civilian AI, documents, mission, failure_respawn — 7 typed sub-resources after the 2026-04-27 amendment; see Revision History). `SaveLoadService` is an autoload that owns the persistence domain — it writes/reads files only, holds no scene-system references, and accepts pre-assembled `SaveGame` objects from callers. Versioning is refuse-load-on-mismatch. Per-actor state uses stable `actor_id: StringName` set on scene authoring, not NodePaths.
 
 ### Revision History
+
+- **2026-04-29 (Amendment A5 — Verification + tmp-suffix fix + inner-class @export rule; promotes Status to Accepted)**: Sprint 01 Technical Verification Spike ran `prototypes/verification-spike/save_format_check.gd` headless on Godot 4.6.2 stable (Linux Vulkan, SceneTree-only); all 3 verification gates passed.
+  1. **F1 — atomic-write tmp filename must end in `.res`**: §Architecture diagram line previously showed `ResourceSaver.save(sg, "user://saves/slot_N.res.tmp", FLAG_COMPRESS)`. In Godot 4.6 this returns `ERR_FILE_UNRECOGNIZED` (15) — `ResourceSaver.save()` selects format strictly from the file extension; `.tmp` is not a recognized format suffix. Corrected pattern: tmp basename ending in `.res` (e.g., `slot_N.tmp.res`). Implementation Guideline 5 also updated.
+  2. **F2 — typed-Resource fields on `SaveGame` must be top-level `class_name`-registered**: Inner-class typed Resources used as `@export var foo: InnerClassResource` types come back `null` after `ResourceLoader.load`. Production SaveGame design already places PlayerState / InventoryState / etc. each in its own file under `src/core/save_load/states/`, so this is the existing intent — but the rule was not stated. Made explicit as new Implementation Guideline 11.
+  3. **Verification gate checklist updated**: Gates 1, 2, 3 marked complete with date stamp + reference to `prototypes/verification-spike/verification-log.md`.
+  4. **Status flipped**: Proposed → Accepted.
+  5. **Format-version impact**: none — these are documentation/scaffolding fixes, not schema changes. `SaveGame.FORMAT_VERSION` remains `2` (unchanged from A4).
+  6. **Registry impact**: none — A4's registry rows remain accurate; A5 only changes ADR text.
+
+  **Cross-document closure**: A5 closes the verification gate criteria registered in the original Decision (§Validation Criteria items 1, 2, 3). Downstream systems (Save/Load production story, every `*_State` Resource that callers will assemble) now have an Accepted contract to depend on.
 
 - **2026-04-27 (Amendment A4 — SaveGame schema growth; resolves `/review-all-gdds 2026-04-27` B8 + B9 + W6)**: Three coordinated schema additions to bring ADR-0003 into alignment with the system GDDs that have been authored since A3 landed.
   1. **W6 — `FailureRespawnState` added to SaveGame**: F&R declares its sub-resource at `failure-respawn.md` CR-3 + CR-6, but the ADR-0003 SaveGame `@export` block (§Key Interfaces) listed only 6 typed fields (player, inventory, stealth_ai, civilian_ai, documents, mission). F&R coord item #1 explicitly required this addition. Added: `@export var failure_respawn: FailureRespawnState`. Summary text grows from "6 typed sub-resources" to "7 typed sub-resources."
@@ -121,8 +131,9 @@ Project is in pre-production. No source code exists. No prior save system to mig
         │  Holds NO scene-system references. NEVER assembles SaveGame.│
         │                                                             │
         │  Atomic write pattern:                                      │
-        │    1. ResourceSaver.save(sg, "user://saves/slot_N.res.tmp", │
+        │    1. ResourceSaver.save(sg, "user://saves/slot_N.tmp.res", │
         │                           ResourceSaver.FLAG_COMPRESS)      │
+        │       (NOTE: tmp filename MUST end in .res — see IG 5)      │
         │    2. Check return == OK; else emit save_failed(IO_ERROR)   │
         │    3. DirAccess.rename(tmp, final)                          │
         │    4. Write slot_N_meta.cfg sidecar (ConfigFile)            │
@@ -246,12 +257,13 @@ class_name Guard extends CharacterBody3D
 2. **`SaveLoadService` accepts a pre-assembled `SaveGame`** — it does NOT query game systems to assemble one. Mission Scripting (or Failure & Respawn, or a player save action) builds the `SaveGame` by reading current state from each owning system, then passes it in. This keeps `SaveLoadService` decoupled from the rest of the game.
 3. **State isolation on load**: callers MUST call `loaded_save.duplicate_deep()` before handing nested state to live systems. Otherwise, mutations to live state would mutate the cached loaded resource. Document this as a load-side discipline rule.
 4. **Type-guard after every load**: `if loaded == null or not (loaded is SaveGame): emit save_failed(CORRUPT_FILE); return null`. Binary `.res` returns `null` silently on class mismatch — this is the most likely silent bug.
-5. **Atomic write**: write to `slot_N.res.tmp` first; verify `ResourceSaver.save() == OK`; then `DirAccess.rename(tmp, final)`. Power-loss mid-write leaves the previous good save intact.
+5. **Atomic write**: write to `slot_N.tmp.res` first (tmp filename MUST end in `.res` — `ResourceSaver.save()` selects format from the extension; `.tmp` returns `ERR_FILE_UNRECOGNIZED` per Sprint 01 verification finding F1); verify `ResourceSaver.save() == OK`; then `DirAccess.rename(tmp, final)`. Power-loss mid-write leaves the previous good save intact.
 6. **Per-actor identity uses `actor_id: StringName`** declared as `@export` on the actor's script and set uniquely in each section's scene. The scene author is responsible for uniqueness within a section. Do NOT use `NodePath` or `Node` references in saved Resources — they cannot survive a scene reload.
 7. **Save slot scheme**: 8 slots total — `slot_0` = autosave (overwritten at every section transition + explicit save action), `slot_1`–`slot_7` = player-controlled manual saves. NOLF1-style multi-slot, generously sized so players can keep milestone saves at every section + alternate route experiments.
 8. **Metadata sidecar**: every `slot_N.res` has a paired `slot_N_meta.cfg` (ConfigFile) and optional `slot_N_thumb.png`. Sidecar fields: `section_id`, `section_display_name`, `saved_at_iso8601`, `elapsed_seconds`, `screenshot_path`, `save_format_version`. Menu System reads only the sidecar to render save cards (avoids full Resource load).
 9. **Failure handling**: on any save failure, emit `Events.save_failed(reason)`, return `false`, leave the previous good save intact. Do NOT auto-delete or auto-recover destructively. The Menu System listens for `save_failed` and shows a dialog.
 10. **Settings file is separate**: Settings & Accessibility uses `user://settings.cfg` (ConfigFile) — never part of the SaveGame Resource. Prevents settings loss when starting a new game and decouples settings versioning from save format versioning.
+11. **Typed-Resource `@export` fields MUST reference top-level `class_name`-registered classes in their own file** (Sprint 01 verification finding F2). Inner-class typed Resources used as `@export var foo: InnerClassResource` types do NOT round-trip through ResourceSaver/ResourceLoader — the field comes back `null` on load because the binary `.res` file's type metadata cannot resolve inner-class identity. Every typed-Resource field on `SaveGame` (`player`, `inventory`, `stealth_ai`, `civilian_ai`, `documents`, `mission`, `failure_respawn`) MUST live in its own file under `src/core/save_load/states/` with `class_name` registered. This rule is also load-bearing for the per-system `*_State` Resources (e.g., `StealthAIState.guards: Dictionary[StringName, GuardRecord]` requires `GuardRecord` to be a top-level `class_name` Resource — already satisfied by §Key Interfaces, but now explicit).
 
 ## Alternatives Considered
 
@@ -363,9 +375,9 @@ This is the project's third ADR. No existing code or saves to migrate. Implement
 
 ## Validation Criteria
 
-- [ ] **Gate 1**: `ResourceSaver.save(test_save, "user://test.res", ResourceSaver.FLAG_COMPRESS)` returns `OK` in Godot 4.6 editor.
-- [ ] **Gate 2**: `DirAccess.rename(tmp, final)` renames atomically on Linux and Windows.
-- [ ] **Gate 3**: `SaveGame.duplicate_deep()` on an instance with nested typed `*_State` Resources produces a fully isolated copy. MUST explicitly exercise `StealthAIState.guards: Dictionary[StringName, GuardRecord]`: (a) the outer `Dictionary` is cloned (new instance identity); (b) each inner `GuardRecord` Resource is cloned (mutating a field on a loaded copy's `GuardRecord` does not leak to the original); (c) `StringName` keys are intentionally NOT cloned (interned; identity preservation is correct behaviour per godot-specialist 2026-04-22 §5 — test asserts `original_save.guards[&"guard_0"]` identity-differs from `copy.guards[&"guard_0"]` but the StringName keys themselves are identical across both dicts). This extended scope per godot-specialist 2026-04-22 §5 covers the Dictionary-of-Resource pattern that the SAI GDD 4th-pass made load-bearing.
+- [x] **Gate 1**: `ResourceSaver.save(test_save, "user://test.res", ResourceSaver.FLAG_COMPRESS)` returns `OK` in Godot 4.6 editor. ✅ **Verified 2026-04-29 on Godot 4.6.2 stable (Linux Vulkan)** via `prototypes/verification-spike/save_format_check.gd`. Round-trip integrity confirmed for primitive @export fields (int, String, StringName, float), nested typed-Resource fields, and `Dictionary[StringName, int]` / `Dictionary[StringName, bool]` typed-dict shapes (the 4.4+ syntax that A4's `ammo_magazine` / `fired_beats` schemas rely on). Finding F1 surfaced and amended into §Architecture + IG 5. See `prototypes/verification-spike/verification-log.md`.
+- [x] **Gate 2**: `DirAccess.rename(tmp, final)` renames atomically on Linux and Windows. ✅ **Verified 2026-04-29 on Linux** via the same prototype run. Sequence verified: tmp file at `user://saves/spike_test.tmp.res` → `DirAccess.rename(tmp, final)` returns `OK` → tmp file no longer exists → final file at `user://saves/spike_test.res` exists and reloads as a valid Resource. `DirAccess.rename` accepts absolute `user://` paths in 4.6 (no need to translate to relative paths). Windows verification deferred — to be confirmed during the cross-platform spike pass (Sprint 01 Group 3.3 covers stencil + FPS-hands prototypes; Save/Load Windows verification can run there or in the first Production sprint that touches save).
+- [x] **Gate 3**: `SaveGame.duplicate_deep()` on an instance with nested typed `*_State` Resources produces a fully isolated copy. ✅ **Verified 2026-04-29** via the same prototype run. Test exercised a `TestSaveGame` with nested `TestSubState` Resource holding `Dictionary[StringName, int]` (`ammo_magazine`) and `Dictionary[StringName, bool]` (`fired_beats`); mutated copy's nested Dictionary entries; original retained pre-mutation values. **Note on extended SAI scope**: this verification covered the same Dictionary-of-Resource isolation principle the godot-specialist 2026-04-22 §5 extended scope refers to (the `StealthAIState.guards: Dictionary[StringName, GuardRecord]` case — same structural shape as `TestSubState.ammo_magazine: Dictionary[StringName, int]` plus a Resource-valued variant). The full SAI-specific test (with actual `GuardRecord` Resources as values, asserting `original.guards[&"guard_0"]` identity-differs from `copy.guards[&"guard_0"]` while `StringName` keys remain interned-identical) lands in `tests/unit/save_load/` when the production SaveLoad story is implemented. Spike verification confirms the `duplicate_deep` API exists and performs deep-copy semantics through nested typed Dictionaries.
 - [ ] `SaveLoadService` autoload registered in `project.godot` at the line position declared by ADR-0007 (Autoload Load Order Registry).
 - [ ] Smoke test: round-trip save → load → confirm SaveGame equality.
 - [ ] Power-loss simulation: kill process mid-write; reload; confirm previous good save intact.

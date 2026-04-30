@@ -36,10 +36,10 @@ This is a verification spike, NOT a feature build. Code written here exists sole
 
 | ID | Deliverable | Closes ADR Gate(s) | Status |
 |----|-------------|--------------------|--------|
-| 1.1 | `src/core/physics_layers.gd` — 5 named constants + masks + composites | ADR-0006 G1 | Pending |
-| 1.2 | `project.godot` named 3D physics layer slots 1–5 | ADR-0006 G2 | Pending |
-| 1.3 | `src/core/signal_bus/events.gd` — Signal Bus autoload skeleton | ADR-0002 (skeleton) | Pending |
-| 1.4 | `project.godot` `[autoload]` block per ADR-0007 §Key Interfaces (10 entries) | ADR-0007 G(a) | Pending |
+| 1.1 | `src/core/physics_layers.gd` — 5 named constants + masks + composites | ADR-0006 G1 | ✅ Done (2026-04-29) |
+| 1.2 | `project.godot` named 3D physics layer slots 1–5 | ADR-0006 G2 | ✅ Done (2026-04-29) |
+| 1.3 | `src/core/signal_bus/events.gd` — Signal Bus autoload skeleton | ADR-0002 (skeleton) | ✅ Done (2026-04-29) |
+| 1.4 | `project.godot` `[autoload]` block per ADR-0007 §Key Interfaces (10 entries) | ADR-0007 G(a) | ✅ Done (2026-04-29) |
 
 Group 1 acceptance: files exist with correct content; `project.godot` parses cleanly when opened in Godot 4.6 editor.
 
@@ -47,10 +47,10 @@ Group 1 acceptance: files exist with correct content; `project.godot` parses cle
 
 | ID | Deliverable | Closes ADR Gate(s) | Status |
 |----|-------------|--------------------|--------|
-| 2.1 | `prototypes/verification-spike/save_format_check.gd` — `ResourceSaver.save(...FLAG_COMPRESS)` round-trip + `DirAccess.rename` atomic | ADR-0003 G1 + G2 | Pending |
-| 2.2 | `prototypes/verification-spike/ui_framework_check.tscn` + script — verify `accessibility_description`, `accessibility_role` settability, `Theme.fallback_theme`, `auto_translate_mode` enum, `_unhandled_input()` modal dismiss, BBCode→AccessKit serialization | ADR-0004 G1 + G3 + G5 | Pending |
-| 2.3 | First gameplay file migrated to `PhysicsLayers.*` constants — end-to-end usage check | ADR-0006 G3 | Pending |
-| 2.4 | `prototypes/verification-spike/signal_bus_smoke.tscn` — emit→EventLogger→subscriber signal pipeline test | ADR-0002 G1 (incidentally closes ADR-0007 G(b)) | Pending |
+| 2.1 | `prototypes/verification-spike/save_format_check.gd` — `ResourceSaver.save(...FLAG_COMPRESS)` round-trip + `DirAccess.rename` atomic + `Resource.duplicate_deep()` isolation | ADR-0003 G1 + G2 + G3 | ✅ Done (2026-04-29) — 2 findings, ADR amendment proposed |
+| 2.2 | `prototypes/verification-spike/ui_framework_check.gd` — verify `accessibility_description`, `accessibility_role` settability, `ui_cancel` action grammar (KB/M + gamepad). G5 (BBCode→AccessKit) DEFERRED — needs runtime AT. | ADR-0004 G1 + G3 (✅); G5 DEFERRED | ✅ Done (2026-04-29) — F3 finding fixed in project.godot + ADR IG 14 |
+| 2.3 | First gameplay file migrated to `PhysicsLayers.*` constants — end-to-end usage check | ADR-0006 G3 | ✅ Done (2026-04-29) — all 6 checks PASS |
+| 2.4 | `prototypes/verification-spike/signal_bus_smoke.tscn` — emit→EventLogger→subscriber signal pipeline test | ADR-0002 G1 (incidentally closes ADR-0007 G(b)) | ✅ Done (2026-04-29) — all 4 checks PASS |
 
 Group 2 acceptance: each verification script returns the expected output; results logged in `verification-log.md`.
 
@@ -58,8 +58,8 @@ Group 2 acceptance: each verification script returns the expected output; result
 
 | ID | Deliverable | Closes ADR Gate(s) | Status |
 |----|-------------|--------------------|--------|
-| 3.1 | `prototypes/verification-spike/stencil_tier_demo.tscn` — 4 cubes writing stencil values 0/1/2/3 + `CompositorEffect` reading them | ADR-0001 G1 + G4 | Pending |
-| 3.2 | `prototypes/verification-spike/fps_hands_demo.tscn` — `SubViewport` with stand-in hand mesh using inverted-hull, side-by-side with stencil tier-HEAVIEST world object | ADR-0005 G1 | Pending |
+| 3.1 | `stencil_outline_demo.tscn` — uses native Godot 4.6 `stencil_mode = Outline` API (Finding F4 — see verification-log). 5 cubes covering 3 active tiers + no-outline control + distance test. Loads cleanly headless. | ADR-0001 G1 (closed via Finding F4 path); ADR-0001 design itself pending user visual verification | Code ✅ written 2026-04-29; visual verify pending |
+| 3.2 | `fps_hands_demo.tscn` + `inverted_hull_outline.gdshader` — 3 capsules: inverted-hull outline / no outline / native stencil tier-HEAVIEST. Single-viewport (SubViewport integration deferred to FPS Hands production story). Loads cleanly headless. | ADR-0005 G1 | Code ✅ written 2026-04-29; visual verify pending |
 | 3.3 | Cross-platform Vulkan + D3D12 spot-check on prototypes 3.1 + 3.2 | ADR-0001 G2, ADR-0005 G2 | Pending |
 | 3.4 | Profile outline pass on integrated graphics @ 1080p + 75% scale | ADR-0001 G3 | Pending |
 | 3.5 | Shader Baker compatibility check on `CompositorEffect` shaders | ADR-0001 G4 | Pending |
@@ -70,11 +70,11 @@ Group 3 acceptance: visual outputs match the prototype expectations documented i
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
-| 4.1 | `prototypes/verification-spike/verification-log.md` populated with per-ADR-per-gate evidence | Pending |
-| 4.2 | ADR status edits — `Status:` and `Last Verified:` updated to `Accepted` once all gates close | Pending |
-| 4.3 | Re-run `/architecture-review` (sanity check on Accepted ADR set) | Pending |
-| 4.4 | Re-run `/create-control-manifest` (resumes the original chain) | Pending |
-| 4.5 | Re-run `/gate-check` Pre-Production → Production | Pending |
+| 4.1 | `prototypes/verification-spike/verification-log.md` populated with per-ADR-per-gate evidence | ✅ Active (running log; populated as gates close) |
+| 4.2 | ADR status edits — `Status:` and `Last Verified:` updated to `Accepted` once all gates close | ✅ 4 of 8 done (ADR-0002, 0003, 0006, 0007); 4 still Proposed (0001, 0004, 0005, 0008) |
+| 4.3 | Re-run `/architecture-review` (sanity check on Accepted ADR set) | Pending — defer until rendering ADRs Accepted |
+| 4.4 | Re-run `/create-control-manifest` (resumes the original chain) | ✅ Done (2026-04-29) — PARTIAL manifest (Foundation + Core) at `docs/architecture/control-manifest.md`; regenerate when rendering ADRs Accept |
+| 4.5 | Re-run `/gate-check` Pre-Production → Production | Pending — would still FAIL (no VS, no playtests, half of ADRs Proposed); re-run after VS sprint completes |
 
 ## Acceptance Criteria
 
@@ -124,23 +124,23 @@ Estimated total: 1–2 weeks calendar time depending on user availability for ed
 Updated after each work item closes. Source of truth for sprint progress.
 
 ```text
-Group 1 (4 items):  ☐☐☐☐
-Group 2 (4 items):  ☐☐☐☐
-Group 3 (5 items):  ☐☐☐☐☐
-Group 4 (5 items):  ☐☐☐☐☐
+Group 1 (4 items):  ☑☑☑☑
+Group 2 (4 items):  ☑☑☑☑
+Group 3 (5 items):  ⌛✅☐☐☐  (3.1 partial: G1 closed, G2/3/4 need CompositorEffect; 3.2 verified)
+Group 4 (5 items):  ☑☑☐☑☐  (4.1 + 4.2 + 4.4 done; 4.3 + 4.5 deferred to post-VS)
 ```
 
 ADR Promotion Checklist (8 ADRs):
 
 ```text
-ADR-0001 Stencil ID Contract:               Proposed
-ADR-0002 Signal Bus Event Taxonomy:         Proposed
-ADR-0003 Save Format Contract:              Proposed
-ADR-0004 UI Framework:                      Proposed
-ADR-0005 FPS Hands Outline Rendering:       Proposed
-ADR-0006 Collision Layer Contract:          Proposed
-ADR-0007 Autoload Load Order Registry:      Proposed
-ADR-0008 Performance Budget Distribution:   Proposed
+ADR-0001 Stencil ID Contract:               Proposed (G1 ✅ closed via probe + demo; native API confirmed world-space — does NOT supersede ADR-0001; G2/G3/G4 need CompositorEffect prototype = post-spike spike)
+ADR-0002 Signal Bus Event Taxonomy:         ✅ ACCEPTED (2026-04-29) — Group 2.4 smoke test PASS
+ADR-0003 Save Format Contract:              ✅ ACCEPTED (2026-04-29) — Amendment A5 lands F1+F2; 3/3 gates passed
+ADR-0004 UI Framework:                      Proposed (G1+G2+G3+G4 ✅; G5 BBCode→AccessKit DEFERRED to runtime AT testing; F3 amended into IG 14 + project.godot)
+ADR-0005 FPS Hands Outline Rendering:       G1 ✅ PASS (2026-04-29 visual verify); G2 (cross-platform Vulkan + D3D12 parity) still pending Windows access; remains Proposed pending G2
+ADR-0006 Collision Layer Contract:          ✅ ACCEPTED (2026-04-29) — all 3 gates PASS
+ADR-0007 Autoload Load Order Registry:      ✅ ACCEPTED (2026-04-29) — G(a) + G(b) PASS
+ADR-0008 Performance Budget Distribution:   Proposed (composite — depends on the rendering ADRs)
 ```
 
 ## Related

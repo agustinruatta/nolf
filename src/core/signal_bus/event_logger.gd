@@ -21,11 +21,7 @@ const LOG_PREFIX: String = "[EventLogger]"
 
 
 func _ready() -> void:
-	# In debug builds, subscribe to the smoke-test signal. Real impl will
-	# subscribe to every Events.* signal and add a self-remove in
-	# non-debug builds via OS.is_debug_build().
-	Events.smoke_test_pulse.connect(_on_smoke_test_pulse)
-
-
-func _on_smoke_test_pulse(payload: int) -> void:
-	print("%s smoke_test_pulse received: payload=%d" % [LOG_PREFIX, payload])
+	# smoke_test_pulse removed (SB-001). Full EventLogger implementation
+	# (subscribe to all Events.* signals, self-remove in non-debug builds)
+	# lands in Story SB-003.
+	pass

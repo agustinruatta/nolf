@@ -1,10 +1,10 @@
 # Story 002: Built-in-type signal declarations on `events.gd`
 
 > **Epic**: Signal Bus
-> **Status**: Ready
+> **Status**: Complete (2026-04-30)
 > **Layer**: Foundation
 > **Type**: Logic
-> **Manifest Version**: 2026-04-29
+> **Manifest Version**: 2026-04-30 (rolled forward from 2026-04-29 by `/dev-story` 2026-04-30 — Foundation rules unchanged; additive Feature/Presentation/Polish updates only)
 
 ## Context
 
@@ -105,3 +105,20 @@
 - Depends on: Story 001 (autoload registration finalized)
 - Unlocks: Story 003 (EventLogger needs real signals to subscribe to), Story 006 (edge case tests use real signals)
 - Cross-epic: AC 3 fully closes only after Stealth AI, Combat, Level Streaming, Civilian AI, Save/Load, and UI Framework epics each ship their domain signals
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 10/10 passing — all AC verified by automated tests
+**Test Evidence (Logic — BLOCKING)**:
+- `tests/unit/foundation/events_signal_taxonomy_test.gd` — 11 test functions covering AC-3-A through AC-3-J + deferred-absence guard
+- Test suite hardened post-code-review: `class_name` discrimination added for all 6 TYPE_OBJECT signal args (`player_interacted`, `enemy_damaged`, `enemy_killed`, `weapon_fired`, `player_damaged`, `civilian_panicked`) — distinguishes `Node` from `Node3D` from `Resource` per qa-tester finding
+- Suite result: 23/23 PASS, 0 errors, 0 failures
+**Deviations**:
+- ADVISORY: `cutscene_started`/`cutscene_ended` placed under dedicated `# ─── Cutscenes domain ───` banner rather than under Mission (per ADR-0002 amendment 2026-04-29 which added Cutscenes as a separate domain). Test grouping under AC-3-C remains correct.
+- ADVISORY: `signal save_failed(reason: int)` removed from the bus along with the SB-001 skeleton cleanup. The Save/Load epic (Story SL-001+) will re-add it as `signal save_failed(reason: SaveLoad.FailureReason)` once the `FailureReason` enum lands. Until then `save_failed` is intentionally absent — verified by `test_events_taxonomy_deferred_signals_not_present`.
+**Code Review**: Complete (`/code-review` 2026-04-30 — APPROVED WITH SUGGESTIONS; class_name discrimination gap fixed before this report)
+**Manifest version**: rolled forward 2026-04-29 → 2026-04-30 during `/dev-story` (Foundation rules unchanged)
+**Final signal count**: 31 in-scope signals across 9 domains (Player, Documents, Mission, Cutscenes, Failure & Respawn, Dialogue, Inventory, Combat, Civilian, Persistence, Settings). Remaining ~10–12 deferred signals land in paired commits with consumer epics.

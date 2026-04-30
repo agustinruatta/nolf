@@ -67,6 +67,53 @@ Story breakdown agents flagged these dependencies as needing pre-Sprint-02 resol
 
 `/sprint-plan` should treat these as ordering constraints (most are dependency edges, not blockers).
 
+## Session Extract — /story-done 2026-04-30 (SB-002)
+
+- Verdict: COMPLETE WITH NOTES
+- Story: `production/epics/signal-bus/story-002-builtin-type-signals.md` — Built-in-type signal declarations on events.gd
+- ACs: 10/10 passing (AC-3-A through AC-3-J + deferred-absence integrity check)
+- Tests: 11 functions in `events_signal_taxonomy_test.gd`; class_name discrimination added post-review for 6 TYPE_OBJECT signals
+- Suite: 23/23 PASS (4 test files: signal_bus_smoke + events_purity + events_autoload_registration + events_signal_taxonomy)
+- Deviations logged: Cutscenes domain banner (ADR-driven, not Mission); save_failed deferred to Save/Load epic
+- Tech debt logged: None
+- Story file: Status: Ready → Status: Complete (2026-04-30); Completion Notes section added
+- sprint-status.yaml: SB-002 status → done
+- Sprint 02 progress: 2/24 Must-Have done (8.3%)
+- Next recommended: **SB-003** (EventLogger debug autoload — restores the `_ready()` body SB-001 stubbed; full subscriber to all `Events.*` signals + non-debug self-removal). Also unblocked: **LOC-001** (independent), **IN-001** (independent).
+
+## Session Extract — /dev-story 2026-04-30 (SB-002)
+
+- Story: `production/epics/signal-bus/story-002-builtin-type-signals.md` — Built-in-type signal declarations on events.gd
+- Files changed: `src/core/signal_bus/events.gd` (8 skeleton → 31 production signals across 9 domains; `save_failed(reason: int)` removed pending Save/Load epic re-add with proper `SaveLoad.FailureReason` enum); `tests/unit/foundation/events_signal_taxonomy_test.gd` (created — 11 test functions)
+- Tests written: 11 test functions covering AC-3-A through AC-3-J + deferred-absence guard
+- Suite result: 23/23 PASS (6 smoke + 6 SB-001 + 11 new); 0 errors, 0 failures, exit 0
+- Deviation: minor — `cutscene_started`/`cutscene_ended` placed under a dedicated `# ─── Cutscenes domain ───` banner per ADR-0002 amendment 2026-04-29, not bundled under Mission as the story listed. ADR wins per story rule.
+- Story manifest version rolled forward 2026-04-29 → 2026-04-30 (Foundation rules unchanged)
+- Blockers: None
+- Next: `/code-review` then `/story-done`
+
+## Session Extract — /story-done 2026-04-30 (SB-001)
+
+- Verdict: COMPLETE WITH NOTES
+- Story: `production/epics/signal-bus/story-001-events-autoload-structural.md` — Events autoload structural purity + registration finalization
+- ACs: 3/3 passing — all verified by automated tests (12/12 PASS in suite)
+- Deviation logged: `event_logger.gd` `_ready()` stubbed (in-scope-but-out-of-declared-files); SB-003 restores full impl. Risk: low.
+- Tech debt logged: None (deviation is tracked in SB-003 prereqs, not tech-debt-register)
+- Story file: Status: Ready → Status: Complete (2026-04-30); Completion Notes section added
+- sprint-status.yaml: SB-001 status → done; completed: 2026-04-30
+- Next recommended: **SB-002** (Built-in-type signal declarations on events.gd) — depends on SB-001 only, now satisfied; unblocks SL-001 + LS-002 + FS-004 + downstream save-load chain
+
+## Session Extract — /dev-story 2026-04-30 (SB-001)
+
+- Story: `production/epics/signal-bus/story-001-events-autoload-structural.md` — Events autoload structural purity + registration finalization
+- Files changed: `src/core/signal_bus/events.gd` (smoke_test_pulse removed, _ready removed), `src/core/signal_bus/event_logger.gd` (in-scope deviation — stubbed _ready to prevent crash; SB-003 owns full restoration), `tests/unit/foundation/events_purity_test.gd` (created, 151 lines, 4 functions), `tests/unit/foundation/events_autoload_registration_test.gd` (created, 69 lines, 2 functions)
+- Tests written: 6 new test functions covering AC-1, AC-2, AC-3 — all pass
+- Suite result: 12/12 PASS (6 pre-existing + 6 new); 0 errors, 0 failures
+- Deviation flagged: `event_logger.gd` _ready was stubbed because removing `smoke_test_pulse` from `events.gd` made the existing `Events.smoke_test_pulse.connect()` line crash at autoload boot. Stub annotated `# SB-003 will land full impl`. Out-of-scope-but-necessary; SB-003 must restore the full `_ready()` body. Risk: low.
+- Story manifest version rolled forward 2026-04-29 → 2026-04-30 (Foundation rules unchanged; additive Feature/Presentation/Polish updates).
+- Blockers: None
+- Next: `/code-review` on the 4 changed/created files, then `/story-done`
+
 ## Recently Completed (this session, 2026-04-30)
 
 - 17 epics created across Feature, Presentation, Foundation top-up, and Polish layers (`/create-epics`)

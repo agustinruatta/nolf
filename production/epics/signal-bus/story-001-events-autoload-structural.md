@@ -1,11 +1,11 @@
 # Story 001: Events autoload — structural purity + registration finalization
 
 > **Epic**: Signal Bus
-> **Status**: Ready
+> **Status**: Complete (2026-04-30)
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 3 hours (S — surgical changes to existing skeleton + one new test file)
-> **Manifest Version**: 2026-04-29
+> **Manifest Version**: 2026-04-30 (rolled forward from 2026-04-29 by `/dev-story` 2026-04-30 — 1-day delta is additive Feature/Presentation/Polish rule additions; Foundation rules unchanged)
 
 ## Context
 
@@ -105,3 +105,18 @@ Story 002 (next) populates `events.gd` with the production signal subset.
 
 - Depends on: None (Sprint 01 skeleton already in place)
 - Unlocks: Story 002 (signal declarations), Story 003 (EventLogger), Story 004 (lifecycle tests)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 3/3 passing — all AC verified by automated tests
+**Test Evidence (Logic — BLOCKING)**:
+- `tests/unit/foundation/events_purity_test.gd` — 4 tests (AC-2 + AC-3); regex hardened post-review (catches `static func` and `@onready var`)
+- `tests/unit/foundation/events_autoload_registration_test.gd` — 2 tests (AC-1)
+- Suite result: 12/12 PASS, 0 errors, 0 failures
+**Deviations**:
+- OUT OF SCOPE (advisory): `src/core/signal_bus/event_logger.gd` `_ready()` body stubbed to `pass`. Required because `Events.smoke_test_pulse.connect(...)` would crash at autoload boot once SB-001 removed the signal. Stub annotated `# Story SB-003 will restore full impl`. Risk: low. **Track**: SB-003 must restore full EventLogger lifecycle.
+**Code Review**: Complete (`/code-review` 2026-04-30 — APPROVED WITH SUGGESTIONS; GAP-1 regex strengthen applied before this report)
+**Manifest version**: rolled forward 2026-04-29 → 2026-04-30 (Foundation rules unchanged; additive Feature/Presentation/Polish updates)

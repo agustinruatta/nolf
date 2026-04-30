@@ -53,4 +53,12 @@ Full requirement text: `docs/architecture/tr-registry.yaml` Post-Process Stack s
 
 ## Stories
 
-Not yet created. Run `/create-stories post-process-stack` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | TR-IDs | ADR |
+|---|-------|------|--------|--------|-----|
+| 001 | PostProcessStack autoload scaffold + chain-order const table | Logic | Ready | TR-PP-001, TR-PP-007 | ADR-0007, ADR-0008 |
+| 002 | Sepia dim CompositorEffect shader + Compositor wiring | Visual/Feel | Ready | TR-PP-003 | ADR-0005, ADR-0008 |
+| 003 | Sepia dim tween state machine (IDLE/FADING_IN/ACTIVE/FADING_OUT) | Logic | Ready | TR-PP-002, TR-PP-003 | ADR-0005, ADR-0008 |
+| 004 | Document Overlay API integration handshake | Integration | Ready | TR-PP-002, TR-PP-007 | ADR-0002, ADR-0008 |
+| 005 | WorldEnvironment glow ban + forbidden post-process enforcement | Logic | Ready | TR-PP-004, TR-PP-005, TR-PP-006 | ADR-0005, ADR-0008 |
+| 006 | Resolution scale subscription + Viewport.scaling_3d_scale wiring | Logic | Ready | TR-PP-008, TR-PP-010 | ADR-0002, ADR-0007 |
+| 007 | Full-stack visual + performance verification (4.6 glow rework + Slot 3 budget) | Visual/Feel | Ready | TR-PP-009 | ADR-0005, ADR-0008 |

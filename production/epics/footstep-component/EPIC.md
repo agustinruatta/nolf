@@ -5,7 +5,7 @@
 > **Architecture Module**: FootstepComponent — child node of PlayerCharacter (`architecture.md` §3.2)
 > **Engine Risk**: LOW (Object.get_meta/set_meta stable since 4.0; `PhysicsRayQueryParameters3D` stable; `_physics_process` cadence)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories footstep-component`
+> **Stories**: 4 stories created (VS-scoped)
 > **Manifest Version**: 2026-04-30
 
 ## Overview
@@ -56,6 +56,15 @@ This epic is complete when:
 
 ADR-0006 fully Accepted; `MASK_FOOTSTEP_SURFACE` constant defined in `src/core/physics_layers.gd`. ADR-0002 fully Accepted; `Events.player_footstep` declared as part of the production signal taxonomy (lands incrementally as consumer epics are implemented per ADR-0002 §Skeleton Status). No FC-specific verification spike was required — surface metadata authoring contract was verified via Level Streaming GDD §CR-10 + Tools Programmer plugin scope.
 
+## Stories
+
+| # | Story | Type | Status | TR-IDs | ADR |
+|---|-------|------|--------|--------|-----|
+| 001 | FootstepComponent node scaffold + parent assertion | Logic | Ready | TR-FC-001 (partial), TR-FC-008 | ADR-0002, ADR-0006 |
+| 002 | Step cadence state machine + phase-preservation accumulator | Logic | Ready | TR-FC-002, TR-FC-006 | ADR-0002, ADR-0008 |
+| 003 | Surface detection raycast + tag vocabulary | Logic | Ready | TR-FC-003, TR-FC-004, TR-FC-008 | ADR-0006 |
+| 004 | Signal emission, noise_radius_m mirroring, purity + integration test | Integration | Ready | TR-FC-001, TR-FC-005, TR-FC-007 | ADR-0002, ADR-0008 |
+
 ## Next Step
 
-Run `/create-stories footstep-component` to break this epic into implementable stories.
+Run `/story-readiness production/epics/footstep-component/story-001-footstep-component-scaffold.md` to begin implementation. Work through stories in order — each story's `Depends on:` field tells you what must be Done before you can start it.

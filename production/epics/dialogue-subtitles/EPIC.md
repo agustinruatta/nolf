@@ -58,4 +58,10 @@ The Vertical Slice exercises this system at **minimum viable depth**:
 
 ## Stories
 
-Not yet created. Run `/create-stories dialogue-subtitles` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | [DialogueLine resource scaffold + Dialogue-domain signal declarations](story-001-dialogue-line-resource-signal-declarations.md) | Logic | Ready | ADR-0002 |
+| 002 | [Orchestrator playback lifecycle, rate-gate, range gate, priority resolver](story-002-orchestrator-playback-lifecycle.md) | Logic | Ready | ADR-0002, ADR-0007, ADR-0008 |
+| 003 | [Self-suppression + subtitle visibility state machine](story-003-self-suppression-visibility-state-machine.md) | Integration | Ready | ADR-0002, ADR-0004 |
+| 004 | [Subtitle renderer — period typography, layout, localization plumbing](story-004-subtitle-renderer-period-typography.md) | UI | Ready | ADR-0004, ADR-0007 |
+| 005 | [Plaza VS integration smoke — BQA briefing + document suppress/restore](story-005-plaza-vs-integration-smoke.md) | Integration | Ready | ADR-0002, ADR-0004, ADR-0007, ADR-0008 |

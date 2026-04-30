@@ -59,4 +59,11 @@ Full requirement text: `docs/architecture/tr-registry.yaml` Settings & Accessibi
 
 ## Stories
 
-Not yet created. Run `/create-stories settings-accessibility` (with Day-1-HARD-MVP-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | Layer | ADR |
+|---|-------|------|--------|-------|-----|
+| 001 | [SettingsService autoload scaffold + ConfigFile persistence layer](story-001-settings-service-scaffold.md) | Logic | Ready | Polish / Day-1 HARD MVP DEP | ADR-0002, ADR-0003, ADR-0007 |
+| 002 | [Boot lifecycle — burst emit, settings_loaded signal, photosensitivity warning flag](story-002-boot-lifecycle-settings-loaded.md) | Logic | Ready | Polish / Day-1 HARD MVP DEP | ADR-0002, ADR-0003, ADR-0007 |
+| 003 | [Photosensitivity kill-switch + PostProcessStack glow handshake](story-003-photosensitivity-kill-switch.md) | Integration | Ready | Polish / Day-1 HARD MVP DEP (WCAG SC 2.3.1) | ADR-0002, ADR-0003, ADR-0004 |
+| 004 | [Audio volume sliders — dB formula + bus apply integration](story-004-audio-volume-sliders.md) | Logic | Ready | Polish / Day-1 HARD MVP DEP (Master); VS-expansion (Music / SFX / Voice) | ADR-0002, ADR-0003 |
+| 005 | [Settings panel UI shell — layout, InputContext, navigation, AccessKit, forbidden-pattern CI gates](story-005-settings-panel-ui-shell.md) | UI | BLOCKED (ADR-0004 Gates 1 + 5 OPEN) | Polish / VS-expansion | ADR-0002, ADR-0004 |
+| 006 | [Subtitle defaults write + subtitle settings persistence](story-006-subtitle-defaults-write-persistence.md) | Logic | Ready | Polish / Day-1 HARD MVP DEP (captions-default-on per WCAG SC 1.2.2 / CR-23) | ADR-0002, ADR-0003, ADR-0007 |

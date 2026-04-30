@@ -5,7 +5,7 @@
 > **Architecture Module**: Cutscenes & Mission Cards (`CanvasLayer` modal scene; NOT autoload per ADR-0007)
 > **Engine Risk**: LOW (subscriber to mission signals + simple modal render)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories cutscenes-and-mission-cards`
+> **Stories**: 5 stories created (story-001 through story-005)
 > **Manifest Version**: 2026-04-30
 
 ## Overview
@@ -56,4 +56,10 @@ Full requirement text: `docs/architecture/tr-registry.yaml` Cutscenes & Mission 
 
 ## Stories
 
-Not yet created. Run `/create-stories cutscenes-and-mission-cards` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | File | Title | Type | TRs | Estimate | Status |
+|---|------|-------|------|-----|----------|--------|
+| 001 | `story-001-scene-scaffold-and-subscriber-lifecycle.md` | Scene scaffold + subscriber lifecycle | Integration | TR-CMC-001, 002, 003 | 3-4 h | Ready |
+| 002 | `story-002-cutscene-signal-domain.md` | Cutscene signal domain — cutscene_started and cutscene_ended | Integration | TR-CMC-004, 005, 007, 008 | 2-3 h | Ready |
+| 003 | `story-003-replay-suppression-and-one-active-invariant.md` | Replay suppression + one-active invariant | Logic | TR-CMC-006, 015 | 3-4 h | Ready |
+| 004 | `story-004-mission-cards-visual-and-dismiss-grammar.md` | Mission briefing + closing cards — visual spec, localization, and dismiss grammar | UI | TR-CMC-009, 010, 013, 014 | 4-5 h | Ready |
+| 005 | `story-005-ci-fences-and-performance-budget.md` | CI fences + performance budget compliance | Config/Data + Integration | TR-CMC-011, 012 | 3-4 h | Ready |

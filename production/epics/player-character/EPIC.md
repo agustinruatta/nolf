@@ -5,7 +5,7 @@
 > **Architecture Module**: Player Character — `PlayerCharacter` scene root (`CharacterBody3D`) (`architecture.md` §3.2)
 > **Engine Risk**: MEDIUM (Jolt physics 4.6 default; `material_overlay` slot for FPS hands outline; `SubViewport` FOV 55° for hands rendering)
 > **Status**: Ready (with note: governing ADR-0005 + ADR-0008 are Proposed — Gates 1+2 closed; gates 3, 4, 5 require this epic's hands rendering production story to close — chicken-and-egg by design)
-> **Stories**: Not yet created — run `/create-stories player-character`
+> **Stories**: 8 stories created 2026-04-30
 > **Manifest Version**: 2026-04-30
 
 ## Overview
@@ -63,6 +63,19 @@ This epic is complete when:
 
 ADR-0005 G1 (inverted-hull capsule outline on Linux Vulkan) PASSED via `prototypes/verification-spike/fps_hands_demo.tscn`. ADR-0006 fully Accepted (collision layer constants + project.godot layer_names verified end-to-end). ADR-0001 fully Accepted. The PlayerCharacter scaffold has not yet been created; this epic's stories will create it from scratch following the GDD + ADR-0005 hands rendering contract.
 
+## Stories
+
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | PlayerCharacter scene root scaffold | Logic | Ready | ADR-0006 |
+| 002 | First-person camera + look input | Integration | Ready | ADR-0006 |
+| 003 | Movement state machine + locomotion | Logic | Ready | ADR-0006, ADR-0008 |
+| 004 | Noise perception surface | Logic | Ready | ADR-0002, ADR-0008 |
+| 005 | Interact raycast + query API | Integration | Ready | ADR-0006, ADR-0002 |
+| 006 | Health system (apply_damage, apply_heal, signals) | Logic | Ready | ADR-0002 |
+| 007 | Respawn contract + PlayerState serialization | Logic | Ready | ADR-0003 |
+| 008 | FPS hands rendering — production (closes ADR-0005 G3/G4/G5) | Visual/Feel | Ready | ADR-0005 |
+
 ## Next Step
 
-Run `/create-stories player-character` to break this epic into implementable stories.
+Run `/story-readiness production/epics/player-character/story-001-scene-root-scaffold.md` then `/dev-story` to begin implementation. Work through stories in order — each story's `Depends on:` field tells you what must be DONE before you can start it.

@@ -58,4 +58,21 @@ The Vertical Slice exercises this system at **minimum viable depth**:
 
 ## Stories
 
-Not yet created. Run `/create-stories failure-respawn` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | ADRs |
+|---|-------|------|--------|------|
+| 001 | [FailureRespawn autoload scaffold — state machine + signal subscriptions + restore callback registration](story-001-autoload-scaffold-state-machine.md) | Logic | Ready | ADR-0007 + ADR-0002 |
+| 002 | [Slot-0 autosave assembly via MLS-owned capture() chain + in-memory SaveGame handoff to LS](story-002-slot0-autosave-assembly-mls-capture-chain.md) | Logic | Ready | ADR-0003 + ADR-0002 |
+| 003 | [respawn_triggered signal emission — ordering contract + subscriber re-entrancy fence + sting suppression](story-003-respawn-triggered-signal-ordering-contract.md) | Logic | Ready | ADR-0002 |
+| 004 | [Plaza checkpoint assembly — section_entered handler + CR-7 IDLE guard + floor flag state machine (VS path)](story-004-plaza-checkpoint-assembly-section-entered-cr7-guard.md) | Logic | Ready | ADR-0003 + ADR-0002 |
+| 005 | [LS step-9 restore callback + PlayerCharacter.reset_for_respawn + InputContext push/pop — VS end-to-end respawn beat](story-005-ls-step9-restore-callback-reset-for-respawn-vs-beat.md) | Integration | Ready | ADR-0003 + ADR-0007 + ADR-0008 |
+| 006 | [Anti-pattern fences — fr_autosaving_on_respawn forbidden pattern + RESPAWN-not-FORWARD autosave distinction + CI lint guards](story-006-anti-pattern-fences-fr-autosaving-on-respawn.md) | Config/Data | Ready | ADR-0002 + ADR-0003 |
+
+**Dependency chain**: 001 → 002 → 003; 001 → 004; {002, 003, 004} → 005 → 006.
+
+**TR-ID coverage**: TR-FR-001 (story-001), TR-FR-002 (stories 003 + 006), TR-FR-003 (stories 002 + 006), TR-FR-004 (story-002), TR-FR-005 (story-005), TR-FR-006 (story-004), TR-FR-007 (story-004), TR-FR-008 (stories 003 + 006), TR-FR-009 (story-005), TR-FR-010 (story-001), TR-FR-011 (story-005), TR-FR-012 (story-005), TR-FR-013 (story-005), TR-FR-014 (story-003).
+
+**Post-VS deferrals** (not in any story above):
+- Combat-driven death paths (bullet/blade `DeathCause`) — no combat in VS
+- Kill-plane fall-out-of-bounds detector (Plaza is bounded)
+- Ammo respawn floor actual application math — VS path is no-op; Inventory GDD coord item lands with Inventory epic
+- Multi-checkpoint progression within a section (Mission Scripting extension point)

@@ -52,4 +52,8 @@ Full requirement text: `docs/architecture/tr-registry.yaml` HUD State Signaling 
 
 ## Stories
 
-Not yet created. Run `/create-stories hud-state-signaling` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | TR-IDs | ADR |
+|---|-------|------|--------|--------|-----|
+| 001 | HUD State Signaling — structural scaffold + HUD Core handshake | Integration | Ready | TR-HSS-002, TR-HSS-003 | ADR-0002 |
+| 002 | ALERT_CUE — Day-1 HoH/deaf minimal slice | Logic | Ready | TR-HSS-001, TR-HSS-006, TR-HSS-008, TR-HSS-010 | ADR-0002 |
+| 003 | MEMO_NOTIFICATION — document pickup toast (VS scope) | UI | Ready | TR-HSS-011 | ADR-0002 |

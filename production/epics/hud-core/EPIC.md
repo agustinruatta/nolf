@@ -5,7 +5,7 @@
 > **Architecture Module**: HUD Core (`CanvasLayer`-rooted scene under root; NOT autoload per ADR-0007)
 > **Engine Risk**: LOW–MEDIUM (ADR-0004 UI Framework Proposed — gates G3/G4/G5 deferred to runtime AT testing post-MVP)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories hud-core`
+> **Stories**: 6 stories created (001–006)
 > **Manifest Version**: 2026-04-30
 
 ## Overview
@@ -58,4 +58,20 @@ VS exercises this system at **Day-1 HARD MVP slice** depth:
 
 ## Stories
 
-Not yet created. Run `/create-stories hud-core` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Title | Type | Status | TR-IDs | ADR |
+|---|-------|------|--------|--------|-----|
+| 001 | CanvasLayer scene root scaffold + Theme resource + FontRegistry wiring | UI | Ready | TR-HUD-001, TR-HUD-005, TR-HUD-006, TR-HUD-007, TR-HUD-008 | ADR-0004 |
+| 002 | Signal subscription lifecycle + forbidden-pattern fences | Logic | Ready | TR-HUD-002, TR-HUD-003, TR-HUD-013, TR-HUD-015 | ADR-0002 |
+| 003 | Health widget logic (damage flash, critical-state edge trigger, Tween.kill on context-leave) | Logic | Ready | TR-HUD-009, TR-HUD-012, TR-HUD-014 | ADR-0002, ADR-0004, ADR-0008 |
+| 004 | Interact prompt strip — PC query resolver, _process state machine, get_prompt_label() extension hook | Logic | Ready | TR-HUD-003 (partial), TR-HUD-013 (partial) | ADR-0002, ADR-0004, ADR-0008 |
+| 005 | Settings live-update wiring, pickup memo subscription, context-hide full implementation | Logic | Ready | TR-HUD-004, TR-HUD-010 (partial), TR-HUD-011, TR-HUD-014 (full) | ADR-0002, ADR-0004, ADR-0008 |
+| 006 | Plaza VS integration smoke — end-to-end visual sign-off + Slot 7 0.3 ms perf measurement | UI | Ready | TR-HUD-010 (verification) | ADR-0008, ADR-0004 |
+
+**Coverage note**: All 15 TR-HUD-* IDs are addressed across the 6 stories. TR-HUD-003 and TR-HUD-013 span Stories 002 and 004 (subscriber-only contract covers signal plumbing in 002 and PC-query accessor discipline in 004). TR-HUD-010 spans Stories 005 (set_process opt-out) and 006 (measurement gate). TR-HUD-014 spans Stories 003 (health+dry-fire Tween kills) and 005 (gadget reject Tween kill + full handler).
+
+**Post-VS deferrals** (not in any story — do not implement until post-VS sprint):
+- Ammo widget logic (no Combat in VS)
+- Gadget tile logic (no Inventory in VS)
+- Crosshair `_draw()` implementation (no aim-down-sights in VS)
+- Full prompt-strip rebind contract (CR-21 — Input GDD pending)
+- Dry-fire flash full detection logic (ammo widget dependency)

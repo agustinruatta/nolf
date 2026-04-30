@@ -54,4 +54,10 @@ Full requirement text: `docs/architecture/tr-registry.yaml` Outline Pipeline sec
 
 ## Stories
 
-Not yet created. Run `/create-stories outline-pipeline` (with VS-narrowed scope flag) to break this epic into implementable stories. Reference Sprint 01 verification log + ADR-0005 Acceptance findings F1–F6 directly.
+| # | Story | Type | Status | TR-IDs | ADR |
+|---|-------|------|--------|--------|-----|
+| 001 | OutlineTier class scaffold — constants, set_tier(), validation | Logic | Ready | TR-OUT-001, TR-OUT-010 | ADR-0001 |
+| 002 | CompositorEffect stencil-test pipeline — per-tier graphics passes + intermediate tier-mask texture | Integration | Ready | TR-OUT-005, TR-OUT-002, TR-OUT-009 | ADR-0001, ADR-0008 |
+| 003 | Jump-flood outline compute shader — Stage 2 algorithm + outline color composition | Visual/Feel | Ready | TR-OUT-003, TR-OUT-006, TR-OUT-008 | ADR-0001, ADR-0008 |
+| 004 | Resolution-scale kernel formula — Formula 2 implementation + Settings wiring | Logic | Ready | TR-OUT-004, TR-OUT-007 | ADR-0001, ADR-0005 |
+| 005 | Plaza per-tier visual validation — composition order, Slot 1 perf measurement, sign-off | Visual/Feel | Ready | TR-OUT-002, TR-OUT-003, TR-OUT-005, TR-OUT-006, TR-OUT-009 | ADR-0001, ADR-0005, ADR-0008 |

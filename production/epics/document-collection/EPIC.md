@@ -62,4 +62,10 @@ The `document-overlay-ui` Presentation epic owns the full-screen reading modal a
 
 ## Stories
 
-Not yet created. Run `/create-stories document-collection` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | TR-IDs | ADR |
+|---|-------|------|--------|--------|-----|
+| 001 | [Document Resource schema + DocumentCollectionState sub-resource](story-001-document-resource-schema.md) | Logic | Ready | TR-DC-002, TR-DC-009 | ADR-0003 |
+| 002 | [DocumentBody node — collision layer, stencil tier, interact priority](story-002-document-body-node.md) | Logic | Ready | TR-DC-003, TR-DC-004 | ADR-0006, ADR-0001 |
+| 003 | [DocumentCollection node — subscribe/publish lifecycle + pickup handler](story-003-document-collection-node.md) | Logic | Ready | TR-DC-001, TR-DC-005, TR-DC-012, TR-DC-013, TR-DC-015 | ADR-0002, ADR-0007 |
+| 004 | [Save/restore contract — capture(), restore(), spawn-gate](story-004-save-restore-contract.md) | Integration | Ready | TR-DC-006, TR-DC-007, TR-DC-008, TR-DC-014 | ADR-0003, ADR-0002 |
+| 005 | [Plaza tutorial document set — placement, locale keys, end-to-end integration](story-005-plaza-tutorial-integration.md) | Integration | Ready | TR-DC-010 (partial), TR-DC-011 (partial) | ADR-0002, ADR-0003, ADR-0004, ADR-0006, ADR-0007 |

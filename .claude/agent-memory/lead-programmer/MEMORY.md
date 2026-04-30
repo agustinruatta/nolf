@@ -26,3 +26,11 @@
 
 ### Skills Completed
 - `story-done` — end-of-story completion handshake (Phase 1-8, writes story file)
+
+## MLS Epic
+
+- [MLS stories created 2026-04-30](project_mls_stories_created.md) — 5 VS-scoped stories; dependency order 001→002→003→004→005; 3 open questions live
+
+## Failure & Respawn Epic
+
+- [F&R stories created 2026-04-30](project_fr_stories_created.md) — 6 VS-scoped stories; all 14 TR-IDs covered; dependency chain 001→002→003; 001→004; {002,003,004}→005→006

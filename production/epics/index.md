@@ -62,13 +62,13 @@ support those systems without harming design fit).
 
 ## Status Summary
 
-- **7 Foundation epics**: 4 with stories created (signal-bus 7, save-load 9, localization-scaffold 5, level-streaming 10 = 31 Foundation stories ready); 3 newly added 2026-04-30 (audio, outline-pipeline, post-process-stack — stories pending).
-- **3 Core epics** created (2026-04-30); stories not yet broken down — run `/create-stories input` / `/create-stories player-character` / `/create-stories footstep-component` next.
-- **5 Feature epics** created (2026-04-30) with VS-narrowed scope. 3 Feature systems deferred post-VS (combat-damage, inventory-gadgets, civilian-ai).
-- **5 Presentation epics** created (2026-04-30) with VS-narrowed scope.
-- **1 Polish epic** created (2026-04-30) — Day-1 HARD MVP DEP slice in scope; full Polish slice deferred.
+- **7 Foundation epics** — all stories broken down: signal-bus (6), save-load (9), localization-scaffold (5), level-streaming (10), audio (5), outline-pipeline (5), post-process-stack (7) = **47 Foundation stories**.
+- **3 Core epics** — all stories broken down: input (7), player-character (8), footstep-component (4) = **19 Core stories**.
+- **5 Feature epics** — all stories broken down: stealth-ai (10), document-collection (5), mission-level-scripting (5), failure-respawn (6), dialogue-subtitles (5) = **31 Feature stories**. 3 systems deferred post-VS (combat-damage, inventory-gadgets, civilian-ai).
+- **5 Presentation epics** — all stories broken down: hud-core (6), hud-state-signaling (3), document-overlay-ui (5), menu-system (8), cutscenes-and-mission-cards (5) = **27 Presentation stories**.
+- **1 Polish epic** — all stories broken down: settings-accessibility (6, Day-1 HARD MVP DEP slice + VS expansion) = **6 Polish stories**.
 
-**Total: 21 epics covering 21 of 24 systems (87.5%) for Vertical Slice. 3 systems deferred post-VS.**
+**Total: 21 epics covering 21 of 24 systems (87.5%) for Vertical Slice. 130 stories ready for `/sprint-plan` Sprint 02 input. 3 systems deferred post-VS.**
 
 ## Related
 

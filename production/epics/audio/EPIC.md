@@ -2,10 +2,10 @@
 
 > **Layer**: Foundation
 > **GDD**: `design/gdd/audio.md`
-> **Architecture Module**: Audio (`Audio` autoload — registered in `project.godot [autoload]` per ADR-0007)
+> **Architecture Module**: Audio (`AudioManager` scene-tree Node in persistent root scene — NOT autoload; subscribes to Events per ADR-0002)
 > **Engine Risk**: LOW–MEDIUM (Godot 4.6 audio bus configuration; AudioStreamPolyphonic for stinger pool)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories audio`
+> **Stories**: 5 stories created (VS-scoped)
 > **Manifest Version**: 2026-04-30
 
 ## Overview
@@ -56,4 +56,10 @@ Full requirement text: `docs/architecture/tr-registry.yaml` Audio section.
 
 ## Stories
 
-Not yet created. Run `/create-stories audio` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| ID | Title | Type | Est | TR-IDs | Status |
+|----|-------|------|-----|--------|--------|
+| 001 | AudioManager node scaffold + 5-bus structure | Logic | M (2–3 h) | TR-AUD-002, TR-AUD-003 | Ready |
+| 002 | Signal subscription lifecycle — connect/disconnect registry | Logic | M (2–3 h) | TR-AUD-001, TR-AUD-003 | Ready |
+| 003 | Plaza ambient layer + UNAWARE/COMBAT music states + section reverb | Integration | L (3–4 h) | TR-AUD-004, TR-AUD-005, TR-AUD-006, TR-AUD-008, TR-AUD-009, TR-AUD-010 | Ready |
+| 004 | VO ducking (Formula 1) + document world-bus mute + respawn cut-to-silence | Logic | M (2–3 h) | TR-AUD-004, TR-AUD-006, TR-AUD-010 | Ready |
+| 005 | Footstep variant routing (marble) + COMBAT stinger on actor_became_alerted | Logic | M (2–3 h) | TR-AUD-007, TR-AUD-011 | Ready |

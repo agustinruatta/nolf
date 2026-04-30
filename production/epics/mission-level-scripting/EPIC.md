@@ -57,4 +57,10 @@ The Vertical Slice exercises this system at **minimum viable depth**:
 
 ## Stories
 
-Not yet created. Run `/create-stories mission-level-scripting` (with VS-narrowed scope flag) to break this epic into implementable stories.
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | [MissionLevelScripting autoload scaffold + load-order registration](story-001-mls-autoload-scaffold.md) | Logic | Ready | ADR-0007 |
+| 002 | [Mission state machine + four Mission-domain signal declarations](story-002-mission-state-machine.md) | Logic | Ready | ADR-0002 |
+| 003 | [Plaza section authoring contract — required nodes, CI validation, discovery surface](story-003-plaza-section-authoring-contract.md) | Logic | Ready | ADR-0006 |
+| 004 | [SaveGame assembler chain — FORWARD autosave gate wired to all 6 capture() calls](story-004-savegame-assembler-chain.md) | Integration | Ready | ADR-0003 |
+| 005 | [Plaza objective integration — Recover Plaza Document, NEW_GAME to COMPLETED](story-005-plaza-objective-integration.md) | Integration | Ready | ADR-0002 + ADR-0003 |

@@ -5,7 +5,7 @@
 > **Architecture Module**: Input — `InputContext` autoload + `InputActions` static class (`architecture.md` §3.2)
 > **Engine Risk**: MEDIUM (SDL3 gamepad backend 4.5+; dual-focus split 4.6 sidestepped via `_unhandled_input` + `ui_cancel`)
 > **Status**: Ready (with note: governing ADR-0004 is Proposed pending G5 — BBCode AccessKit serialization — for unrelated formatted-body scope; Input-relevant clauses are validated)
-> **Stories**: Not yet created — run `/create-stories input`
+> **Stories**: 7 stories — see table below
 > **Manifest Version**: 2026-04-30
 
 ## Overview
@@ -57,6 +57,14 @@ This epic is complete when:
 
 ADR-0004 G1 (AccessKit description property), G2 (`Control.accessibility_description` set/get), G3 (Theme-typed lookup), G4 (`auto_translate_mode` enum identifiers) all CLOSED. The `InputContext` autoload script stub exists at `src/core/ui/input_context.gd` (extends `Node`, `_ready()` pass-through) — production implementation replaces this stub. ADR-0007 G(a) + G(b) verified — autoload line-4 placement is proven safe.
 
-## Next Step
+## Stories
 
-Run `/create-stories input` to break this epic into implementable stories.
+| # | Story | Type | Status | ADR |
+|---|-------|------|--------|-----|
+| 001 | InputActions static class + project.godot action catalog | Logic | Ready | ADR-0004, ADR-0007 |
+| 002 | InputContextStack autoload — production implementation | Logic | Ready | ADR-0004, ADR-0007, ADR-0002 |
+| 003 | Context routing + dual-focus dismiss integration | Integration | Ready | ADR-0004, ADR-0002 |
+| 004 | Anti-pattern CI enforcement + debug action gating | Logic | Ready | ADR-0004, ADR-0007 |
+| 005 | Edge-case discipline — order-of-operations + mouse mode + held-key | Integration | Ready | ADR-0004, ADR-0002 |
+| 006 | Runtime rebinding API — Vertical Slice scope | Integration | Ready | ADR-0004, ADR-0003 |
+| 007 | LOADING context gate integration | Integration | Ready | ADR-0004, ADR-0002 |

@@ -1,17 +1,16 @@
 # Session State
 
-**Last updated:** 2026-04-30 — Sprint 02 pre-work **complete**. 21 epics with 130 stories ready, scope broadened beyond original session-state plan to "test all systems in VS" per user direction. Test harness (GdUnit4) verified working with one local patch. Next step: **`/sprint-plan`** to generate Sprint 02 (Vertical Slice production sprint).
+**Last updated:** 2026-04-30 — Sprint 02 in progress. **2/24 Must-Have stories done** (SB-001 + SB-002). Test suite: 23/23 PASS. Sprint plan + QA plan written. Continuing with `/dev-story` loop.
 
 ## Next Action — START HERE
 
-Run **`/sprint-plan`** — it should:
-- Read `production/epics/index.md` (21 epics, 130 stories) for full backlog visibility
-- Pull dependency information from each epic's `Stories` table
-- Surface the cross-epic open questions (see "Known Cross-Epic Open Questions" below)
-- Propose a Sprint 02 scope and ordering based on dependency-safe layer order: Foundation → Core → Feature → Presentation → Polish
-- Solo mode is configured (`production/review-mode.txt`) — gates that require team-of-3 sign-off are skipped
+Run `/dev-story production/epics/signal-bus/story-003-event-logger-debug-autoload.md` — restores the `EventLogger._ready()` body that SB-001 stubbed (closes that documented deviation), subscribes EventLogger to all 31 `Events.*` signals declared in SB-002, self-removes in non-debug builds via `OS.is_debug_build()`. Highest leverage next.
 
-After `/sprint-plan` lands, the natural next step is `/dev-story production/epics/signal-bus/story-001-events-autoload-structural.md` (the dependency-lowest story).
+After SB-003, three independent stories become productive (parallel-safe): **LOC-001** (CSV registration + tr() runtime), **IN-001** (InputActions static class), **SL-001** (SaveGame Resource scaffolding — depends on SB-002, now done).
+
+Sprint plan: `production/sprints/sprint-02-foundation-core.md` (24 Must-Have / 5 Should-Have / 2 Nice-to-Have stories, 3-week cadence).
+QA plan: `production/qa/qa-plan-sprint-02-2026-04-30.md`.
+Sprint status: `production/sprint-status.yaml` (machine-readable; auto-updated by `/story-done`).
 
 ## Current Stage
 
@@ -141,6 +140,6 @@ Story breakdown agents flagged these dependencies as needing pre-Sprint-02 resol
 ## How to Resume
 
 1. New session reads this file (auto-loaded by `session-start.sh` hook)
-2. Run `/sprint-plan` — pulls epic + story metadata to propose Sprint 02 scope
-3. Discuss ordering with the planning skill, especially the 8 cross-epic open questions above
-4. Approve plan, then begin `/dev-story` loop on signal-bus story-001
+2. Run `/dev-story production/epics/signal-bus/story-003-event-logger-debug-autoload.md` — the next story in the dependency chain. SB-001 + SB-002 are Complete; SB-003 closes the EventLogger stub deviation.
+3. After SB-003 lands: `/code-review` → `/story-done` → either continue Signal Bus (SB-004 lifecycle / SB-005 anti-pattern fences / SB-006 edge-case dispatch) or pivot to LOC-001 / IN-001 / SL-001 (all unblocked).
+4. Maintain one story-loop per session and `/clear` between, per cadence agreed 2026-04-30.

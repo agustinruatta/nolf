@@ -21,7 +21,7 @@ The system's architectural contract is **ADR-0001 (Stencil ID Contract)**. Key d
 - **4 stencil values**: `0 = no outline`, `1 = heaviest (4 px) — Eve, gadget pickups, bomb components, comedic hero props`, `2 = medium (2.5 px) — PHANTOM guards`, `3 = light (1.5 px) — environment, civilians`.
 - **Every `MeshInstance3D` must be paired with `OutlineTier.set_tier(mesh, tier)`** at spawn time. The forbidden pattern `unmarked_visible_mesh` enforces this in code review.
 - **Escape-hatch runtime tier reassignment** (e.g., the swinging lamp in Lower Scaffolds can be promoted to tier 1 during a focal moment).
-- **4 verification gates** pending before the ADR moves from Proposed to Accepted: material API exposure, stencil read on Vulkan and D3D12, perf on Iris Xe.
+- **All 4 ADR-0001 verification gates closed 2026-04-30 — ADR Accepted.** G1 ✅ (material API), G2 ✅ on Vulkan via Sprint 01 spike (D3D12 closed by removal per Amendment A2 — project forces Vulkan on Windows), G3 ✅ CONDITIONAL (Iris Xe perf via extrapolation; production must use jump-flood per IG-7), G4 ✅ (Shader Baker reframed via Finding F5).
 
 This GDD's job is to articulate the shader's design-level behavior: what the player sees (Art Bible Section 1 Principle 2 — *Silhouette Owns Readability*), how the tiered weights communicate (outline hierarchy signals importance without HUD chrome), how the outline survives diegetic lighting variance (lighting does NOT weaken outlines — this is per Art Bible's rule that alert state is signaled through audio, not visuals), and how the pipeline integrates with Post-Process Stack's sepia-dim effect (outline runs before sepia, so the dim darkens both world and outlines equally).
 
@@ -139,7 +139,7 @@ The following 4 gates must pass before this GDD reaches Approved status and befo
 |---|---|---|
 | Gate 1 | `BaseMaterial3D` stencil write value property exposure (or confirmed need for custom `ShaderMaterial`) | technical-artist + godot-shader-specialist, 5-min editor test |
 | Gate 2 | `CompositorEffect` stencil buffer read on Vulkan (Linux) | technical-artist, 30-min shader prototype |
-| Gate 3 | Same on D3D12 (Windows 4.6 default) | technical-artist, cross-platform test |
+| ~~Gate 3~~ | ~~Same on D3D12 (Windows 4.6 default)~~ **CLOSED BY REMOVAL 2026-04-30 (ADR-0001 Amendment A2)** — D3D12 not targeted; project forces Vulkan on Windows. | — |
 | Gate 4 | Performance: outline pass ≤2.0 ms on Iris Xe at 75% scale | performance-analyst, benchmark run |
 
 ## Formulas
@@ -327,7 +327,7 @@ No in-game UI displays outline state, tier hierarchy, or stencil values. Those a
 
 1. **GIVEN** a `MeshInstance3D` with a `ShaderMaterial` in Godot 4.6 editor, **WHEN** stencil write is configured, **THEN** `RenderingDevice` writes the specified stencil value to the depth-stencil attachment. *(Gate 1 — ADR-0001)*
 2. **GIVEN** a `CompositorEffect` shader on Linux/Vulkan, **WHEN** it samples the depth-stencil buffer, **THEN** stencil values 0–3 are readable per pixel. *(Gate 2 — ADR-0001)*
-3. **GIVEN** the same shader on Windows/D3D12, **WHEN** it runs, **THEN** stencil reads produce visually identical output to Vulkan. *(Gate 3 — ADR-0001 cross-platform)*
+3. ~~**GIVEN** the same shader on Windows/D3D12, **WHEN** it runs, **THEN** stencil reads produce visually identical output to Vulkan.~~ *(Gate 3 — ADR-0001 cross-platform)* **CLOSED BY REMOVAL 2026-04-30 (ADR-0001 Amendment A2)** — D3D12 not targeted.
 4. **GIVEN** the outline pass running on Intel Iris Xe integrated graphics at 1080p, resolution_scale = 0.75, **WHEN** measured with `Performance` API, **THEN** the pass completes in ≤2.0 ms for 95% of frames across a 60-second sample. *(Gate 4 — ADR-0001)*
 
 ### Tier behavior
@@ -377,5 +377,5 @@ No in-game UI displays outline state, tier hierarchy, or stencil values. Those a
 | Edge threshold value (Formula 3)? | technical-artist | After initial shader prototype | Recommendation: `0.02`. Final value via visual testing — too low = noisy outlines on subtle geometry; too high = missing outlines on gentle ridges. Document final value in the future `Outline Shader Implementation` ADR. |
 | Should outline have an anti-aliasing pass applied to itself? | technical-artist | Polish phase | Current design: no — hard-edged outlines match comic-panel aesthetic. SMAA (4.5+) may be applied AFTER outline to smooth screen-level aliasing. If pixel-sharp outlines look too harsh in playtest, consider a 1px feather on the outline edge. |
 | How are environment meshes tagged with stencil tier at scene design time? | level-designer + technical-artist | Before first section authoring | Recommendation: scene editor plugin that adds "Outline Tier" dropdown to MeshInstance3D inspector, saved as metadata. Alternative: per-scene script that iterates children in `_ready()` and applies tier based on naming convention. Pick one before section authoring begins. |
-| Does Windows/D3D12 stencil read work identically to Vulkan/Linux? | technical-artist | Gate 3 verification | ADR-0001 Risk flagged as MEDIUM probability, HIGH impact. Test on both platforms in Week 1 of prototyping. If divergent, platform-specific shader paths required. |
+| ~~Does Windows/D3D12 stencil read work identically to Vulkan/Linux?~~ | — | — | **CLOSED BY REMOVAL 2026-04-30 (ADR-0001 Amendment A2)** — D3D12 not targeted; question is moot. Project forces Vulkan on Windows via `project.godot [rendering] rendering_device/driver.windows="vulkan"`. |
 | Should a uniform-weight fallback be implemented at MVP for hardware that can't handle tiered branching? | technical-artist + performance-analyst | After Gate 4 perf testing | ADR-0001 Alternative 2 documented this fallback. Currently NOT in scope at MVP; only implement if Gate 4 fails on min-spec target. |

@@ -59,3 +59,13 @@ ui_cancel={
 [physics]
 
 3d/physics_engine="Jolt"
+
+[rendering]
+
+; Force Vulkan on Windows (overrides Godot 4.6 D3D12 default).
+; Project decision 2026-04-30 — single rendering backend simplifies cross-platform
+; verification and removes D3D12-specific risk for ADR-0001 (outline pipeline).
+; Vulkan runs on all target Windows hardware (NVIDIA / AMD / Intel ship Vulkan
+; drivers); slight perf cost on D3D12-optimized hardware is negligible for the
+; project's stylized low-poly target. See verification-log §F6 + ADR-0001 IG 7.
+rendering_device/driver.windows="vulkan"

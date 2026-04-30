@@ -7,7 +7,7 @@
 | **Version** | 1.0 (initial draft — all 9 sections authored via `/create-architecture`) |
 | **Started** | 2026-04-23 |
 | **Last Updated** | 2026-04-23 (Phase 7 complete — Architecture Principles + Open Questions written; TD sign-off recorded below) |
-| **Engine** | Godot 4.6 · GDScript · Forward+ (Vulkan Linux / D3D12 Windows) · Jolt 3D default |
+| **Engine** | Godot 4.6 · GDScript · Forward+ (Vulkan on both Linux and Windows — D3D12 disabled per project Amendment A2) · Jolt 3D default |
 | **Platform** | PC — Linux + Windows (Steam). Single-player, no networking. |
 | **Performance Contract** | 60 fps · 16.6 ms · ≤1500 draw calls · ≤4 GB (technical-preferences.md; allocated by ADR-0008). |
 | **GDDs Covered** | **23 / 23 authored** — all MVP + VS systems designed (last metadata refresh 2026-04-29 post-`/architecture-review` seventh run). Per-system status tracked in `design/gdd/systems-index.md`. |
@@ -27,7 +27,7 @@
 
 | Domain | Post-cutoff concerns | Fencing ADR(s) |
 |---|---|---|
-| **Rendering** | Stencil buffer writes/reads (4.5); `CompositorEffect` post-process chain (4.3+ base, 4.6 production-pinned); D3D12 default on Windows (4.6); glow-before-tonemap (4.6); Shader Baker (4.5); SMAA 1x (4.5); specular occlusion (4.5). | ADR-0001 (stencil tier contract); ADR-0005 (FPS hands inverted-hull carve-out); ADR-0008 Slot #3 (outline + sepia 2.5 ms combined cap). |
+| **Rendering** | Stencil buffer writes/reads (4.5); `CompositorEffect` post-process chain (4.3+ base, 4.6 production-pinned); ~~D3D12 default on Windows (4.6)~~ project disables D3D12 via Amendment A2 — Vulkan-only on both platforms; glow-before-tonemap (4.6); Shader Baker (4.5); SMAA 1x (4.5); specular occlusion (4.5). | ADR-0001 (stencil tier contract — **Accepted 2026-04-30**); ADR-0005 (FPS hands inverted-hull carve-out); ADR-0008 Slot #3 (outline + sepia 2.5 ms combined cap). |
 | **UI** | Dual-focus system (4.6: mouse/touch vs KB/gamepad separated); AccessKit screen reader integration (4.5); FoldableContainer + Recursive Control disable (4.5); live translation preview (4.5). | ADR-0004 (Theme hierarchy + InputContext stack + `_unhandled_input`+`ui_cancel` dismiss grammar explicitly sidesteps 4.6 dual-focus complexity). |
 
 ### MEDIUM risk domains — each fenced by ≥1 ADR
@@ -94,7 +94,7 @@ The 23 authored-or-planned systems (plus the FootstepComponent sibling of Player
 | Layer | # | System | Tier | Engine risk | GDD status |
 |---|---|---|---|---|---|
 | **Presentation** | 3 | Audio | MVP | LOW | Approved (2026-04-21) |
-| | 4 | Outline Pipeline | MVP | **HIGH** (stencil 4.5, CompositorEffect, D3D12) | Designed (re-review pending) |
+| | 4 | Outline Pipeline | MVP | MEDIUM (stencil 4.5, CompositorEffect — Vulkan-only per A2; ADR-0001 Accepted 2026-04-30) | Designed (re-review pending) |
 | | 5 | Post-Process Stack | MVP | **HIGH** (Compositor chain, glow-before-tonemap 4.6) | Designed (re-review pending) |
 | | 16 | HUD Core | MVP | **HIGH** (4.6 dual-focus, Theme) | Not Started |
 | | 19 | HUD State Signaling | VS | MED (signal subscribers only) | Not Started |
@@ -401,8 +401,9 @@ Frame N starts ─────────────────────�
 
   (15) Reserve — Slot #9 (1.6 ms)
        Unallocated; absorbs OS jitter, Jolt first-contact spikes,
-       AudioServer reverb-swap CPU stall (0.3–0.8 ms documented), D3D12
-       heap pressure.
+       AudioServer reverb-swap CPU stall (0.3–0.8 ms documented), and
+       unknowns. (D3D12 heap pressure dropped 2026-04-30 Amendment A2 —
+       D3D12 not targeted; Vulkan-only on both platforms.)
 
 Frame N ends (≤16.6 ms) ────────────────────────────────────────────────────►
 ```
@@ -1378,14 +1379,14 @@ The heavy lifting of traceability is already done by `docs/architecture/requirem
 
 | ADR | Title | Engine-Compat section | Version recorded | Post-cutoff APIs flagged | GDD Reqs section | Conflicts vs §§2–5 | Valid for 4.6 |
 |---|---|---|---|---|---|---|---|
-| 0001 | Stencil ID Contract | ✅ | 4.6 | ✅ stencil 4.5, CompositorEffect 4.3+, D3D12 4.6, Shader Baker 4.5 | ✅ | None | ✅ |
+| 0001 | Stencil ID Contract | ✅ | 4.6 | ✅ stencil 4.5, CompositorEffect 4.3+, RDPipelineDepthStencilState 4.5 (graphics-pipeline stencil-test pattern per F5), Shader Baker 4.5; ~~D3D12 4.6~~ removed by Amendment A2 (Vulkan-only) | ✅ | None | ✅ |
 | 0002 | Signal Bus + Event Taxonomy | ✅ | 4.6 | ✅ script backtracing 4.5 (debug-only) | ✅ | None | ✅ |
 | 0003 | Save Format Contract | ✅ | 4.6 | ✅ duplicate_deep 4.5 (load-bearing), FileAccess 4.4 (informational) | ✅ | None | ✅ |
 | 0004 | UI Framework | ✅ | 4.6 | ✅ AccessKit 4.5, dual-focus 4.6, FoldableContainer 4.5 | ✅ | None | ✅ |
 | 0005 | FPS Hands Outline (inverted-hull) | ✅ | 4.6 | ✅ (none load-bearing; Shader Baker 4.5 for compile) | ✅ | None | ✅ |
 | 0006 | Collision Layer Contract | ✅ | 4.6 | ✅ Jolt 4.6 default + A6 Area3D broadphase tunneling | ✅ | None | ✅ |
 | 0007 | Autoload Load Order Registry | ✅ | 4.6 | ✅ (autoload syntax stable 4.0+) | ✅ | ⚠ **Combat-autoload omission** (§6.3 below) | ✅ |
-| 0008 | Performance Budget Distribution | ✅ | 4.6 | ✅ Jolt 4.6, Shader Baker 4.5, D3D12 4.6, CompositorEffect 4.6 | ✅ | None | ✅ |
+| 0008 | Performance Budget Distribution | ✅ | 4.6 | ✅ Jolt 4.6, Shader Baker 4.5, CompositorEffect 4.6; ~~D3D12 4.6~~ removed by Amendment A2 (Vulkan-only) | ✅ | None | ✅ |
 
 All 8 ADRs satisfy the skill's quality checkboxes. All 8 remain Proposed; 21 verification gates outstanding across the chain. Four A3–A6 amendments and ADR-0008's Gate 1–4 are captured on the ADRs themselves and tracked in `production/session-state/active.md`.
 
@@ -1508,14 +1509,14 @@ Normal Technical Setup / Prototype phase work. These move ADRs from Proposed →
 
 | ADR | Gates | Nature |
 |---|---:|---|
-| ADR-0001 | 4 | Editor verification (BaseMaterial3D stencil property; CompositorEffect stencil read on Vulkan+D3D12; performance on Iris Xe + RTX 2060) |
+| ADR-0001 | 4 | **All 4 gates closed 2026-04-30 — ADR Accepted.** G1 (BaseMaterial3D stencil property) ✅; G2 (CompositorEffect stencil-test on Vulkan) ✅ via Sprint 01 spike — D3D12 closed by removal per Amendment A2; G3 (Iris Xe profiling) ✅ CONDITIONAL on production using jump-flood (Finding F6 → IG 7); G4 (Shader Baker) ✅ reframed via Finding F5 (RDShaderFile pre-compile path) |
 | ADR-0002 | 1 | Smoke test: emit one signal → EventLogger prints → subscriber receives |
 | ADR-0003 | 3 | ResourceSaver FLAG_COMPRESS round-trip; DirAccess.rename atomicity; `Dictionary[StringName, GuardRecord]` duplicate_deep isolation (A3-refined) |
 | ADR-0004 | 3 | Control.accessibility_* property names; Theme inheritance property name; `_unhandled_input` dismiss across KB/M and gamepad |
-| ADR-0005 | 5 | Inverted-hull Vulkan+D3D12 parity; Shader Baker × `material_overlay` compat (A5-added, moved to Prototype) |
+| ADR-0005 | 5 | Inverted-hull Vulkan parity (G1 ✅ closed via Sprint 01 spike; G2 D3D12 parity ✅ CLOSED BY REMOVAL Amendment A6 — Vulkan-only); Shader Baker × `material_overlay` compat (G5, A5-added, moved to Prototype); G3 + G4 still pending (resolution-scale toggle + animated rigged hand mesh — production scope) |
 | ADR-0006 | 3 | PhysicsLayers compiles and references from gameplay; project.godot named-layer slots populated; end-to-end usage migration verification |
 | ADR-0007 | 1 | `project.godot [autoload]` block byte-matches canonical table (incidentally validated by ADR-0002 Gate 1) |
-| ADR-0008 | 4 | Restaurant reference scene measurement on Iris Xe; RTX 2060 informative; D3D12 post-stream warm-up allowance; autoload boot ≤50 ms cold-start |
+| ADR-0008 | 4 | Restaurant reference scene measurement on Iris Xe; RTX 2060 informative; ~~D3D12 post-stream warm-up allowance~~ CLOSED BY REMOVAL Amendment A2 (Vulkan-only); autoload boot ≤50 ms cold-start |
 | **Total** | **24** | 21 pre-existing + 3 added via A3–A6 amendments |
 
 Two infrastructure stories are implied by the gates (flagged in `production/session-state/active.md` 2026-04-23):
@@ -1535,7 +1536,7 @@ Two infrastructure stories are implied by the gates (flagged in `production/sess
 |---|---|---|
 | **Outline Shader Implementation** — Sobel vs Laplacian kernel choice, edge-threshold tuning, per-tier kernel shape | ADR-0001 §Related explicitly defers: "Future ADR: Outline Shader Implementation (detail-level decision about Sobel vs Laplacian kernel, edge threshold tuning) — out of scope here; this ADR establishes the contract, not the algorithm internals" | During Outline Pipeline implementation (Prototype phase), after Iris Xe measurements reveal which kernel fits the 2.0 ms cap |
 | **Memory Budget Distribution** — 4 GB ceiling distribution across systems (memory analogue of ADR-0008) | ADR-0008 §Requirements explicitly defers: "Memory budgets (4 GB ceiling) are out of scope — deferred to a future ADR" | Polish phase, triggered by a soak-test memory-growth finding or a specific system's memory claim approaching the ceiling |
-| **Shader Baker policy** (if anything beyond ADR-0005 Gate 5 + ADR-0008 cold-boot references needs codifying) | No ADR explicitly defers this. A dedicated ADR may be unnecessary — current references suffice. | Only if Shader Baker export-time behavior on D3D12 surfaces edge cases that affect multiple systems |
+| **Shader Baker policy** (if anything beyond ADR-0005 Gate 5 + ADR-0008 cold-boot references needs codifying) | No ADR explicitly defers this. A dedicated ADR may be unnecessary — current references suffice. | Only if Shader Baker export-time behavior on Vulkan surfaces edge cases that affect multiple systems (D3D12 not targeted per Amendment A2) |
 | **AccessKit Integration Specifics** (if the 4.5 API surfaces complications during Settings & Accessibility implementation) | ADR-0004 references AccessKit at the scaffold level but does not specify control-by-control `accessibility_*` wire-up | During Settings & Accessibility `/design-system` pass (VS phase) if the wire-up has sufficient cross-system implications |
 
 None of these is time-sensitive. They are flags to revisit if the relevant trigger surfaces.
@@ -1612,7 +1613,7 @@ Decisions deferred to later ADRs, Prototype-phase empirical work, or Polish-phas
 | 2 | CI `perf-gate` job configuration | Reference scene exists (devops-engineer owner) |
 | 3 | ADR-0002 Gate 1 (smoke test) + ADR-0007 Gate 1 (byte-match canonical autoload table) | Smallest scope; validates Signal Bus + Autoload infra together |
 | 4 | ADR-0006 Gates 1–3 (PhysicsLayers + named layer slots + migration) | Zero API risk; establishes collision contract |
-| 5 | ADR-0001 Gates 1–4 + ADR-0005 Gates 1–5 | Rendering verification bundle — HIGH risk; do together on both Vulkan + D3D12 |
+| 5 | ADR-0001 Gates 1–4 + ADR-0005 Gates 1–5 | Rendering verification bundle — HIGH risk; do together on Vulkan (D3D12 not targeted per Amendment A2). **ADR-0001 all 4 gates closed 2026-04-30 — Accepted.** ADR-0005 G1 + G2 closed; G3, G4, G5 still production scope. |
 | 6 | ADR-0003 Gates 1–3 + ADR-0004 Gates 1–3 | Save + UI verification; can run parallel |
 | 7 | ADR-0008 Gates 1–4 | Requires reference scene (order 1) and perf-gate CI (order 2); runs against the full system set |
 
@@ -1650,7 +1651,7 @@ Decisions deferred to later ADRs, Prototype-phase empirical work, or Polish-phas
 **Candidate answers**:
 - **Iris Xe**: Gen 12 is common on 2020+ Intel laptops; solo dev likely has access or can borrow. Verification on a Gen 11 or Gen 13 is an acceptable proxy (document the substitution).
 - **RTX 2060**: measurements are *informative not caps* per ADR-0008. An RTX 3060/4060 minus ~20% expected delta is a workable approximation for target-experience tuning. Explicitly note when RTX 2060 is a proxy measurement.
-- **D3D12 post-stream warm-up (ADR-0008 Gate 3)**: Windows machine required. Cross-compile from Linux is possible but the warm-up behavior is D3D12-runtime specific; measurement on actual Windows is mandatory.
+- ~~**D3D12 post-stream warm-up (ADR-0008 Gate 3)**: Windows machine required.~~ **CLOSED BY REMOVAL 2026-04-30 (Amendment A2)** — D3D12 not targeted; this hardware setup item no longer exists. Windows verification of ADR-0008 Gate 4 still requires a Windows machine running Vulkan, but no D3D12-specific tooling.
 
 **Trigger to revisit**: Technical Setup phase scope planning. May need to reach out for platform-specific measurement help.
 
@@ -1673,7 +1674,7 @@ Re-listed here for completeness; full triggers live in §7.4:
 
 - **Outline Shader Implementation** — deferred by ADR-0001. Trigger: Prototype-phase measurement revealing which edge-detect kernel fits the 2.0 ms cap.
 - **Memory Budget Distribution** — deferred by ADR-0008. Trigger: soak-test memory-growth finding or system-level claim approaching the 4 GB ceiling.
-- **Shader Baker policy** — unforced. Trigger: D3D12 export-time edge case affecting multiple systems.
+- **Shader Baker policy** — unforced. Trigger: Vulkan export-time edge case affecting multiple systems (D3D12 not targeted per Amendment A2).
 - **AccessKit Integration specifics** — unforced. Trigger: Settings & Accessibility `/design-system` pass surfacing cross-system wire-up complications.
 
 ### 9.7 GDD-level open questions (not architectural — flagged for awareness)

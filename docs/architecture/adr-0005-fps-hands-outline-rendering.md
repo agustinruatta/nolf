@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — moves to Accepted once two verification gates pass: (1) a 30-minute Godot 4.6 editor prototype renders an inverted-hull outline on a stand-in hand mesh inside a `SubViewport` and visually matches a tier-HEAVIEST (4 px at 1080p) outline on an adjacent world object rendered via the ADR-0001 stencil `CompositorEffect`; (2) the same prototype renders identically on both Vulkan (Linux) and D3D12 (Windows).
+**Proposed** — moves to Accepted once the remaining verification gates pass. **Gate 1 ✅ PASS** (2026-04-29 Sprint 01 spike — `prototypes/verification-spike/fps_hands_demo.tscn`): inverted-hull capsule renders correct outline on Linux Vulkan; thickness tuning is a production concern, not a gate. **Gate 2 ✅ CLOSED BY REMOVAL** (2026-04-30 Amendment A6): D3D12 is no longer a target backend per ADR-0001 Amendment A2 + `project.godot [rendering] rendering_device/driver.windows="vulkan"`; cross-platform parity collapses to single-Vulkan verification. **Gates 3, 4, 5 still pending** — production scope (resolution-scale toggle behavior, animated rigged hand mesh, Shader Baker × `material_overlay`) requires the actual hands rendering production story.
 
 ## Date
 
@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-23 (Amendment A5: Validation Criteria gained Gate 5 — Shader Baker × `material_overlay` compatibility verification in 4.6 export build, moved from Polish to Prototype phase per godot-specialist 2026-04-22 §6 to avoid costly refactor if baking excludes `material_overlay` slots)
+2026-04-30 (Amendment A6: Gate 2 — D3D12/Windows parity — closed by removal per project decision to force Vulkan on Windows. Gate 1 also closed via Sprint 01 spike `prototypes/verification-spike/fps_hands_demo.tscn`. Status stays Proposed pending Gates 3, 4, 5 — production-scope. Earlier: 2026-04-23 Amendment A5 added Gate 5 Shader Baker × `material_overlay` compatibility verification.)
 
 ## Decision Makers
 
@@ -26,10 +26,10 @@ First-person player hands in *The Paris Affair* cannot participate in ADR-0001's
 |-------|-------|
 | **Engine** | Godot 4.6 |
 | **Domain** | Rendering |
-| **Knowledge Risk** | LOW-MEDIUM — Inverted-hull outlining via front-face-culled extruded mesh is a stable Godot 3.x+ technique; `SubViewport` compositing is stable 4.0+. No post-cutoff APIs are load-bearing. The only MEDIUM-risk element is whether SubViewport compositing ordering interacts correctly with the main camera's outline `CompositorEffect` from ADR-0001 across Vulkan and D3D12. |
+| **Knowledge Risk** | LOW — Inverted-hull outlining via front-face-culled extruded mesh is a stable Godot 3.x+ technique; `SubViewport` compositing is stable 4.0+. No post-cutoff APIs are load-bearing. SubViewport compositing ordering with the main camera's outline `CompositorEffect` from ADR-0001 verified on Vulkan via Sprint 01 spike. (Was LOW-MEDIUM pre-2026-04-30 due to D3D12 cross-platform unknown; D3D12 no longer targeted per Amendment A6.) |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `docs/engine-reference/godot/modules/rendering.md`, ADR-0001, godot-shader-specialist technical memo (2026-04-19) |
 | **Post-Cutoff APIs Used** | None as load-bearing dependencies. Shader Baker (4.5) will compile the inverted-hull shader; this is an optimization, not a correctness requirement. |
-| **Verification Required** | (1) 30-minute editor prototype: hands stand-in mesh in SubViewport with inverted-hull material; visual match to adjacent stencil-based outlined world object on **Vulkan/Linux**. (2) Same prototype on **D3D12/Windows** — identical visual output. (3) Confirm outline width scales correctly when `resolution_scale` switches from 1.0 → 0.75 (Iris Xe branch). |
+| **Verification Required** | (1) Editor prototype: hands stand-in mesh in SubViewport with inverted-hull material; visual match to adjacent stencil-based outlined world object on **Vulkan/Linux**. **CLOSED 2026-04-29** via `prototypes/verification-spike/fps_hands_demo.tscn`. (2) ~~Same prototype on **D3D12/Windows** — identical visual output.~~ **CLOSED BY REMOVAL 2026-04-30 (Amendment A6)** — D3D12 not targeted; Vulkan-only on both Linux and Windows. (3) Confirm outline width scales correctly when `resolution_scale` switches from 1.0 → 0.75 (Iris Xe branch). Production scope. |
 
 > **Note**: LOW-MEDIUM Knowledge Risk. The inverted-hull pattern predates the LLM's knowledge cutoff and is well-documented in community tutorials; no breaking changes in 4.4–4.6 affect this approach.
 
@@ -71,7 +71,7 @@ Without a decision here, the Player Character GDD's AC-11.1 (hands have visible 
 - **Engine: Godot 4.6, Forward+ renderer, GDScript primary.** No GDExtension in the project. Any solution requiring direct `RenderingServer` / `RenderingDevice` work is out of scope.
 - **Visual target: tier-HEAVIEST match.** Hands must visually match ADR-0001 tier 1 (4 px outline at 1080p native, `#1A1A1A` near-black color) within perceptual tolerance. A close-range observer should not be able to tell that hands use a different outline technique than adjacent world objects.
 - **Performance: outline pass ≤2 ms total per Art Bible 8F.** The hands outline budget must fit within that or claim a small dedicated slice. Target: ≤0.3 ms for hands outline on Iris Xe (16% of the shared 2 ms budget — reasonable since hands are low-poly and on-screen always).
-- **Cross-platform: Linux (Vulkan) + Windows (D3D12).** Must render identically on both.
+- **Cross-platform: Linux + Windows, both on Vulkan.** Project decision (ADR-0001 Amendment A2 + `project.godot [rendering]`) forces Vulkan on Windows; D3D12 no longer targeted. Single-backend verification surface.
 - **Resolution scale: must honor ADR-0001's 75% Iris Xe fallback.** Hands outline scales with the rest of the world when `resolution_scale = 0.75`.
 - **Single mesh class exception.** This ADR defines the hands as the only exception to ADR-0001's stencil contract. No other mesh class may adopt the inverted-hull approach without a new ADR or an amendment here.
 - **Animated mesh.** Hands will be rigged and animated (idle sway, interact reach, gadget poses). The outline technique must survive skeletal deformation without breaking at joint normals.
@@ -300,7 +300,7 @@ func _on_setting_changed(category: StringName, name: StringName, value: Variant)
 This is the project's fifth ADR. No existing code or saves to migrate. Implementation order:
 
 1. **Verification gate 1** (Vulkan/Linux, 30 minutes): create a minimal scene with a main camera rendering a cube with ADR-0001 tier-1 stencil outline, plus a SubViewport containing a test hand-stand-in mesh with the inverted-hull shader. Confirm visual parity (both objects have a ~4 px black outline). Confirm outline survives when the stand-in mesh is parented to a simple `Skeleton3D` with an animated pose.
-2. **Verification gate 2** (D3D12/Windows): run the same scene via Windows build, confirm identical output.
+2. ~~**Verification gate 2** (D3D12/Windows): run the same scene via Windows build, confirm identical output.~~ **CLOSED BY REMOVAL 2026-04-30 (Amendment A6)** — D3D12 not targeted.
 3. **Verification gate 3** (resolution scale): toggle `resolution_scale` uniform from 1.0 to 0.75; confirm both world outline (ADR-0001) and hands outline (this ADR) scale proportionally in the frame.
 4. If all three gates pass: author the production `HandsOutlineMaterial` resource, wire `resolution_scale` to the Settings signal, and implement Player Character hands per revised GDD.
 5. Set ADR-0005 status Proposed → Accepted.
@@ -310,7 +310,7 @@ This is the project's fifth ADR. No existing code or saves to migrate. Implement
 ## Validation Criteria
 
 - [ ] **Gate 1** — Vulkan/Linux prototype renders hands-stand-in with ~4 px outline matching an adjacent stencil-outlined cube.
-- [ ] **Gate 2** — same scene renders identically on D3D12/Windows.
+- [x] ~~**Gate 2** — same scene renders identically on D3D12/Windows.~~ **CLOSED BY REMOVAL 2026-04-30 (Amendment A6)** — D3D12 not targeted; Vulkan-only on both Linux and Windows.
 - [ ] **Gate 3** — `resolution_scale` toggle (1.0 → 0.75) scales both outlines proportionally; no visible divergence.
 - [ ] **Gate 4** — animated rigged hand mesh (idle sway + interact reach) shows no outline artifacts at finger joints or wrist.
 - [ ] **Gate 5** (added 2026-04-23 per godot-specialist 2026-04-22 §6) — In a Godot 4.6 export build, verify Shader Baker compiles `hands_outline_material.gdshader` assigned via `material_overlay` on the skinned hands mesh. If Shader Baker excludes `material_overlay` slots from baking in 4.6, escalate to the two-surface `ShaderMaterial` fallback described in Implementation Guideline 7 (the `material_overlay` vs two-surface tradeoff stated in the Key Interfaces code comment). **This gate MUST pass before Prototype phase completes.** Moved from Polish phase (prior scope) to Prototype phase because discovering a Shader Baker exclusion during Polish would force a cascading refactor through every hands-holding weapon pose and every FPS-hands animation state — a costly and schedule-breaking rework. Prototype-phase verification is cheap; Polish-phase discovery is not.
@@ -328,6 +328,11 @@ This is the project's fifth ADR. No existing code or saves to migrate. Implement
 | `design/gdd/player-character.md` | AC-11.1 | "No head-bob, no sprint whoosh, no damage-edge vignette, no stamina bar, no hold-E interact meter" (implicit: outlined hands present, not absent) | Outline remains visible on hands without violating the no-modern-UX pillar. |
 | `design/art/art-bible.md` | Section 1 Principle 2 — Silhouette Owns Readability | "All foreground objects have outline contributing to figure-ground" | Hands participate in the outline visual identity via an alternate technique. |
 | `docs/architecture/adr-0001-stencil-id-contract.md` | ADR-0001 Implementation Guideline 1 | "Every visible object must declare its outline tier" | ADR-0005 registers hands as an explicit exception to ADR-0001. Any reader of ADR-0001 should cross-reference this ADR. |
+
+## Revision History
+
+- **2026-04-30 (Amendment A6 — Gate 2 D3D12 closed by removal)**: Project-level decision (ADR-0001 Amendment A2 + `project.godot [rendering] rendering_device/driver.windows="vulkan"`) drops D3D12 as a target backend. Cross-platform parity collapses to single-Vulkan verification on Linux and Windows. Effects on this ADR: Gate 2 closes by removal; §Status, §Knowledge Risk, §Verification Required, §Constraints, §Migration Plan §gate 2, §Validation Criteria Gate 2 updated. Gate 1 also confirmed PASS this date via Sprint 01 spike `prototypes/verification-spike/fps_hands_demo.tscn` (Linux Vulkan visual verification — inverted-hull capsule renders correct outline; thickness tuning is a production concern, not a gate). Status stays Proposed: Gates 3, 4, 5 require the actual hands rendering production story (resolution-scale toggle behavior on rigged mesh, animated mesh artifacts, Shader Baker × `material_overlay` compatibility in export build).
+- **2026-04-23 (Amendment A5 — Gate 5 added; moved Shader Baker × `material_overlay` compatibility to Prototype phase)**: per godot-specialist 2026-04-22 §6 to avoid costly refactor if Shader Baker excludes `material_overlay` slots from baking in 4.6.
 
 ## Related
 

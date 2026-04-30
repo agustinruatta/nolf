@@ -21,6 +21,8 @@ See `production/sprints/sprint-01-technical-verification-spike.md` for the full 
 | `signal_bus_smoke.tscn` + `.gd` | `Events.emit` → `EventLogger` prints → subscriber receives | ADR-0002 G1, ADR-0007 G(b) |
 | `stencil_tier_demo.tscn` + `.gdshader` | 4 cubes writing stencil values 0/1/2/3 + `CompositorEffect` reading them | ADR-0001 G1 + G4 |
 | `fps_hands_demo.tscn` + `.gdshader` | `SubViewport` with stand-in hand mesh using inverted-hull outline; side-by-side with stencil-rendered tier-HEAVIEST world object | ADR-0005 G1 |
+| `stencil_compositor_outline.gd` + `stencil_compositor_demo.{tscn,gd}` + `shaders/{stencil_pass,outline}.glsl` | Screen-space-stable outline `CompositorEffect`: 3 stencil-test graphics passes write tier markers to an intermediate texture; compute shader paints outlines into the scene color buffer at tier-specific pixel widths. Pattern adapted from [dmlary/godot-stencil-based-outline-compositor-effect](https://github.com/dmlary/godot-stencil-based-outline-compositor-effect) (MIT). | ADR-0001 G2 (Vulkan) + G4 |
+| `_screenshot_capture.{gd,tscn}` | Helper that loads a target scene, lets it render a few frames, saves a PNG. Used by the agent to verify visual prototypes without opening the editor: `xvfb-run -a godot --rendering-driver vulkan ... _screenshot_capture.tscn -- --target=<path> --out=user://...`. | All visual gates |
 
 Some files are added incrementally as Group 2 and Group 3 work proceeds.
 

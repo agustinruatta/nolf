@@ -7,7 +7,7 @@
 
 - **Engine**: Godot 4.6
 - **Language**: GDScript
-- **Rendering**: Forward+ (Vulkan on Linux, D3D12 on Windows — Godot 4.6 default)
+- **Rendering**: Forward+ (Vulkan on Linux + Windows — D3D12 explicitly disabled to simplify cross-platform verification; see ADR-0001 §Engine Compatibility + verification-log Finding F6)
 - **Physics**: Jolt (3D — Godot 4.6 default), Godot Physics 2D
 
 ## Input & Platform

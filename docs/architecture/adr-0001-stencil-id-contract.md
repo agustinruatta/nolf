@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed** — must remain Proposed until two verification gates pass (see Risks). Stories that depend on this ADR are blocked until status is Accepted.
+**Accepted** (2026-04-30) — all four verification gates closed via Sprint 01 spike: G1 ✅ (Finding F4), G2 ✅ (Vulkan-only via spike prototype; D3D12 closed by removal — project decision to disable D3D12 on Windows, see Revision History entry A2 + technical-preferences.md), G3 ✅ CONDITIONAL on production using jump-flood (Finding F6 → IG 7), G4 ✅ (Finding F5 reframe). Dependent system GDDs may now reference this ADR.
 
 ## Date
 
@@ -10,7 +10,7 @@
 
 ## Last Verified
 
-2026-04-19
+2026-04-30 (all 4 gates closed; G2-D3D12 closed by removal — project forces Vulkan on Windows via `project.godot [rendering]`. Status promoted Proposed → Accepted.)
 
 ## Decision Makers
 
@@ -28,8 +28,8 @@ Every renderable object in *The Paris Affair* writes one of four reserved stenci
 | **Domain** | Rendering |
 | **Knowledge Risk** | HIGH — Stencil buffer support is a Godot 4.5 feature (post-LLM-cutoff). `CompositorEffect` (4.3+) is in training data; per-material stencil write API and `CompositorEffect` stencil read API are post-cutoff. |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `docs/engine-reference/godot/modules/rendering.md`, Art Bible Sections 3.4, 8C, 8F, 8J |
-| **Post-Cutoff APIs Used** | Stencil buffer write from `ShaderMaterial` or `BaseMaterial3D` (4.5); stencil buffer read from `CompositorEffect` shader (4.5); D3D12 backend default on Windows (4.6); Shader Baker for `CompositorEffect` shaders (4.5) |
-| **Verification Required** | (1) Confirm whether `BaseMaterial3D` exposes a stencil write value property in the 4.6 editor inspector — if not, mandatory `ShaderMaterial` path. (2) Confirm `CompositorEffect` GLSL shader can bind/sample the stencil buffer on **both** Vulkan (Linux) and D3D12 (Windows) backends — cross-platform correctness risk. (3) Profile the outline pass on integrated graphics (Intel Iris Xe-class) at 1080p native and at 75% render scale. (4) Confirm Shader Baker handles `CompositorEffect` shaders the same as `ShaderMaterial` resources. |
+| **Post-Cutoff APIs Used** | Stencil buffer write from `ShaderMaterial` or `BaseMaterial3D` (4.5); stencil-test via `RDPipelineDepthStencilState.enable_stencil` on a graphics pipeline whose framebuffer's depth attachment is the scene's depth-stencil texture (4.5; verified Finding F5 — the stencil aspect is NOT directly sampleable from a compute shader); `RDShaderFile` (`.glsl`) pre-compile to SPIR-V at edit-time import (Finding F5 reframe of original "Shader Baker for `CompositorEffect`" wording — these resources take a different path than `ShaderMaterial`'s ubershader Shader Baker). Vulkan-only (project decision A2 disables D3D12). |
+| **Verification Required** | (1) Confirm whether `BaseMaterial3D` exposes a stencil write value property in the 4.6 editor inspector — if not, mandatory `ShaderMaterial` path. **CLOSED 2026-04-29** — `BaseMaterial3D` exposes `stencil_mode`/`stencil_flags`/`stencil_compare`/`stencil_reference`/`stencil_color`/`stencil_outline_thickness` (Finding F4). (2) Confirm a `CompositorEffect`-based stencil-test graphics pipeline + compute-shader outline pass works on **both** Vulkan (Linux) and D3D12 (Windows) backends — cross-platform correctness risk. The stencil buffer is **NOT directly sampleable from a compute shader** in Godot 4.6 — instead, the stencil-test happens via `RDPipelineDepthStencilState.enable_stencil = true` on a graphics pipeline whose framebuffer's depth attachment is the scene's depth-stencil texture (verification-log Finding F5). **Vulkan CLOSED 2026-04-30; D3D12 still pending.** (3) Profile the outline pass on integrated graphics (Intel Iris Xe-class) at 1080p native and at 75% render scale. **CONDITIONAL CLOSED 2026-04-30** via RTX 4070 measurement + Iris Xe extrapolation — pass requires production to use jump-flood or equivalent log2-pass algorithm (Finding F6 + IG 7). (4) Confirm Shader Baker handles `CompositorEffect` shaders the same as `ShaderMaterial` resources. **CLOSED 2026-04-30 with reframe** — RDShaderFile (`.glsl`) shaders are pre-compiled to SPIR-V at edit-time import, distinct from ShaderMaterial's Shader Baker path; the equivalent risk is covered (Finding F5). |
 
 > **Note**: HIGH Knowledge Risk. This ADR must be re-validated if the project upgrades engine versions. If APIs change, flag as Superseded and write a new ADR.
 
@@ -58,7 +58,7 @@ Project is in pre-production. No source code exists. No existing rendering archi
 
 - **Engine: Godot 4.6, Forward+ renderer.** Stencil buffer support added in Godot 4.5 (post-LLM-cutoff per `VERSION.md`). The outline pass is implemented as a `CompositorEffect` (4.3+ pattern, in training data — see `rendering.md`).
 - **Performance: outline pass ≤2 ms per frame (12% of 16.6 ms 60 fps budget)** per Art Bible 8F. Target 0.8–1.5 ms on RTX 2060-class hardware.
-- **Cross-platform: Linux (Vulkan) + Windows (D3D12 default since 4.6).** Stencil read in shaders must work identically on both backends.
+- **Cross-platform: Linux + Windows, both on Vulkan.** Project decision 2026-04-30 to force Vulkan on Windows (override Godot 4.6 D3D12 default) via `project.godot [rendering] rendering_device/driver.windows="vulkan"`. Single backend = single verification surface for the outline pipeline. See Revision History A2.
 - **Minimum-spec hardware: Intel Iris Xe integrated graphics.** Resolution-scale fallback (render at 75% internal, upscale to native) must be supported.
 - **First-time solo Godot dev with 6–9 month MVP timeline.** Architecture must be simple enough to implement and debug without specialist knowledge.
 
@@ -68,7 +68,7 @@ Project is in pre-production. No source code exists. No existing rendering archi
 - The outline `CompositorEffect` shader must select kernel width per pixel based on the tier marker of the rendered object underneath.
 - Tier assignment must work for **dynamic objects** (spawned at runtime by systems like Stealth AI, Combat, Inventory) AND **static environment geometry** (scene-baked).
 - An escape-hatch mechanism must exist for the rare case where an object needs its tier reassigned at runtime (e.g., the swinging lamp in Lower Scaffolds becoming a focal moment).
-- The contract must remain valid across both Vulkan (Linux) and D3D12 (Windows) backends.
+- The contract must remain valid on Vulkan across Linux and Windows. D3D12 is no longer a target backend per Amendment A2 — `project.godot [rendering] rendering_device/driver.windows="vulkan"` overrides Godot 4.6's D3D12 default.
 
 ## Decision
 
@@ -103,7 +103,7 @@ Project is in pre-production. No source code exists. No existing rendering archi
                                    ▼
               ┌───────────────────────────────────────────────┐
               │  Frame buffer: color + depth + STENCIL plane  │
-              │  (D24_S8 format on Vulkan/D3D12)              │
+              │  (D24_S8 format on Vulkan)                    │
               └──────────────────┬────────────────────────────┘
                                  │ read by
                                  ▼
@@ -137,29 +137,24 @@ static func set_tier(mesh: MeshInstance3D, tier: int) -> void:
     pass
 ```
 
-```glsl
-// Outline CompositorEffect fragment shader (pseudocode — exact stencil read API
-// pending verification gate; see Risks).
+**Implementation pattern (verified 2026-04-30 on Vulkan/Linux — see verification-log Findings F5 + F6).**
 
-uniform sampler2D depth_stencil_texture;    // exact hint name TBD
-uniform vec4 outline_color = vec4(0.10, 0.10, 0.10, 1.0); // near-black per Art Bible 4.4
-uniform float resolution_scale = 1.0;        // 1.0 native, 0.75 integrated default
+The outline `CompositorEffect` is a 2-stage pipeline. **The earlier pseudocode that showed `sample_stencil(SCREEN_UV)` from a compute shader was wrong** — Godot 4.6 does NOT expose the stencil aspect of the depth-stencil texture as a sampleable resource in any shader stage. The stencil-test happens via the graphics-pipeline state object instead.
 
-void fragment() {
-    int tier = sample_stencil(SCREEN_UV);    // exact API TBD
-    if (tier == 0) discard;
+**Stage 1 — per-tier stencil-test passes (graphics pipelines)**:
+- For each tier T ∈ {1, 2, 3}, build an `RDPipelineDepthStencilState` with `enable_stencil = true`, `front_op_compare = COMPARE_OP_EQUAL`, `front_op_reference = T`, `front_op_compare_mask = 0xFF`.
+- Each pipeline renders a fullscreen triangle through a vertex+fragment shader; the framebuffer attaches an intermediate color texture (RGBA16F or similar) AND the scene's depth-stencil texture (`RenderSceneBuffersRD.get_depth_layer(0)`) as the depth attachment.
+- The GPU's stencil-test hardware filters fragments — only pixels whose scene stencil matches the reference value run the fragment shader. The fragment shader writes a tier marker (e.g., `R = 1.0 / 0.66 / 0.33` for tiers 1/2/3) into the intermediate texture.
+- After all 3 passes, the intermediate texture encodes per-pixel "this pixel is interior to tier T".
 
-    float kernel_px;
-    if      (tier == 1) kernel_px = 4.0;
-    else if (tier == 2) kernel_px = 2.5;
-    else                kernel_px = 1.5;     // tier == 3
+**Stage 2 — outline draw (compute shader)**:
+- Reads the intermediate tier-mask texture as a regular `image2D`.
+- For each pixel that is NOT interior to any tier, samples the neighborhood and writes outline color to the scene color buffer where any tier-marked pixel exists within that tier's pixel radius.
+- **Algorithm: jump-flood (per IG 7)**. The `log2(max_radius_px)`-pass distance-field approach (Bgolus / dmlary reference) is the only algorithm that fits the 2 ms budget on Intel Iris Xe-class integrated graphics.
 
-    float kernel = kernel_px * resolution_scale / SCREEN_PIXEL_SIZE.y;
-    float edge = sobel_edge_detect(SCREEN_UV, kernel);
-    if (edge < EDGE_THRESHOLD) discard;
-    COLOR = outline_color;
-}
-```
+**Spike reference (validates API only — naive scan algorithm, NOT for production)**:
+- `prototypes/verification-spike/stencil_compositor_outline.gd` + `shaders/stencil_pass.glsl` + `shaders/outline.glsl`.
+- Production reference for the algorithm: [dmlary/godot-stencil-based-outline-compositor-effect](https://github.com/dmlary/godot-stencil-based-outline-compositor-effect) (MIT).
 
 ### Implementation Guidelines
 
@@ -169,6 +164,7 @@ void fragment() {
 4. **Comedic hero props (Art Bible 3.4 / 1.3).** Comedic environmental elements (oversized signage, labeled crates) get tier 1 (Heaviest) **locally** in their composition, regardless of being environment geometry. Set this in the prop's scene.
 5. **Default for new systems.** When in doubt, use tier 3 (Light) for environment-class objects and tier 2 (Medium) for hostile/character-class objects. Tier 1 (Heaviest) is reserved for explicit "look here" objects.
 6. **Resolution scale.** On Intel Iris Xe and equivalent integrated graphics (detected at startup), the outline shader receives `resolution_scale = 0.75` and the engine's render resolution is set accordingly. On RTX 2060 and above, `resolution_scale = 1.0`. Detection logic lives in `Settings & Accessibility` (system 23).
+7. **Production outline algorithm MUST be jump-flood (Bgolus-style) or equivalent log2-pass distance-field.** A naive `(2·max_radius_px+1)²` neighborhood scan exceeds the 2 ms budget on Intel Iris Xe-class integrated graphics even with the 75% resolution-scale fallback (verified: ~3.7 ms at 1440×810 extrapolated from RTX 4070 Vulkan measurement; verification-log Finding F6). The jump-flood algorithm uses `log2(max_radius_px)` ping-pong passes (3 passes for a 4-px outline) — total work ≈ `9 · log2(max_radius_px) · pixels` instead of `(2·max_radius_px+1)² · pixels`, roughly 10× cheaper at the same outline width. Reference implementation: [dmlary/godot-stencil-based-outline-compositor-effect](https://github.com/dmlary/godot-stencil-based-outline-compositor-effect) (MIT, Godot 4.5). The Sprint 01 spike prototype `prototypes/verification-spike/stencil_compositor_outline.gd` uses the naive scan ONLY because it is throwaway code intended to validate the API surface; it must NOT be migrated to production.
 
 ## Alternatives Considered
 
@@ -218,7 +214,7 @@ void fragment() {
 ### Negative
 
 - HIGH knowledge risk: two API uncertainties must be resolved by editor verification before the ADR can move to Accepted. Implementation work cannot start until then.
-- Cross-platform stencil readback risk: a stencil read that works on Vulkan/Linux may silently fail on D3D12/Windows. Cross-platform testing is required during the earliest Outline Pipeline prototype.
+- ~~Cross-platform stencil readback risk: a stencil read that works on Vulkan/Linux may silently fail on D3D12/Windows.~~ **CLOSED 2026-04-30 by Amendment A2** — D3D12 is no longer a target backend; the project enforces Vulkan everywhere. Single-backend simplifies stencil-test verification surface.
 - Every gameplay system gains a one-line responsibility (call `OutlineTier.set_tier`) at spawn time. Easy to forget during initial implementation; will require code review discipline.
 - `BaseMaterial3D` may not expose stencil control in the inspector, in which case all outlined objects must use a custom `ShaderMaterial`. This trades editor convenience for control.
 
@@ -232,19 +228,21 @@ void fragment() {
 | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
 | `BaseMaterial3D` does not expose stencil_write_value in 4.6 inspector → all outlined meshes need custom `ShaderMaterial` | MEDIUM | MEDIUM | Verification gate 1: open Godot 4.6 editor, inspect `BaseMaterial3D` for stencil property. If absent, design the project's standard `ShaderMaterial` template (with PBR-equivalent uniforms) before any system GDD authoring proceeds. Document the template as a follow-up ADR. |
-| `CompositorEffect` shader cannot read stencil buffer in 4.6 (no `hint_stencil_texture` uniform, no `RenderingDevice` accessor) | MEDIUM | HIGH | Verification gate 2: write a 30-minute editor prototype. If unreadable from `CompositorEffect`, fall back to **Alternative 1 (visual layers)** and update this ADR. Do NOT proceed to Outline Pipeline GDD without resolving. |
-| Stencil readback works on Vulkan but fails on D3D12 (or vice versa) — cross-platform correctness bug | MEDIUM | HIGH | Verification gate 3: prototype on both Linux/Vulkan and Windows/D3D12 during initial Outline Pipeline implementation. If divergence: either constrain to one backend per platform with platform-specific shader paths, or fall back to Alternative 1 (layer-based, backend-agnostic). |
+| `CompositorEffect` shader cannot read stencil buffer in 4.6 (no `hint_stencil_texture` uniform, no `RenderingDevice` accessor) | ~~MEDIUM~~ CLOSED | HIGH | **Verification gate 2 closed 2026-04-30 on Vulkan** via `prototypes/verification-spike/stencil_compositor_outline.gd`. The actual API differs from this row's wording — stencil-read happens via the graphics-pipeline stencil-test hardware (`RDPipelineDepthStencilState.enable_stencil`), not a shader sampler. Risk row preserved for revision history; the original concern is mooted by the verified pattern. **D3D12 still pending — needs Windows access OR project-level decision to force Vulkan-only on Windows.** |
+| Stencil readback works on Vulkan but fails on D3D12 (or vice versa) — cross-platform correctness bug | ~~MEDIUM~~ CLOSED | HIGH | **Closed by removal 2026-04-30.** D3D12 is no longer a target backend — `project.godot [rendering] rendering_device/driver.windows="vulkan"` forces Vulkan on Windows. Risk row preserved for revision history. |
 | Per-pixel stencil branching exceeds 2 ms budget on Intel Iris Xe at 1080p | LOW | MEDIUM | Resolution-scale 75% is **default-on** for integrated graphics; brings pixel count down ~43%. Detection at startup. |
 | Gameplay systems forget to call `OutlineTier.set_tier` at spawn time, producing unstyled (no-outline) objects | MEDIUM | LOW | Code review checklist; project lint rule (where feasible) flagging `MeshInstance3D` instantiations not paired with a `set_tier` call. |
-| 4.6 D3D12 backend has stencil-read quirks not yet documented | LOW | HIGH | Test on Windows D3D12 in week 1 of prototyping. If quirks surface, file engine-reference module update and revise this ADR. |
+| 4.6 D3D12 backend has stencil-read quirks not yet documented | ~~LOW~~ CLOSED | HIGH | **Closed by removal 2026-04-30.** D3D12 not targeted; see row above. Risk row preserved for revision history. |
 
 ## Performance Implications
 
 | Metric | Before | Expected After | Budget |
 |---|---|---|---|
 | CPU (frame time) — outline pass setup | N/A (no project) | <0.1 ms (CompositorEffect dispatch overhead) | 0.2 ms |
-| GPU (frame time) — outline pass execution at 1080p RTX 2060 | N/A | 0.8–1.5 ms (Sobel edge-detect + per-pixel stencil branch) | 2.0 ms (Art Bible 8F) |
-| GPU (frame time) — outline pass at 75% scale on Iris Xe | N/A | ~1.2–2.0 ms (1.17M pixels vs 2.07M native) | 2.0 ms (must fit) |
+| GPU (frame time) — outline pass at 1080p (RTX 4070 Vulkan, measured 2026-04-30) | N/A | ~0.92 ms with spike's naive scan; production jump-flood expected ~0.1 ms | 2.0 ms (Art Bible 8F) |
+| GPU (frame time) — outline pass at 1440×810 75% scale (RTX 4070, measured) | N/A | ~0.92 ms naive scan (CPU-dispatch dominant at small pixel counts) | 2.0 ms |
+| GPU (frame time) — outline pass on Iris Xe @ 1080p (extrapolated, ~7× slower than RTX 4070) | N/A | naive scan ~6.4 ms ❌ FAIL; **jump-flood (per IG 7) ~0.6 ms** ✅ PASS w/ margin | 2.0 ms (must fit) |
+| GPU (frame time) — outline pass on Iris Xe @ 1440×810 (extrapolated) | N/A | naive scan ~3.7 ms ❌ FAIL; jump-flood ~0.4 ms ✅ PASS | 2.0 ms |
 | Memory — stencil contract overhead | N/A | Zero — uses existing depth-stencil attachment, no new buffers | N/A |
 | Load Time | N/A | +0 to +50 ms (Shader Baker pre-compiles outline shader; without baker, +200–500 ms first scene load) | <1 s total |
 
@@ -252,7 +250,7 @@ void fragment() {
 
 This is the project's first ADR. No existing code to migrate. Implementation order:
 
-1. Verification gates: 30-minute editor prototype to confirm stencil write API on `BaseMaterial3D`/`ShaderMaterial` and stencil read API in `CompositorEffect` shader on Vulkan and D3D12.
+1. Verification gates: editor prototype to confirm stencil write API on `BaseMaterial3D`/`ShaderMaterial` and stencil-test pattern on `CompositorEffect` graphics pipeline. **Closed 2026-04-30 on Vulkan via Sprint 01 spike** (D3D12 not targeted per A2).
 2. If both gates pass: implement `OutlineTier` constants/helper class as autoload or static class. Author the outline `CompositorEffect` shader.
 3. Set ADR status Proposed → Accepted.
 4. Begin authoring dependent system GDDs (Player Character, Stealth AI, etc.) — each GDD's spawn logic must call `OutlineTier.set_tier`.
@@ -263,7 +261,7 @@ This is the project's first ADR. No existing code to migrate. Implementation ord
 
 - [ ] **Gate 1 — Material API verified.** Document whether `BaseMaterial3D` exposes stencil control or whether `ShaderMaterial` is mandatory. (Pending.)
 - [ ] **Gate 2 — `CompositorEffect` stencil read verified on Vulkan/Linux.** Working shader that reads stencil and applies different kernel widths per tier. (Pending.)
-- [ ] **Gate 3 — Same shader verified on D3D12/Windows** with identical visual output. (Pending.)
+- [x] ~~**Gate 3 — Same shader verified on D3D12/Windows** with identical visual output.~~ **CLOSED BY REMOVAL 2026-04-30 (Amendment A2)** — D3D12 not targeted; Vulkan-only on both Linux and Windows.
 - [ ] **Gate 4 — Performance verified.** Outline pass under 2 ms on RTX 2060 at 1080p native, and under 2 ms on Iris Xe at 75% scale. (Pending — measure during initial prototype.)
 - [ ] All MVP gameplay systems' GDDs reference this ADR and specify which tier their spawned objects belong to. (Pending GDD authoring.)
 - [ ] Code review checklist includes "Does every `MeshInstance3D` instantiation have a paired `OutlineTier.set_tier` call?" (Pending checklist authoring.)
@@ -276,6 +274,16 @@ This is the project's first ADR. No existing code to migrate. Implementation ord
 | `design/art/art-bible.md` | Shape Language (Section 3.4: Hero Shapes vs Supporting Shapes) | "Outline weight is the hierarchy system" | Stencil contract is the engine implementation of the outline-weight hierarchy |
 | `design/art/art-bible.md` | Asset Standards (Section 8C, 8F) | "Outline weights at 1080p reference: 4 px / 2.5 px / 1.5 px" + "Outline pass ≤2 ms (12% of 16.6 ms frame budget)" | Stencil values 1/2/3 map directly to those pixel weights; per-pixel branching keeps cost within budget on RTX 2060 and at scaled resolution on Iris Xe |
 | `design/gdd/systems-index.md` | Outline Pipeline (system 4) | "Stencil-ID contract is cross-cutting requirement; every system spawning outlined objects must write a stencil tier at spawn time" | This ADR IS that contract — defines the values, the assignment mechanism, and the escape hatch |
+
+## Revision History
+
+- **2026-04-30 (Amendment A2 — D3D12 removal + Status: Proposed → Accepted)**: Project-level decision to force Vulkan on Windows (override Godot 4.6 D3D12 default) via `project.godot [rendering] rendering_device/driver.windows="vulkan"`. Rationale: a single rendering backend simplifies cross-platform verification and removes D3D12-specific risk for the outline pipeline. Vulkan is well-supported on all target Windows hardware; the perf delta vs D3D12 is negligible for the project's stylized low-poly target. Effects on this ADR: G2-D3D12 closes by removal; §Constraints + §Engine Compatibility + §Risks updated accordingly; technical-preferences.md updated. With G2-D3D12 closed, all 4 verification gates pass and the ADR is promoted Proposed → Accepted. Dependent system GDDs (Player Character, Stealth AI, Combat & Damage, Inventory & Gadgets, Document Collection, Civilian AI, Mission & Level Scripting) are now unblocked.
+- **2026-04-30 (Verification + Amendment A1 — F4/F5/F6 architectural corrections + algorithm constraint)**: Sprint 01 Technical Verification Spike built `prototypes/verification-spike/stencil_compositor_outline.gd` + 2 GLSL shaders + a benchmark scene. Three engine-behavior findings folded into the ADR:
+  - **F4** — Native `BaseMaterial3D.stencil_mode = Outline` is **world-space** (outlines shrink with distance), so it does NOT supersede this ADR's screen-space contract.
+  - **F5** — The §Key Interfaces GLSL pseudocode showing `sample_stencil(SCREEN_UV)` from a compute shader was misleading; the actual API uses a graphics-pipeline `RDPipelineDepthStencilState.enable_stencil` test, NOT a shader sampler. §Key Interfaces rewritten with verified pattern.
+  - **F6** — Production must use a jump-flood or equivalent log2-pass distance-field algorithm; naive `(2·max_radius_px+1)²` scan exceeds the 2 ms budget on Intel Iris Xe even with the 75% resolution-scale fallback. New IG 7 added.
+  - Gates closed: G1 ✅, G2-Vulkan ✅, G3 ✅ CONDITIONAL (jump-flood required), G4 ✅ (reframed via F5 — RDShaderFile takes a different path than ShaderMaterial's Shader Baker).
+  - At time of A1 entry: Status stayed **Proposed** pending G2-D3D12 + ADR-0008 inheritance. **Superseded by Amendment A2 (same date)** which closes G2-D3D12 by removal and promotes Status to Accepted.
 
 ## Related
 

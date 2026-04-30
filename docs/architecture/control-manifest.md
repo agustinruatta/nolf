@@ -1,10 +1,10 @@
 # Control Manifest
 
 > **Engine**: Godot 4.6
-> **Last Updated**: 2026-04-29
-> **Manifest Version**: 2026-04-29
-> **ADRs Covered**: ADR-0002, ADR-0003, ADR-0006, ADR-0007 *(4 of 8 Accepted; rendering + UI + perf-budget rules pending until ADR-0001/0004/0005/0008 reach Accepted)*
-> **Status**: Active (PARTIAL) — regenerate with `/create-control-manifest update` when ADRs change
+> **Last Updated**: 2026-04-30
+> **Manifest Version**: 2026-04-30
+> **ADRs Covered**: ADR-0001, ADR-0002, ADR-0003, ADR-0006, ADR-0007 *(5 of 8 Accepted; ADR-0004 G5 deferred to S&A production story, ADR-0005 G3/G4/G5 production scope, ADR-0008 G1/G2 need Iris Xe — rules from those ADRs land when each reaches Accepted)*
+> **Status**: Active — regenerate with `/create-control-manifest update` when ADRs change
 
 `Manifest Version` is the date this manifest was generated. Story files embed
 this date when created. `/story-readiness` compares a story's embedded version
@@ -15,21 +15,28 @@ This manifest is a programmer's quick-reference extracted from all Accepted ADRs
 technical preferences, and engine reference docs. For the reasoning behind each
 rule, see the referenced ADR.
 
-## Coverage Caveat — Partial Manifest
+## Coverage Caveat — 5 of 8 ADRs Covered
 
-This manifest is generated from the 4 ADRs Accepted as of 2026-04-29. Foundation
-and Core layer rules are complete for the systems those ADRs govern. **Presentation
-layer (rendering, audio, UI, VFX, shaders) and Feature layer (AI, secondary mechanics)
-are not yet covered** because the relevant ADRs are still Proposed:
+This manifest is generated from the 5 ADRs Accepted as of 2026-04-30. Foundation,
+Core, and the **outline-rendering subset of Presentation** layer rules are now
+complete. The remaining gaps are scoped to specific later production stories:
 
-- ADR-0001 (Stencil ID Contract — outline rendering) — pending visual verification
-- ADR-0004 (UI Framework) — G5 BBCode→AccessKit deferred to runtime AT testing
-- ADR-0005 (FPS Hands Outline Rendering) — pending visual verification
-- ADR-0008 (Performance Budget Distribution) — depends on rendering ADRs + Restaurant reference scene + Iris Xe profiling
+- **ADR-0004 (UI Framework)** — Gates 1-4 closed; G5 (BBCode → AccessKit
+  serialization) deferred to the Settings & Accessibility production story
+  (needs runtime AT). UI framework rules still pending until G5 closes.
+- **ADR-0005 (FPS Hands Outline Rendering)** — G1+G2 closed; G3 (resolution-scale
+  toggle on rigged mesh), G4 (animated mesh artifacts), G5 (Shader Baker ×
+  `material_overlay`) all require the actual hands-rendering production story.
+  FPS hands outline rules still pending.
+- **ADR-0008 (Performance Budget Distribution)** — G1+G2 (Restaurant reference
+  scene measurement on Iris Xe + RTX 2060 informative) need hardware access; G3
+  D3D12 closed by removal; G4 needs Windows Vulkan. Per-slot performance
+  guardrails still pending.
 
-Stories that depend only on the Foundation + Core rules below can begin with this
-manifest. Stories touching rendering, audio, UI, or VFX must wait for the
-manifest regeneration after the Presentation-layer ADRs reach Accepted.
+Stories that depend on the rules below — Foundation, Core, and outline-rendering
+Presentation — can proceed now. Stories touching UI framework, FPS hands
+rendering, or per-slot performance gates must wait for the manifest regeneration
+after the relevant ADR reaches Accepted.
 
 ---
 
@@ -134,7 +141,43 @@ manifest regeneration after the Presentation-layer ADRs reach Accepted.
 
 *Applies to: rendering, audio, UI, VFX, shaders, animations*
 
-*Pending — ADR-0001 (stencil outline), ADR-0004 (UI Framework), ADR-0005 (FPS hands), ADR-0008 (perf budget) are still Proposed. ADR-0001 has a Sprint 01 visual-verification prototype in `prototypes/verification-spike/stencil_outline_demo.tscn` and a major finding (F4) — Godot 4.6 has native `BaseMaterial3D.stencil_mode = Outline` which may supersede ADR-0001's CompositorEffect design. ADR-0004 has 4 of 5 gates closed; only G5 (BBCode→AccessKit) remains, deferred to runtime AT testing. Regenerate this manifest once the rendering set advances.*
+### Required Patterns
+
+#### Outline Rendering (ADR-0001 — Stencil ID Contract)
+
+- **Every gameplay system that spawns visible objects MUST call `OutlineTier.set_tier(mesh, OutlineTier.X)` at spawn time.** No engine default exists; unmarked meshes write stencil 0 and receive no outline. Static environment meshes set the stencil tier once in the `.tscn` (scene-baked) and do NOT re-set at runtime unless the escape hatch is invoked. — source: ADR-0001 IG 1 + IG 2.
+- **Tier value contract is fixed**: 0=None (no outline) / 1=HEAVIEST (4 px @ 1080p; Eve, gadget pickups, key interactives) / 2=MEDIUM (2.5 px; PHANTOM guards) / 3=LIGHT (1.5 px; environment, civilians). Single near-black outline color `#1A1A1A` for all tiers. — source: ADR-0001 §Decision (per-tier table).
+- **Escape-hatch runtime reassignment is supported**: a controller script may call `OutlineTier.set_tier(mesh, new_tier)` at any time to change a mesh's outline tier (e.g., the swinging lamp in Lower Scaffolds promoted to tier 1 during a focal moment). The shader does not change — only the stencil value on the material. — source: ADR-0001 IG 3.
+- **Comedic hero props (oversized signage, labeled crates) get tier 1 (HEAVIEST) locally** in their composition, regardless of being environment-class geometry. Set this in the prop's scene. — source: ADR-0001 IG 4.
+- **Default tier for new systems**: tier 3 (Light) for environment-class objects; tier 2 (Medium) for hostile/character-class. Tier 1 (HEAVIEST) is reserved for explicit "look here" objects. — source: ADR-0001 IG 5.
+- **Resolution-scale fallback**: on Intel Iris Xe-class integrated graphics (detected at startup), the outline shader receives `resolution_scale = 0.75` and the engine's render resolution is set accordingly. On RTX 2060 and above, `resolution_scale = 1.0`. Detection logic lives in `Settings & Accessibility` (system 23). — source: ADR-0001 IG 6.
+- **Production outline algorithm MUST be jump-flood (Bgolus-style) or equivalent log2-pass distance-field.** Total work ≈ `9 · log2(max_radius_px) · pixels`. The Sprint 01 spike prototype `prototypes/verification-spike/stencil_compositor_outline.gd` uses a naive scan ONLY because it is throwaway code intended to validate the API surface; it must NOT be migrated to production. Reference implementation: [dmlary/godot-stencil-based-outline-compositor-effect](https://github.com/dmlary/godot-stencil-based-outline-compositor-effect) (MIT, Godot 4.5). — source: ADR-0001 IG 7 (Sprint 01 finding F6).
+- **Per-material stencil writes use `STENCIL_MODE_CUSTOM`** (`stencil_mode = 3`, `stencil_flags = 2` Write, `stencil_compare = 0` Always, `stencil_reference = N` for N ∈ {1, 2, 3}). NOT `STENCIL_MODE_OUTLINE` — that activates the world-space native pass which violates screen-space stability. — source: ADR-0001 §Engine Compatibility + Finding F4.
+- **CompositorEffect stencil-test uses graphics-pipeline state, NOT shader sampling.** Build per-tier `RDPipelineDepthStencilState` with `enable_stencil = true`, `front_op_compare = COMPARE_OP_EQUAL`, `front_op_reference = N`, `front_op_compare_mask = 0xFF`. Attach the scene's depth-stencil texture (`RenderSceneBuffersRD.get_depth_layer(0)`) as the framebuffer's depth attachment so the GPU stencil-test hardware filters fragments. The compute shader then reads the resulting tier-mask intermediate texture as a regular `image2D`. — source: ADR-0001 §Key Interfaces + Finding F5.
+
+### Forbidden Approaches
+
+#### Outline Rendering (ADR-0001)
+- **Never use `BaseMaterial3D.stencil_mode = STENCIL_MODE_OUTLINE` for player-facing comic outlines.** It is world-space (outlines shrink with distance), which violates the Saturated Pop pillar (Art Bible §1: outline ink weight must remain consistent across the frame, like a comic page). The native API is documented as a fallback for incidental outlines where screen-space stability is not load-bearing (e.g., editor-mode highlights, debug overlays). Production use is forbidden by ADR-0001's pillar alignment. — source: ADR-0001 §Engine Compatibility + verification-log Finding F4.
+- **Never `sample_stencil(SCREEN_UV)` from a compute shader.** Godot 4.6 does NOT expose the stencil aspect of the depth-stencil texture as a sampleable resource in any shader stage. ADR-0001's original GLSL pseudocode showing this approach was wrong; the actual API uses graphics-pipeline `RDPipelineDepthStencilState.enable_stencil = true`. — source: verification-log Finding F5 + ADR-0001 §Key Interfaces (post-A1 amendment).
+- **Never use the naive `(2·max_radius_px+1)²` neighborhood scan as the production algorithm.** Verified to exceed the 2 ms budget on Intel Iris Xe even with the 75% resolution-scale fallback (~3.7 ms at 1440×810 extrapolated from RTX 4070 measurement). Use jump-flood per IG-7. — source: verification-log Finding F6.
+- **Never use Alternative 1 (Visual Layers / `VisualInstance3D.layers` bitmask + N full-screen passes).** Three full-screen passes risk exceeding the 2 ms budget on integrated graphics. Listed in ADR-0001 §Alternatives as a documented fallback only if both verification gates fail. — source: ADR-0001 Alternative 1.
+- **Never use single-pass uniform-weight outline (no tier hierarchy).** Violates Art Bible Section 1 Principle 2 (Silhouette Owns Readability) and Pillar 3 (Stealth is Theatre). — source: ADR-0001 Alternative 2.
+- **Never use multi-pass per-tier outline with three separate `CompositorEffect` resources.** For a single-player game with three fixed tiers, the single-pass branching approach is simpler. Listed as a future fallback if runtime debugging proves harder than expected. — source: ADR-0001 Alternative 3.
+- **Never encode tier in a vertex color channel.** Adds a pre-pass draw call; burdens art pipeline (every authored mesh needs the right vertex color); makes runtime escape-hatch reassignment painful (would require modifying mesh data). — source: ADR-0001 Alternative 4.
+- **Never claim stencil values 0/1/2/3 for other purposes** in any future ADR. The remaining 252 stencil values (4–255 on the 8-bit stencil plane) are available for future claims (e.g., portal effects, depth-based effects). — source: ADR-0001 §Decision (Neutral consequence) + §Related.
+
+### Performance Guardrails
+
+- **Outline pass execution at 1080p (Iris Xe @ 75% scale, jump-flood algorithm)**: target ≤2.0 ms (Art Bible §8F). Naive scan algorithm fails this budget; jump-flood expected to land ~0.4 ms with margin. — source: ADR-0001 §Performance Implications (post-A1 amendment) + verification-log F6.
+- **Outline pass on RTX 2060 at 1080p native (informative target)**: 0.8–1.5 ms. — source: ADR-0001 §Performance Implications.
+- **Outline pass setup CPU**: <0.1 ms (CompositorEffect dispatch overhead). Budget 0.2 ms. — source: ADR-0001 §Performance Implications.
+- **Memory overhead**: zero. Uses existing depth-stencil attachment; no new buffers. — source: ADR-0001 §Performance Implications.
+- **Load time**: +0 to +50 ms for shader pre-compile (RDShaderFile pre-compile path per F5). — source: ADR-0001 §Performance Implications.
+
+*UI framework rules pending — ADR-0004 G5 deferred to Settings & Accessibility production story.*
+*FPS hands outline rules pending — ADR-0005 G3/G4/G5 require the actual hands-rendering production story.*
+*Per-slot performance gates pending — ADR-0008 G1/G2 need Iris Xe + Windows Vulkan measurement.*
 
 ---
 
@@ -194,6 +237,9 @@ These APIs are deprecated or unverified for Godot 4.6. Do NOT introduce them in 
 | `Texture2D` in shader uniform parameters | `Texture` base type | 4.4 |
 | Manual post-process viewport chains | `Compositor` + `CompositorEffect` | 4.3+ |
 | GodotPhysics3D for new projects | Jolt Physics 3D (default since 4.6) | 4.6 |
+| `BaseMaterial3D.stencil_mode = STENCIL_MODE_OUTLINE` for player-facing outlines | `STENCIL_MODE_CUSTOM` + per-tier `CompositorEffect` (per ADR-0001 IG 1–7); native API is world-space, violates Art Bible screen-space pillar | Sprint 01 finding F4 |
+| Sampling stencil from a compute shader (`sample_stencil(SCREEN_UV)`) | Graphics-pipeline `RDPipelineDepthStencilState.enable_stencil = true` (per ADR-0001 §Key Interfaces post-A1) — stencil aspect is not sampleable | Sprint 01 finding F5 |
+| Naive `(2·max_radius_px+1)²` outline scan as production algorithm | Jump-flood (Bgolus / dmlary reference) per ADR-0001 IG 7 | Sprint 01 finding F6 |
 
 Source: `docs/engine-reference/godot/deprecated-apis.md`.
 
@@ -204,7 +250,7 @@ The LLM's training data predates Godot 4.4. The following 4.4+ APIs are part of 
 - **GDScript 4.5+**: `@abstract` for required-override methods; variadic `Variant...` arguments; detailed Release-build script backtracing.
 - **Resources 4.5+**: `duplicate_deep()` for nested-Resource isolation. Mandatory wherever `SaveGame` state is loaded (per ADR-0003 IG 3).
 - **Physics 4.6**: Jolt is the default 3D physics engine. 2D physics unchanged.
-- **Rendering 4.6**: Forward+ default; D3D12 default on Windows; AgX tonemapper; SMAA 1x option (sharper than FXAA, cheaper than TAA); glow processes before tonemap (was after).
+- **Rendering 4.6**: Forward+ default; **Vulkan on both Linux and Windows** (D3D12 disabled per project Amendment A2 — `project.godot [rendering] rendering_device/driver.windows="vulkan"`); AgX tonemapper; SMAA 1x option (sharper than FXAA, cheaper than TAA); glow processes before tonemap (was after).
 - **Rendering 4.5**: Shader Baker pre-compiles shaders to eliminate startup hitching; stencil buffer support; bent normal maps; specular occlusion.
 - **Accessibility 4.5+**: AccessKit screen reader integration via `Control.accessibility_description` (verified Sprint 01 G1); `accessibility_role` is inferred from node type, NOT a settable property.
 - **UI 4.6**: dual-focus split (mouse/touch separate from keyboard/gamepad). ADR-0004's `_unhandled_input + ui_cancel` design sidesteps this complexity.
@@ -228,7 +274,7 @@ These apply to every layer and every story; they come from project-wide standard
 
 ### Project Conventions (recap from technical-preferences.md)
 
-- **Engine**: Godot 4.6 (Forward+ rendering; Vulkan on Linux, D3D12 on Windows; Jolt 3D physics).
+- **Engine**: Godot 4.6 (Forward+ rendering; Vulkan on both Linux and Windows per project Amendment A2 2026-04-30; Jolt 3D physics).
 - **Language**: GDScript primary. Shader files: `.gdshader`. Native C++ extensions: GDExtension (only when invoked).
 - **Target platforms**: PC (Linux + Windows, Steam). Period authenticity pillar forbids modern UX conveniences (objective markers, minimap, kill cams, ping systems).
 - **Input**: KB/M primary; gamepad partial (full menu/gameplay nav; rebinding parity post-MVP). Per ADR-0004 IG 14 (Sprint 01 finding F3): every `ui_*` action MUST have both KB/M and gamepad bindings explicitly declared in `project.godot [input]`.

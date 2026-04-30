@@ -34,13 +34,16 @@ window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[dotnet]
+
+project/assembly_name="The Paris Affair"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
+
 [input]
 
-; Gamepad binding for ui_cancel (B / Circle button per Art Bible 7D).
-; Added 2026-04-29 during Sprint 01 verification spike — Godot 4.6.2's built-in
-; default for ui_cancel only includes KEY_ESCAPE; a gamepad binding is required
-; for ADR-0004 G3 modal dismiss on gamepad. The KEY_ESCAPE engine default is
-; preserved by `events` overriding (not replacing) the built-in event list.
 ui_cancel={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194305,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
@@ -59,13 +62,3 @@ ui_cancel={
 [physics]
 
 3d/physics_engine="Jolt"
-
-[rendering]
-
-; Force Vulkan on Windows (overrides Godot 4.6 D3D12 default).
-; Project decision 2026-04-30 — single rendering backend simplifies cross-platform
-; verification and removes D3D12-specific risk for ADR-0001 (outline pipeline).
-; Vulkan runs on all target Windows hardware (NVIDIA / AMD / Intel ship Vulkan
-; drivers); slight perf cost on D3D12-optimized hardware is negligible for the
-; project's stylized low-poly target. See verification-log §F6 + ADR-0001 IG 7.
-rendering_device/driver.windows="vulkan"

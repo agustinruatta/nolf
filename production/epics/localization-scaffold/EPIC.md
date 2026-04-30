@@ -5,8 +5,8 @@
 > **Architecture Module**: Localization Scaffold (CSVs + convention; no autoload — `architecture.md` §3.1)
 > **Engine Risk**: MEDIUM (CSV plural form support 4.6; `Control.auto_translate_mode` 4.5; `NOTIFICATION_TRANSLATION_CHANGED` re-resolution)
 > **Status**: Ready (with note: governing ADR-0004 is Proposed pending G5 for unrelated scope)
-> **Stories**: Not yet created — run `/create-stories localization-scaffold`
-> **Manifest Version**: 2026-04-29
+> **Stories**: 5 created 2026-04-30 — see Stories table below
+> **Manifest Version**: 2026-04-30
 
 ## Overview
 
@@ -84,6 +84,24 @@ Localization mechanism is verified end-to-end on the Document Overlay path;
 remaining work is extending the convention to other surfaces as their
 production stories implement them.
 
+## Stories
+
+| # | Story | Type | Status | ADRs |
+|---|-------|------|--------|------|
+| 001 | [CSV registration + base tr() runtime + project.godot localization config](story-001-csv-registration-tr-runtime.md) | Logic | Ready | ADR-0004 |
+| 002 | [Pseudolocalization CSV + dev workflow + export filter](story-002-pseudolocalization-csv-export-filter.md) | Logic | Ready | ADR-0004 |
+| 003 | [Plural forms + named-placeholder discipline](story-003-plural-forms-csv-named-placeholders.md) | Logic | Ready | ADR-0004 |
+| 004 | [auto_translate_mode + NOTIFICATION_TRANSLATION_CHANGED discipline](story-004-auto-translate-mode-notification-discipline.md) | Logic | Ready | ADR-0004 |
+| 005 | [Anti-pattern fences + lint guards + /localize audit hook](story-005-anti-pattern-fences-lint-guards-localize-audit.md) | Config/Data | Ready | ADR-0004 |
+
+**Dependency chain**: 001 → {002, 003, 004} → 005.
+
+**Out of scope (deferred to consumer epics)**:
+- AC-11, AC-12 (locale persistence to `user://settings.cfg`) → Settings & Accessibility epic
+- AC-13 (locale picker UI) → Settings & Accessibility epic
+- AC-16 (AccessKit announces translated string) → Accessibility integration / Settings & Accessibility epic
+- Translation content beyond stub examples → owned by `/localize` skill content pipeline + writer/translator
+
 ## Next Step
 
-Run `/create-stories localization-scaffold` to break this epic into implementable stories.
+Run `/story-readiness production/epics/localization-scaffold/story-001-csv-registration-tr-runtime.md` to validate the first story is implementation-ready, then `/dev-story` to begin implementation. Work through stories in the order above — each story's `Depends on:` field tells you what must be DONE before you can start it.

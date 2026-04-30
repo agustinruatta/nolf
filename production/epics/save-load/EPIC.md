@@ -5,8 +5,8 @@
 > **Architecture Module**: Save / Load (SaveLoadService autoload — `architecture.md` §3.1)
 > **Engine Risk**: MEDIUM (`Resource.duplicate_deep()` 4.5; atomic rename API; binary `.res` class-name lookup)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories save-load`
-> **Manifest Version**: 2026-04-29
+> **Stories**: 9 created 2026-04-30 — see Stories table below
+> **Manifest Version**: 2026-04-30
 
 ## Overview
 
@@ -76,6 +76,28 @@ ADR-0003 is **Accepted** (3/3 verification gates passed via
 @export trap) are folded into ADR-0003 Amendment A5. Production code can rely
 on the verified APIs without re-verifying.
 
+## Stories
+
+| # | Story | Type | Status | ADRs |
+|---|-------|------|--------|------|
+| 001 | [SaveGame Resource + 7 typed sub-resource scaffolding](story-001-save-game-resource-scaffold.md) | Logic | Ready | ADR-0003 |
+| 002 | [SaveLoadService autoload + save_to_slot atomic write](story-002-save-load-service-atomic-write.md) | Logic | Ready | ADR-0003 + ADR-0007 |
+| 003 | [load_from_slot + type-guard + version-mismatch refusal](story-003-load-from-slot-type-guard-version-mismatch.md) | Logic | Ready | ADR-0003 |
+| 004 | [duplicate_deep state-isolation discipline](story-004-duplicate-deep-state-isolation.md) | Logic | Ready | ADR-0003 |
+| 005 | [Metadata sidecar + slot_metadata API](story-005-metadata-sidecar-slot-metadata-api.md) | Logic | Ready | ADR-0003 |
+| 006 | [8-slot scheme + slot 0 mirror on manual save](story-006-eight-slot-scheme-slot-zero-mirror.md) | Logic | Ready | ADR-0003 |
+| 007 | [Quicksave/Quickload (F5/F9) + InputContext gating](story-007-quicksave-quickload-input-context-gating.md) | Integration | Ready | ADR-0003 + ADR-0004 |
+| 008 | [Sequential save queueing (state machine)](story-008-sequential-save-queueing-state-machine.md) | Logic | Ready | ADR-0003 |
+| 009 | [Anti-pattern fences + registry entries + lint guards](story-009-anti-pattern-fences-registry-lint-guards.md) | Config/Data | Ready | ADR-0003 |
+
+**Dependency chain**: 001 → 002 → 003 → {004, 005, 008}; {002, 003, 006} → 007 → 009.
+
+**Out of scope (deferred to consumer epics)**:
+- AC-13, AC-14 (slot 0 visibility in Menu grids) → Menu System epic
+- AC-19 (F&R death-respawn round-trip) → Failure & Respawn epic
+- AC-20 (cutscene replay suppression) → Cutscenes & Mission Cards epic
+- AC-21 (cross-session full integration) → Mission & Level Scripting epic
+
 ## Next Step
 
-Run `/create-stories save-load` to break this epic into implementable stories.
+Run `/story-readiness production/epics/save-load/story-001-save-game-resource-scaffold.md` to validate the first story is implementation-ready, then `/dev-story` to begin implementation. Work through stories in the order above — each story's `Depends on:` field tells you what must be DONE before you can start it.

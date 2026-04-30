@@ -1,25 +1,25 @@
 # Epics Index
 
-Last Updated: 2026-04-29
+Last Updated: 2026-04-30
 Engine: Godot 4.6
-Manifest Version: 2026-04-29 (PARTIAL — Foundation + Core layer rules only; `docs/architecture/control-manifest.md`)
+Manifest Version: 2026-04-30 (PARTIAL — Foundation + Core layer rules only; `docs/architecture/control-manifest.md`)
 
-## Foundation Layer (4 epics)
+## Foundation Layer (4 epics — stories created)
 
 | Epic | System | GDD | Module | Stories | Status |
 |------|--------|-----|--------|---------|--------|
-| [signal-bus](signal-bus/EPIC.md) | Signal Bus (system 1) | `design/gdd/signal-bus.md` | Signal Bus (Events + EventLogger autoloads) | Not yet created — run `/create-stories signal-bus` | Ready |
-| [save-load](save-load/EPIC.md) | Save / Load (system 6) | `design/gdd/save-load.md` | Save / Load (SaveLoadService autoload) | Not yet created — run `/create-stories save-load` | Ready |
-| [localization-scaffold](localization-scaffold/EPIC.md) | Localization Scaffold (system 7) | `design/gdd/localization-scaffold.md` | Localization Scaffold (CSV convention; no autoload) | Not yet created — run `/create-stories localization-scaffold` | Ready (governing ADR-0004 Proposed pending G5; G5 affects formatted body, not localization mechanism) |
-| [level-streaming](level-streaming/EPIC.md) | Level Streaming (system 9 — Foundation per `architecture.md` §122) | `design/gdd/level-streaming.md` | Level Streaming (LevelStreamingService autoload) | Not yet created — run `/create-stories level-streaming` | Ready |
+| [signal-bus](signal-bus/EPIC.md) | Signal Bus (system 1) | `design/gdd/signal-bus.md` | Signal Bus (Events + EventLogger autoloads) | 7 stories created | Ready |
+| [save-load](save-load/EPIC.md) | Save / Load (system 6) | `design/gdd/save-load.md` | Save / Load (SaveLoadService autoload) | 9 stories created 2026-04-30 | Ready |
+| [localization-scaffold](localization-scaffold/EPIC.md) | Localization Scaffold (system 7) | `design/gdd/localization-scaffold.md` | Localization Scaffold (CSV convention; no autoload) | 5 stories created 2026-04-30 | Ready (governing ADR-0004 Proposed pending G5; G5 affects formatted body, not localization mechanism) |
+| [level-streaming](level-streaming/EPIC.md) | Level Streaming (system 9 — Foundation per `architecture.md` §122) | `design/gdd/level-streaming.md` | Level Streaming (LevelStreamingService autoload) | 10 stories created 2026-04-30 | Ready |
 
-## Core Layer (pending)
+## Core Layer (3 epics — created 2026-04-30)
 
-Run `/create-epics layer: core` to create Core-layer epics. Core systems per
-`architecture.md` §3.2: Input (system 2), Player Character (system 8),
-FootstepComponent (system 8b). Governing ADRs include ADR-0004 (UI Framework —
-Proposed; G5 deferred), ADR-0006 (Collision Layer Contract — Accepted), and
-ADR-0008 (Performance Budget Distribution — Proposed).
+| Epic | System | GDD | Module | Stories | Status |
+|------|--------|-----|--------|---------|--------|
+| [input](input/EPIC.md) | Input (system 2) | `design/gdd/input.md` | Input (InputContext autoload + InputActions static class) | Not yet created — run `/create-stories input` | Ready (governing ADR-0004 Proposed pending G5 unrelated scope) |
+| [player-character](player-character/EPIC.md) | Player Character (system 8) | `design/gdd/player-character.md` | Player Character (PlayerCharacter scene root = CharacterBody3D) | Not yet created — run `/create-stories player-character` | Ready (governing ADR-0005 + ADR-0008 Proposed; gates 3-5 close via this epic's hands rendering production story — chicken-and-egg by design) |
+| [footstep-component](footstep-component/EPIC.md) | FootstepComponent (system 8b) | `design/gdd/footstep-component.md` | FootstepComponent (child node of PlayerCharacter) | Not yet created — run `/create-stories footstep-component` | Ready |
 
 ## Feature Layer (pending)
 
@@ -40,17 +40,14 @@ verification spike.
 
 ## Status Summary
 
-- **4 Foundation epics created** (2026-04-29). All have governing ADRs that
-  are Accepted or have closed gates relevant to the system's scope.
-- **0 Core / Feature / Presentation epics** — created on demand as the project
-  advances.
-- **Stories**: none yet — run `/create-stories [epic-slug]` per Foundation epic
-  to begin breaking work into implementable units.
+- **4 Foundation epics** created (2026-04-29) + stories complete (2026-04-30): signal-bus (7), save-load (9), localization-scaffold (5), level-streaming (10) = **31 Foundation stories ready**.
+- **3 Core epics** created (2026-04-30); stories not yet broken down — run `/create-stories input` / `/create-stories player-character` / `/create-stories footstep-component` next.
+- **0 Feature / Presentation epics** — created on demand as Core epics complete.
 
 ## Related
 
-- `docs/architecture/control-manifest.md` — programmer rules sheet (Manifest Version 2026-04-29; PARTIAL — Foundation + Core only)
-- `docs/architecture/architecture.md` — module ownership table (§3.1 Foundation Layer)
+- `docs/architecture/control-manifest.md` — programmer rules sheet (Manifest Version 2026-04-30; PARTIAL — Foundation + Core only)
+- `docs/architecture/architecture.md` — module ownership table (§3.1 Foundation Layer + §3.2 Core Layer)
 - `docs/architecture/tr-registry.yaml` — TR-ID → ADR coverage map
 - `production/sprints/sprint-01-technical-verification-spike.md` — verification spike that promoted 4 of 8 ADRs to Accepted, unblocking Foundation epics
 - `prototypes/verification-spike/verification-log.md` — per-ADR-per-gate evidence log

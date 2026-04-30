@@ -5,8 +5,8 @@
 > **Architecture Module**: Level Streaming (LevelStreamingService autoload — `architecture.md` §3.1)
 > **Engine Risk**: MEDIUM (`PackedScene.instantiate()` 4.0+; `await get_tree().process_frame` swap orchestration; `CanvasLayer` z-order edges at 126/127)
 > **Status**: Ready
-> **Stories**: Not yet created — run `/create-stories level-streaming`
-> **Manifest Version**: 2026-04-29
+> **Stories**: 10 created 2026-04-30 — see Stories table below
+> **Manifest Version**: 2026-04-30
 
 ## Overview
 
@@ -77,6 +77,32 @@ script stub exists at `src/core/level_streaming/level_streaming_service.gd`
 replaces this stub. No additional spike work is needed before story
 implementation can begin.
 
+## Stories
+
+| # | Story | Type | Status | ADRs |
+|---|-------|------|--------|------|
+| 001 | [SectionRegistry Resource + autoload boot + CanvasLayer fade overlay scaffold](story-001-section-registry-autoload-fade-overlay.md) | Logic | Ready | ADR-0007 + ADR-0003 |
+| 002 | [State machine + 13-step swap happy path + signal emission](story-002-state-machine-13-step-swap-signals.md) | Logic | Ready | ADR-0007 + ADR-0002 |
+| 003 | [register_restore_callback chain + step 9 sync invocation](story-003-register-restore-callback-step9-sync-invocation.md) | Logic | Ready | ADR-0007 + ADR-0003 |
+| 004 | [Concurrency control: forward-drop, respawn-queue, abort recovery](story-004-concurrency-control-respawn-queue-abort.md) | Logic | Ready | ADR-0007 |
+| 005 | [Registry failure paths + ErrorFallback CanvasLayer recovery](story-005-registry-failure-error-fallback-recovery.md) | Integration | Ready | ADR-0007 |
+| 006 | [Same-section guard + focus-loss handling + cache mode](story-006-same-section-guard-focus-loss-cache-mode.md) | Logic | Ready | ADR-0007 |
+| 007 | [F5/F9 quicksave/quickload queue during transition](story-007-quicksave-quickload-queue-during-transition.md) | Integration | Ready | ADR-0007 + ADR-0003 |
+| 008 | [Section authoring contract + stub scenes + Environment assignment](story-008-section-authoring-contract-stub-scenes.md) | Config/Data | Ready | ADR-0007 |
+| 009 | [Anti-pattern fences + lint guards + CR-13 sync-subscriber detection](story-009-anti-pattern-fences-lint-guards.md) | Config/Data | Ready | ADR-0007 + ADR-0003 |
+| 010 | [Performance budget measurement — p90 verification](story-010-performance-budget-p90-measurement.md) | Logic | Ready | ADR-0007 + ADR-0001 |
+
+**Dependency chain**: 001 → 002 → {003, 004, 008}; 002 + 004 → 005; 002 → 006; {002, 004, Save/Load 007} → 007; {002, 003, 008} → 009; {002, 003, 008, 006} → 010.
+
+**LS-Gates closure**: LS-Gate-1 (ADR-0002 `reason` 2nd param) closed via ADR-0002 4th-pass amendment 2026-04-22 (Accepted). LS-Gate-2 (`InputContext.LOADING` enum value) closed via ADR-0002 2026-04-28 amendment. ADR-0007 + ADR-0003 both Accepted as of 2026-04-29 Sprint 01 verification.
+
+**Out of scope (deferred to consumer epics)**:
+- Production `_assemble_quicksave_payload` and step-9 restore callbacks → Mission Scripting epic, F&R epic, Menu System epic (each registers and provides its own callback)
+- Visual/aesthetic content for plaza.tscn (geometry, lighting, props) → level-designer / Art Director epics
+- ErrorFallback dossier-card visual treatment → Menu System / Art Director
+- HUD toast rendering for `quicksave_unavailable` → HUD State Signaling epic
+- Surface-tag tool plugin (CR-10) → Tools Programmer (referenced in CR-10; AC-LS-4.3 moved to FootstepComponent epic)
+
 ## Next Step
 
-Run `/create-stories level-streaming` to break this epic into implementable stories.
+Run `/story-readiness production/epics/level-streaming/story-001-section-registry-autoload-fade-overlay.md` to validate the first story is implementation-ready, then `/dev-story` to begin implementation. Work through stories in the order above — each story's `Depends on:` field tells you what must be DONE before you can start it.

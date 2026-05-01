@@ -1,0 +1,49 @@
+[gd_scene load_steps=4 format=3 uid="uid://bpc001scaffold1"]
+
+[ext_resource type="Script" path="res://src/gameplay/player/player_character.gd" id="1_player_script"]
+
+; CapsuleShape3D for the player body collider.
+; height = 1.7 m is the TOTAL capsule height including hemispherical caps,
+; per GDD §Detailed Design Core Rules (standing pose). radius = 0.3 m.
+; Per Godot 4.6 CapsuleShape3D semantics: height is the total extent
+; (cylinder portion + both hemispherical caps), matching GDD intent.
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+height = 1.7
+radius = 0.3
+
+; CapsuleShape3D for the ceiling ShapeCast3D (crouch headroom check).
+; Same standing dimensions as body collider. Story PC-003 will call
+; force_shapecast_update() before reading is_colliding().
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ceiling"]
+height = 1.7
+radius = 0.3
+
+; PlayerCharacter — Eve's CharacterBody3D scene root.
+; Script: player_character.gd (class_name PlayerCharacter)
+; Physics layer setup occurs in _ready() via PhysicsLayers.* constants (ADR-0006).
+[node name="PlayerCharacter" type="CharacterBody3D"]
+script = ExtResource("1_player_script")
+
+; Body collider — standing pose capsule (height=1.7, radius=0.3).
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_body")
+
+; Ceiling check ShapeCast3D — detects overhead obstruction for crouch-to-stand
+; transition (Story PC-003). target_position probes upward by 0.1 m so even
+; a near-flush ceiling registers as a collision.
+; collision_mask: set to PhysicsLayers.MASK_WORLD from script in PC-003 per
+; ADR-0006 IG 1 (no bare integer literals in gameplay code). Editor default
+; mask (1 = bit 0 = World layer) matches MASK_WORLD and is overwritten at
+; runtime to use the constant explicitly.
+[node name="ShapeCast3D" type="ShapeCast3D" parent="."]
+shape = SubResource("CapsuleShape3D_ceiling")
+target_position = Vector3(0, 0.1, 0)
+
+; Camera3D at eye height (1.6 m local Y = approximate eye level for a 1.7 m
+; capsule). Story PC-002 owns look-input (mouse yaw/pitch), FOV, and head-bob.
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+; HandAnchor — attachment point for FPS hands SubViewport (Story PC-008).
+; Child of Camera3D so hands track with camera rotation automatically.
+[node name="HandAnchor" type="Node3D" parent="Camera3D"]

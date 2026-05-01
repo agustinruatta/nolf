@@ -1,10 +1,10 @@
 # Story 003: EventLogger autoload — debug subscription + non-debug self-removal
 
 > **Epic**: Signal Bus
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
-> **Manifest Version**: 2026-04-29
+> **Manifest Version**: 2026-04-30
 
 ## Context
 
@@ -29,8 +29,8 @@
 
 *From GDD §Acceptance Criteria:*
 
-- [ ] **AC-11-A**: GIVEN the project is launched in debug mode, WHEN any `Events` signal is emitted, THEN `EventLogger` prints a timestamped line to the Godot output console with the signal name and arguments.
-- [ ] **AC-11-B**: GIVEN the project is launched in non-debug release export, WHEN any `Events` signal is emitted, THEN no `EventLogger` log line is printed (because `EventLogger` self-removed in `_ready` via `OS.is_debug_build()` returning false).
+- [x] **AC-11-A**: GIVEN the project is launched in debug mode, WHEN any `Events` signal is emitted, THEN `EventLogger` prints a timestamped line to the Godot output console with the signal name and arguments.
+- [~] **AC-11-B**: GIVEN the project is launched in non-debug release export, WHEN any `Events` signal is emitted, THEN no `EventLogger` log line is printed (because `EventLogger` self-removed in `_ready` via `OS.is_debug_build()` returning false). *DEFERRED — manual evidence procedure documented; pending first release export.*
 
 ---
 
@@ -86,7 +86,7 @@ Cross-autoload reference safety: this autoload's `_ready()` is permitted to refe
 - `tests/integration/foundation/event_logger_debug_test.gd` — verifies AC-11-A with debug build mode
 - Manual verification doc at `production/qa/evidence/event_logger_release_self_removal.md` — exporting a release build and confirming no `[EventLogger]` lines appear (release-build test cannot be fully automated headlessly)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (suite 29/29 PASS)
 
 ---
 
@@ -94,3 +94,29 @@ Cross-autoload reference safety: this autoload's `_ready()` is permitted to refe
 
 - Depends on: Story 002 (signals exist for EventLogger to subscribe to)
 - Unlocks: Story 004 (subscriber lifecycle tests can use EventLogger as a real subscriber example), Story 006 (edge case tests verify EventLogger plus another subscriber both receive emissions)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 1 PASS / 1 DEFERRED (AC-11-A auto-verified; AC-11-B requires release export — manual evidence template at `production/qa/evidence/event_logger_release_self_removal.md`)
+**Suite**: 29/29 PASS, 0 errors, 0 failures, 0 orphans, exit 0
+**Test File**: `tests/integration/foundation/event_logger_debug_test.gd` — 6 test functions (Integration suite, BLOCKING gate satisfied)
+
+**Files changed**:
+- `src/core/signal_bus/event_logger.gd` — stub → full implementation (278 lines): `class_name SignalBusEventLogger`, 31 per-signal handlers across 9 domains, `_format_log_line()` pure utility, `_register()` connection bookkeeping, `_exit_tree()` with `is_connected` guards, `OS.is_debug_build()` early-out
+- `tests/integration/foundation/event_logger_debug_test.gd` — created (6 tests; uses `auto_free()` for clean orphan-node management)
+- `production/qa/evidence/event_logger_release_self_removal.md` — created (manual AC-11-B verification procedure; sign-off pending first release export)
+
+**Deviations**:
+- ADVISORY: `class_name SignalBusEventLogger` (not `EventLogger`) — mirrors the `Events`/`SignalBusEvents` autoload-key/class-name split per ADR-0002 OQ-CD-1. Avoids parser collision between class_name and autoload key. Consistent with codebase precedent. Risk: low.
+- ADVISORY: Handler type-mismatch coverage gap in `_connect_all()` — test 6 spot-checks 3 of 31 signal/handler pairings via `is_connected`. Richer manifest-based coverage deferred to **SB-006** (Edge case dispatch behavior), which is sprint-scheduled and naturally covers signal emission/dispatch testing.
+
+**Closes**: SB-001's documented `event_logger.gd._ready()` stub deviation. The `_ready()` body is now fully restored per ADR-0002 §IG 8.
+
+**Code Review**: APPROVED (solo mode; in-line code review completed via `/code-review` with godot-gdscript-specialist + qa-tester sub-agent reviews. Two minor fixes applied during review: `args: Array` → `args: Array[Variant]` typing, plus inline comment on Dictionary cast rationale.)
+
+**Tech debt**: None logged. Both advisories are tracked in-line — `class_name` choice is consistent with existing pattern; handler type-mismatch coverage is naturally addressed by SB-006 in this same sprint.
+
+**Test runner note**: A new `class_name` requires one `godot --headless --editor --quit-after 2` invocation to refresh the global class cache before the GdUnit4 CLI sees it. Future runs work without it. Documented in session state for any future story adding new `class_name`s.

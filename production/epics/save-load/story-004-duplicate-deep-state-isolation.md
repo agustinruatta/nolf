@@ -1,7 +1,7 @@
 # Story 004: duplicate_deep state-isolation discipline
 
 > **Epic**: Save / Load
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 1-2 hours (S — small focused test on the production schema; documentation + helper)
@@ -29,13 +29,13 @@
 
 *From GDD §Acceptance Criteria + ADR-0003 §Validation Criteria Gate 3:*
 
-- [ ] **AC-1**: A unit test populates a `SaveGame` with all 7 sub-resources non-empty (per Story 001's round-trip fixture). Calls `var copy: SaveGame = original.duplicate_deep()`. Asserts `copy != original` (different Resource instances) AND each nested field is also a different instance (`copy.player != original.player`, `copy.inventory != original.inventory`, `copy.stealth_ai != original.stealth_ai`, etc. — across all 7 sub-resources).
-- [ ] **AC-2**: GIVEN the duplicated SaveGame from AC-1, WHEN the test mutates `copy.player.position = Vector3(99, 99, 99)`, THEN `original.player.position` is unchanged.
-- [ ] **AC-3**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.inventory.ammo_magazine[&"silenced_p38"] = 999`, THEN `original.inventory.ammo_magazine[&"silenced_p38"]` retains its original value (extending Sprint 01 G3 to the production schema's `Dictionary[StringName, int]` shape).
-- [ ] **AC-4**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.stealth_ai.guards[&"plaza_guard_01"].alert_state = 99`, THEN `original.stealth_ai.guards[&"plaza_guard_01"].alert_state` is unchanged AND `copy.stealth_ai.guards[&"plaza_guard_01"]` is a different `GuardRecord` instance from `original.stealth_ai.guards[&"plaza_guard_01"]` (`Dictionary[StringName, GuardRecord]` deep-copy verification — godot-specialist 2026-04-22 §5 extended scope).
-- [ ] **AC-5**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.mission.fired_beats[&"beat_intro"] = false`, THEN `original.mission.fired_beats[&"beat_intro"]` retains its original value (`Dictionary[StringName, bool]` shape — A4 amendment field).
-- [ ] **AC-6**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.documents.collected.append(&"doc_002")`, THEN `original.documents.collected` does NOT contain `&"doc_002"` (`Array[StringName]` deep-copy verification).
-- [ ] **AC-7**: StringName keys in dictionaries remain interned-identical across `duplicate_deep()` (i.e., `original.stealth_ai.guards.keys()[0] == copy.stealth_ai.guards.keys()[0]` is true; StringName interning is global, only the values are deep-copied — confirms expected Godot semantics).
+- [x] **AC-1**: A unit test populates a `SaveGame` with all 7 sub-resources non-empty (per Story 001's round-trip fixture). Calls `var copy: SaveGame = original.duplicate_deep()`. Asserts `copy != original` (different Resource instances) AND each nested field is also a different instance (`copy.player != original.player`, `copy.inventory != original.inventory`, `copy.stealth_ai != original.stealth_ai`, etc. — across all 7 sub-resources).
+- [x] **AC-2**: GIVEN the duplicated SaveGame from AC-1, WHEN the test mutates `copy.player.position = Vector3(99, 99, 99)`, THEN `original.player.position` is unchanged.
+- [x] **AC-3**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.inventory.ammo_magazine[&"silenced_p38"] = 999`, THEN `original.inventory.ammo_magazine[&"silenced_p38"]` retains its original value (extending Sprint 01 G3 to the production schema's `Dictionary[StringName, int]` shape).
+- [x] **AC-4**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.stealth_ai.guards[&"plaza_guard_01"].alert_state = 99`, THEN `original.stealth_ai.guards[&"plaza_guard_01"].alert_state` is unchanged AND `copy.stealth_ai.guards[&"plaza_guard_01"]` is a different `GuardRecord` instance from `original.stealth_ai.guards[&"plaza_guard_01"]` (`Dictionary[StringName, GuardRecord]` deep-copy verification — godot-specialist 2026-04-22 §5 extended scope).
+- [x] **AC-5**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.mission.fired_beats[&"beat_intro"] = false`, THEN `original.mission.fired_beats[&"beat_intro"]` retains its original value (`Dictionary[StringName, bool]` shape — A4 amendment field).
+- [x] **AC-6**: GIVEN `copy` from AC-1, WHEN the test mutates `copy.documents.collected.append(&"doc_002")`, THEN `original.documents.collected` does NOT contain `&"doc_002"` (`Array[StringName]` deep-copy verification).
+- [x] **AC-7**: StringName keys in dictionaries remain interned-identical across `duplicate_deep()` (i.e., `original.stealth_ai.guards.keys()[0] == copy.stealth_ai.guards.keys()[0]` is true; StringName interning is global, only the values are deep-copied — confirms expected Godot semantics).
 
 ---
 
@@ -135,7 +135,7 @@ This story is primarily **a test + a documented discipline**, not a new code pat
 - Naming follows Foundation-layer convention
 - Determinism: fully in-memory, no file I/O, no random data — fixed StringName / int / Vector3 fixtures
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (7 functions in `save_load_duplicate_deep_test.gd`; suite 67/67 PASS)
 
 ---
 
@@ -143,3 +143,27 @@ This story is primarily **a test + a documented discipline**, not a new code pat
 
 - Depends on: Story 001 (production SaveGame schema must exist with all 7 sub-resources)
 - Unlocks: Story 009 (anti-pattern fence registration; this story is the runtime proof, Story 009 is the static lint)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 7/7 PASS (all auto-verified)
+**Suite**: 67/67 PASS, 0 errors, 0 failures, 0 orphans, exit 0
+
+**Files changed (2)**:
+- `src/core/save_load/save_load_service.gd` — added 3-line caller-discipline reminder comment near `load_from_slot()` return (per ADR-0003 IG 3; references Story SL-009's forbidden-pattern lint)
+- `tests/unit/foundation/save_load_duplicate_deep_test.gd` — created. 7 test functions covering all 7 ACs: AC-1 distinct instances for all 7 sub-resources, AC-2 player position isolation, AC-3 ammo Dict[StringName,int] isolation, AC-4 GuardRecord-in-Dict isolation (godot-specialist 2026-04-22 §5 extended scope), AC-5 fired_beats Dict[StringName,bool] isolation (A4 amendment), AC-6 Array[StringName] isolation, AC-7 StringName key interning preservation.
+
+**Deviations**: None.
+
+**Code Review**: APPROVED (solo mode; inline review). Implementation per ADR-0003 IG 3; production-schema deep-copy verified including the load-bearing AC-4 nested-Resource Dictionary case.
+
+**Tech debt logged**: None.
+
+**Critical proof points**:
+- AC-4 (the godot-specialist 2026-04-22 §5 follow-up) PASSES on the production schema — `Dictionary[StringName, GuardRecord]` deep-copies its Resource values, mutations to `copy.guards[k].alert_state` do not propagate to `original.guards[k].alert_state`, and the GuardRecord instances are different objects.
+- StringName key interning behaviour documented as expected Godot contract (AC-7) — keys equal across deep-copy, hash-identical, both typed TYPE_STRING_NAME.
+
+**Save/Load chain CLOSED**: SL-001 (data) + SL-002 (write) + SL-003 (read) + SL-004 (isolation) all done. The end-of-sprint demo loop (save → quit → reload → resume) is now structurally feasible — the only remaining gap is the level streaming integration (LS-001/002) and player movement (PC-001..005) that closes the visible "walk around the Plaza" half of the demo.

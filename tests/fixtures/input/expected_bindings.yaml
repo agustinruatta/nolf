@@ -1,0 +1,228 @@
+# Input action catalog fixture — single source of truth for AC-INPUT-1.1.
+# Schema:
+#   action_name:        StringName used in InputMap / InputActions constants
+#   kb_event_type:      Godot InputEvent class name (InputEventKey | InputEventMouseButton | null)
+#   kb_event_value:     physical_keycode (Key) or button_index (MouseButton) integer; null if no KB binding
+#   gamepad_event_type: Godot InputEvent class name (InputEventJoypadButton | InputEventJoypadMotion | null)
+#   gamepad_event_value: {button_index: int} or {axis: int, axis_value: float}; null if no gamepad binding
+#
+# Source: design/gdd/input.md §Section C (36 actions).
+# 33 rows here = gameplay/UI only. Debug actions (Group 6) excluded per AC-INPUT-5.3.
+# Gamepad note: JOY_BUTTON_START = button_index 6 per Godot 4.6 SDL3 driver (NOT 11).
+#               JOY_BUTTON_DPAD_UP = button_index 11 (distinct from START).
+# Mouse note:   look_horizontal/look_vertical have no KB/M button event — mouse motion
+#               is read directly via event.relative in the Player Character controller.
+#               Only the gamepad axis binding is registered in project.godot for these actions.
+#
+# Key code reference (Godot 4.6 physical_keycode values):
+#   W=87, S=83, A=65, D=68, E=69, F=70, Q=81, R=82, Space=32, Enter=4194309
+#   Escape=4194305, Left Ctrl=4194326, Left Shift=4194325
+#   1=49, 2=50, 3=51, 4=52, 5=53
+#   Arrow Up=4194320, Arrow Down=4194321, Arrow Left=4194318, Arrow Right=4194322
+#   F5=4194336, F9=4194340
+# Mouse button_index: LEFT=1, RIGHT=2, WHEEL_UP=4, WHEEL_DOWN=5, BUTTON_4=8, BUTTON_5=9
+# JOY axis indices: LEFT_X=0, LEFT_Y=1, RIGHT_X=2, RIGHT_Y=3, TRIGGER_LEFT=4, TRIGGER_RIGHT=5
+# JOY button indices: A=0, B=1, X=2, Y=3, START=6, LS=7, RS=8, DPAD_UP=11, DPAD_DOWN=12, DPAD_LEFT=13, DPAD_RIGHT=14
+
+# ── Group 1: Movement ──────────────────────────────────────────────────────
+- action_name: move_forward
+  kb_event_type: InputEventKey
+  kb_event_value: 87
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 1, axis_value: -1.0}
+
+- action_name: move_backward
+  kb_event_type: InputEventKey
+  kb_event_value: 83
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 1, axis_value: 1.0}
+
+- action_name: move_left
+  kb_event_type: InputEventKey
+  kb_event_value: 65
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 0, axis_value: -1.0}
+
+- action_name: move_right
+  kb_event_type: InputEventKey
+  kb_event_value: 68
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 0, axis_value: 1.0}
+
+- action_name: look_horizontal
+  kb_event_type: null
+  kb_event_value: null
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 2, axis_value: 1.0}
+
+- action_name: look_vertical
+  kb_event_type: null
+  kb_event_value: null
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 3, axis_value: 1.0}
+
+- action_name: jump
+  kb_event_type: InputEventKey
+  kb_event_value: 32
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 0}
+
+- action_name: crouch
+  kb_event_type: InputEventKey
+  kb_event_value: 4194326
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 8}
+
+- action_name: sprint
+  kb_event_type: InputEventKey
+  kb_event_value: 4194325
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 7}
+
+# ── Group 2: Combat & Weapons ──────────────────────────────────────────────
+- action_name: fire_primary
+  kb_event_type: InputEventMouseButton
+  kb_event_value: 1
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 5, axis_value: 1.0}
+
+- action_name: aim_down_sights
+  kb_event_type: InputEventMouseButton
+  kb_event_value: 2
+  gamepad_event_type: InputEventJoypadMotion
+  gamepad_event_value: {axis: 4, axis_value: 1.0}
+
+- action_name: reload
+  kb_event_type: InputEventKey
+  kb_event_value: 82
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 2}
+
+- action_name: weapon_slot_1
+  kb_event_type: InputEventKey
+  kb_event_value: 49
+  gamepad_event_type: null
+  gamepad_event_value: null
+
+- action_name: weapon_slot_2
+  kb_event_type: InputEventKey
+  kb_event_value: 50
+  gamepad_event_type: null
+  gamepad_event_value: null
+
+- action_name: weapon_slot_3
+  kb_event_type: InputEventKey
+  kb_event_value: 51
+  gamepad_event_type: null
+  gamepad_event_value: null
+
+- action_name: weapon_slot_4
+  kb_event_type: InputEventKey
+  kb_event_value: 52
+  gamepad_event_type: null
+  gamepad_event_value: null
+
+- action_name: weapon_slot_5
+  kb_event_type: InputEventKey
+  kb_event_value: 53
+  gamepad_event_type: null
+  gamepad_event_value: null
+
+- action_name: weapon_next
+  kb_event_type: InputEventMouseButton
+  kb_event_value: 4
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 14}
+
+- action_name: weapon_prev
+  kb_event_type: InputEventMouseButton
+  kb_event_value: 5
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 13}
+
+# ── Group 3: Gadgets ───────────────────────────────────────────────────────
+- action_name: takedown
+  kb_event_type: InputEventKey
+  kb_event_value: 81
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 2}
+
+- action_name: use_gadget
+  kb_event_type: InputEventKey
+  kb_event_value: 70
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 3}
+
+- action_name: gadget_next
+  kb_event_type: InputEventMouseButton
+  kb_event_value: 8
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 11}
+
+- action_name: gadget_prev
+  kb_event_type: InputEventMouseButton
+  kb_event_value: 9
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 12}
+
+# ── Group 4: Interaction ───────────────────────────────────────────────────
+- action_name: interact
+  kb_event_type: InputEventKey
+  kb_event_value: 69
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 0}
+
+# ── Group 5: UI & Menus ───────────────────────────────────────────────────
+- action_name: ui_cancel
+  kb_event_type: InputEventKey
+  kb_event_value: 4194305
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 1}
+
+- action_name: pause
+  kb_event_type: InputEventKey
+  kb_event_value: 4194305
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 6}
+
+- action_name: ui_up
+  kb_event_type: InputEventKey
+  kb_event_value: 4194320
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 11}
+
+- action_name: ui_down
+  kb_event_type: InputEventKey
+  kb_event_value: 4194321
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 12}
+
+- action_name: ui_left
+  kb_event_type: InputEventKey
+  kb_event_value: 4194318
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 13}
+
+- action_name: ui_right
+  kb_event_type: InputEventKey
+  kb_event_value: 4194322
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 14}
+
+- action_name: ui_accept
+  kb_event_type: InputEventKey
+  kb_event_value: 4194309
+  gamepad_event_type: InputEventJoypadButton
+  gamepad_event_value: {button_index: 0}
+
+- action_name: quicksave
+  kb_event_type: InputEventKey
+  kb_event_value: 4194336
+  gamepad_event_type: null
+  gamepad_event_value: null
+
+- action_name: quickload
+  kb_event_type: InputEventKey
+  kb_event_value: 4194340
+  gamepad_event_type: null
+  gamepad_event_value: null

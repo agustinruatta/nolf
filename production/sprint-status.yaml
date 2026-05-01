@@ -6,7 +6,7 @@ goal: "Land Foundation + Core code so Eve can walk in a streaming Plaza scene wi
 start: "2026-05-04"
 end: "2026-05-22"
 generated: "2026-04-30"
-updated: "2026-04-30 (SB-002 closed)"
+updated: "2026-04-30 (PC-002 closed — 108/108 tests)"
 
 stories:
   # ─── Must Have — Critical Path ──────────────────────────────────────────
@@ -32,11 +32,11 @@ stories:
     name: "EventLogger debug autoload — subscription + non-debug self-removal"
     file: "production/epics/signal-bus/story-003-event-logger-debug-autoload.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
     blocker: "depends on SB-001"
-    completed: ""
+    completed: "2026-04-30"
   - id: SB-004
     name: "Subscriber lifecycle pattern + Node payload validity guard"
     file: "production/epics/signal-bus/story-004-subscriber-lifecycle-validity.md"
@@ -68,38 +68,38 @@ stories:
     name: "SaveGame Resource + 7 typed sub-resources scaffolding"
     file: "production/epics/save-load/story-001-save-game-resource-scaffold.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
     blocker: "depends on SB-002"
-    completed: ""
+    completed: "2026-04-30"
   - id: SL-002
     name: "SaveLoadService autoload + save_to_slot atomic write"
     file: "production/epics/save-load/story-002-save-load-service-atomic-write.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
     blocker: "depends on SL-001"
-    completed: ""
+    completed: "2026-04-30"
   - id: SL-003
     name: "load_from_slot + type-guard + version-mismatch refusal"
     file: "production/epics/save-load/story-003-load-from-slot-type-guard-version-mismatch.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
     blocker: "depends on SL-002"
-    completed: ""
+    completed: "2026-04-30"
   - id: SL-004
     name: "duplicate_deep state-isolation discipline"
     file: "production/epics/save-load/story-004-duplicate-deep-state-isolation.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
     blocker: "depends on SL-003"
-    completed: ""
+    completed: "2026-04-30"
   - id: LOC-001
     name: "CSV registration + tr() runtime + project.godot loc config"
     file: "production/epics/localization-scaffold/story-001-csv-registration-tr-runtime.md"
@@ -131,38 +131,38 @@ stories:
     name: "InputActions static class"
     file: "production/epics/input/story-001-input-actions-static-class.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
     blocker: ""
-    completed: ""
+    completed: "2026-04-30"
   - id: IN-002
     name: "InputContext stack autoload"
     file: "production/epics/input/story-002-input-context-stack-autoload.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
     blocker: "depends on IN-001"
-    completed: ""
+    completed: "2026-04-30"
   - id: PC-001
     name: "PlayerCharacter scene root scaffold (CharacterBody3D)"
     file: "production/epics/player-character/story-001-scene-root-scaffold.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.4
     blocker: "depends on IN-002"
-    completed: ""
+    completed: "2026-04-30"
   - id: PC-002
     name: "First-person camera + look input"
     file: "production/epics/player-character/story-002-camera-look-input.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "gameplay-programmer"
     estimate_days: 0.4
     blocker: "depends on PC-001 + IN-002"
-    completed: ""
+    completed: "2026-04-30"
   - id: PC-003
     name: "Movement state machine + locomotion"
     file: "production/epics/player-character/story-003-movement-state-machine.md"

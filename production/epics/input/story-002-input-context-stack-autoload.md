@@ -1,7 +1,7 @@
 # Story 002: InputContextStack autoload — production implementation
 
 > **Epic**: Input
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — replace stub with production implementation + 2 test files)
@@ -33,11 +33,11 @@
 
 *From GDD `design/gdd/input.md` §Acceptance Criteria, scoped to this story:*
 
-- [ ] **AC-INPUT-2.1 [Logic] BLOCKING**: `InputContext.push(Context.MENU)` called; `InputContext.is_active(Context.GAMEPLAY)` returns `false`; `InputContext.is_active(Context.MENU)` returns `true`. Evidence: `tests/unit/core/input/input_context_gate_test.gd`.
-- [ ] **AC-INPUT-9.2 [Logic] BLOCKING**: `Engine.get_main_loop().get_root().get_node("/root/InputContext")` resolves successfully from a `_ready()` callback in a test scene (autoload load-order guarantee per ADR-0007). Evidence: `tests/unit/core/input/input_context_autoload_load_order_test.gd`.
-- [ ] **Stack invariant [Logic] BLOCKING** (implied by ADR-0004 IG 12): `InputContext._stack` is never empty; `pop()` called with a single-element stack fires the `assert` (stack underflow guard). The base `GAMEPLAY` context is never popped. Evidence: same test file as AC-INPUT-2.1.
-- [ ] **`Events.ui_context_changed` emitted [Logic] BLOCKING** (implied by ADR-0002 UI domain + GDD §Definition of Done): every `push()` and every `pop()` emits `Events.ui_context_changed(new_ctx: InputContext.Context, old_ctx: InputContext.Context)`. Evidence: `tests/unit/core/input/input_context_gate_test.gd` (subscribe to `Events.ui_context_changed`, assert payload values).
-- [ ] **Debug action registration [Logic] BLOCKING**: in a debug build, `InputContextStack._ready()` calls `InputActions._register_debug_actions()` wrapped in `if OS.is_debug_build():`. Evidence: `tests/unit/core/input/input_context_gate_test.gd` (verify via `InputMap.has_action(&"debug_toggle_ai")` in debug build).
+- [x] **AC-INPUT-2.1 [Logic] BLOCKING**: `InputContext.push(Context.MENU)` called; `InputContext.is_active(Context.GAMEPLAY)` returns `false`; `InputContext.is_active(Context.MENU)` returns `true`. Evidence: `tests/unit/core/input/input_context_gate_test.gd`.
+- [x] **AC-INPUT-9.2 [Logic] BLOCKING**: `Engine.get_main_loop().get_root().get_node("/root/InputContext")` resolves successfully from a `_ready()` callback in a test scene (autoload load-order guarantee per ADR-0007). Evidence: `tests/unit/core/input/input_context_autoload_load_order_test.gd`.
+- [x] **Stack invariant [Logic] BLOCKING** (implied by ADR-0004 IG 12): `InputContext._stack` is never empty; `pop()` called with a single-element stack fires the `assert` (stack underflow guard). The base `GAMEPLAY` context is never popped. Evidence: same test file as AC-INPUT-2.1.
+- [x] **`Events.ui_context_changed` emitted [Logic] BLOCKING** (implied by ADR-0002 UI domain + GDD §Definition of Done): every `push()` and every `pop()` emits `Events.ui_context_changed(new_ctx: InputContext.Context, old_ctx: InputContext.Context)`. Evidence: `tests/unit/core/input/input_context_gate_test.gd` (subscribe to `Events.ui_context_changed`, assert payload values).
+- [x] **Debug action registration [Logic] BLOCKING**: in a debug build, `InputContextStack._ready()` calls `InputActions._register_debug_actions()` wrapped in `if OS.is_debug_build():`. Evidence: `tests/unit/core/input/input_context_gate_test.gd` (verify via `InputMap.has_action(&"debug_toggle_ai")` in debug build).
 
 ---
 
@@ -147,7 +147,7 @@ func is_active(ctx: Context) -> bool:
 - `tests/unit/core/input/input_context_gate_test.gd` — must exist and pass (AC-INPUT-2.1 + stack invariant + Events emission)
 - `tests/unit/core/input/input_context_autoload_load_order_test.gd` — must exist and pass (AC-INPUT-9.2)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (10 functions across 2 test files; suite 89/89 PASS)
 
 ---
 
@@ -155,3 +155,18 @@ func is_active(ctx: Context) -> bool:
 
 - Depends on: Story 001 (InputActions static class + `_register_debug_actions()` method must exist before `_ready()` calls it); Signal Bus epic Story 002 (production `Events.gd` must declare `ui_context_changed` signal before emission test can pass)
 - Unlocks: Story 003 (integration tests require a working `InputContextStack`), Story 005 (order-of-operations tests require a working stack), Story 007 (LOADING context integration requires the full enum)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 5/5 PASS (all auto-verified)
+**Suite**: 89/89 PASS, exit 0
+**Files changed (7)**: input_context.gd stub→production, events.gd ui_context_changed signal, event_logger.gd handler+register, EXPECTED_CONNECTION_COUNT 32→33, events_signal_taxonomy_test (new UI domain test), 2 new test files at tests/unit/core/input/.
+**Cross-epic handshake closed**: SB-002's deferred ui_context_changed signal restored with `int` payload (avoids Events↔InputContextStack circular import — same pattern as SL-002's save_failed). EventLogger now subscribes to all 33 Events.* signals.
+**Deviations**: ADVISORY — events.gd + event_logger.gd modifications planned per SB-002 deferred-UI-domain handshake, not scope creep.
+**Code Review**: APPROVED (solo mode; suite-pass = full green gate).
+**Tech debt**: None.
+**Critical proof points**: Stack invariant (always GAMEPLAY base, never empty); class_name `InputContextStack` / autoload key `InputContext` split per ADR-0004 IG 2; ADR-0007 cross-autoload safety respected.
+**Unblocks**: PC-001 + entire Player Character chain.

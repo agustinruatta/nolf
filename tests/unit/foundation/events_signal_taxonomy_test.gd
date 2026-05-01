@@ -351,7 +351,10 @@ func test_events_taxonomy_civilian_domain_signals_present() -> void:
 # Tests — AC-3-I: Persistence domain
 # ---------------------------------------------------------------------------
 
-## game_saved and game_loaded must be declared. save_failed deferred.
+## game_saved, game_loaded, and save_failed must be declared. save_failed uses
+## an int payload (cast from SaveLoadService.FailureReason at emit time) per
+## the signal-bus comment — this avoids a circular Events ↔ SaveLoadService
+## import while preserving type semantics for subscribers.
 ## Covers ADR-0002 §Key Interfaces Persistence domain (built-in subset).
 func test_events_taxonomy_persistence_domain_signals_present() -> void:
 	# Arrange
@@ -363,6 +366,11 @@ func test_events_taxonomy_persistence_domain_signals_present() -> void:
 
 	# Act + Assert — game_loaded(slot: int)
 	_assert_signal_signature(signal_map, &"game_loaded", [TYPE_INT])
+
+	# Act + Assert — save_failed(reason: int)
+	# Reason is the int value of SaveLoadService.FailureReason, declared as
+	# bare int so the signal bus does not depend on the SaveLoadService class.
+	_assert_signal_signature(signal_map, &"save_failed", [TYPE_INT])
 
 
 # ---------------------------------------------------------------------------
@@ -400,10 +408,9 @@ func test_events_taxonomy_deferred_signals_not_present() -> void:
 	var events: SignalBusEvents = _get_events_node()
 	var signal_map: Dictionary = _build_signal_map(events)
 
-	# Deferred — Save/Load epic (needs SaveLoad.FailureReason)
-	assert_bool(signal_map.has(&"save_failed")).override_failure_message(
-			"Deferred signal 'save_failed' must not be declared until SaveLoad.FailureReason exists"
-	).is_false()
+	# save_failed is no longer deferred — re-added in SL-002 with `int` payload
+	# (cast from SaveLoadService.FailureReason at emit sites). See the
+	# Persistence domain test above for its signature assertion.
 
 	# Deferred — Combat epic (needs CombatSystemNode.DeathCause)
 	assert_bool(signal_map.has(&"player_died")).override_failure_message(
@@ -424,10 +431,9 @@ func test_events_taxonomy_deferred_signals_not_present() -> void:
 			"Deferred signal 'section_exited' must not be declared until LevelStreamingService.TransitionReason exists"
 	).is_false()
 
-	# Deferred — UI Framework epic (needs InputContext.Context)
-	assert_bool(signal_map.has(&"ui_context_changed")).override_failure_message(
-			"Deferred signal 'ui_context_changed' must not be declared until InputContext.Context exists"
-	).is_false()
+	# ui_context_changed is no longer deferred — re-added in IN-002 with `int` payload
+	# (cast from InputContextStack.Context at emit sites). See the UI domain test
+	# below for its signature assertion. Same precedent as save_failed in SL-002.
 
 	# Deferred — AI / Stealth epic (needs StealthAI.* enums)
 	assert_bool(signal_map.has(&"alert_state_changed")).override_failure_message(
@@ -453,3 +459,20 @@ func test_events_taxonomy_deferred_signals_not_present() -> void:
 	assert_bool(signal_map.has(&"guard_woke_up")).override_failure_message(
 			"Deferred signal 'guard_woke_up' belongs to AI/Stealth epic"
 	).is_false()
+
+
+# ---------------------------------------------------------------------------
+# Tests — UI domain
+# ---------------------------------------------------------------------------
+
+## ui_context_changed must be declared. Uses int payload (cast from
+## InputContextStack.Context at emit sites) to avoid the Events ↔
+## InputContextStack circular import — same pattern as save_failed.
+## Covers ADR-0002 §Key Interfaces UI domain.
+func test_events_taxonomy_ui_domain_signals_present() -> void:
+	# Arrange
+	var events: SignalBusEvents = _get_events_node()
+	var signal_map: Dictionary = _build_signal_map(events)
+
+	# Act + Assert — ui_context_changed(new_ctx: int, old_ctx: int)
+	_assert_signal_signature(signal_map, &"ui_context_changed", [TYPE_INT, TYPE_INT])

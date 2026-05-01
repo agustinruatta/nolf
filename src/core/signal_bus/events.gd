@@ -71,7 +71,10 @@ signal player_damaged(amount: float, source: Node, is_critical: bool)
 signal civilian_panicked(civilian: Node, cause_position: Vector3)
 
 # ─── Persistence domain ───────────────────────────────────────────────────
-# save_failed(reason: SaveLoad.FailureReason) deferred to Save/Load epic
+# reason is SaveLoadService.FailureReason (int enum) — owned by SaveLoadService
+# per ADR-0003 §ADR Dependencies + ADR-0002 enum-ownership rule. Declared here
+# as int because the signal bus must not import SaveLoadService directly.
+signal save_failed(reason: int)
 signal game_saved(slot: int, section_id: StringName)
 signal game_loaded(slot: int)
 
@@ -79,5 +82,9 @@ signal game_loaded(slot: int)
 signal setting_changed(category: StringName, name: StringName, value: Variant)
 signal settings_loaded()
 
-# ─── UI domain (deferred — ui_context_changed needs InputContext.Context) ──
+# ─── UI domain ────────────────────────────────────────────────────────────
+# InputContextStack.Context enum value cast to int at emit sites — avoids the
+# Events ↔ InputContextStack circular import (same pattern as save_failed).
+signal ui_context_changed(new_ctx: int, old_ctx: int)
+
 # ─── AI / Stealth domain (deferred — all signals reference StealthAI.* enums) ──

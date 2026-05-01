@@ -1,7 +1,7 @@
 # Story 001: SaveGame Resource + 7 typed sub-resource scaffolding
 
 > **Epic**: Save / Load
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — 8 new files + round-trip test)
@@ -32,13 +32,13 @@
 
 *From GDD §Acceptance Criteria + ADR-0003 §Key Interfaces:*
 
-- [ ] **AC-1**: `src/core/save_load/save_game.gd` declares `class_name SaveGame extends Resource` with `const FORMAT_VERSION: int = 2`, `@export var save_format_version: int = FORMAT_VERSION`, `@export var saved_at_iso8601: String`, `@export var section_id: StringName`, `@export var elapsed_seconds: float`, and 7 typed sub-resource `@export` fields (player, inventory, stealth_ai, civilian_ai, documents, mission, failure_respawn).
-- [ ] **AC-2**: 7 sub-resource files exist under `src/core/save_load/states/`, each with `class_name` registered: `player_state.gd`, `inventory_state.gd`, `stealth_ai_state.gd`, `civilian_ai_state.gd`, `document_collection_state.gd`, `mission_state.gd`, `failure_respawn_state.gd`. (Per ADR-0003 IG 11; the inner-class @export trap is avoided.)
-- [ ] **AC-3**: `src/core/save_load/states/guard_record.gd` declares `class_name GuardRecord extends Resource` with `alert_state: int`, `patrol_index: int`, `last_known_target_position: Vector3`, `current_position: Vector3`. Used as the value type of `StealthAIState.guards: Dictionary` (per-actor record keyed by `actor_id`).
-- [ ] **AC-4**: `InventoryState` declares `@export var ammo_magazine: Dictionary` and `@export var ammo_reserve: Dictionary` (untyped Dictionary with doc-comment typing `## StringName -> int`, NOT `TypedDictionary`, per Inventory CR-11 — TypedDictionary `ResourceSaver` stability is unverified post-cutoff).
-- [ ] **AC-5**: `MissionState` declares `@export var section_id: StringName`, `@export var objectives_completed: Array[StringName]`, `@export var triggers_fired: Dictionary` (`## StringName -> bool`), `@export var fired_beats: Dictionary` (`## StringName -> bool`).
-- [ ] **AC-6**: `DocumentCollectionState` declares `@export var collected: Array[StringName]`.
-- [ ] **AC-7**: A round-trip unit test populates a `SaveGame` instance with stub values for all 7 sub-resources (including non-empty `StealthAIState.guards` with one `GuardRecord`, `InventoryState.ammo_magazine` + `ammo_reserve`, and `MissionState.fired_beats`), calls `ResourceSaver.save(sg, "user://test_round_trip.res", ResourceSaver.FLAG_COMPRESS)`, then `ResourceLoader.load("user://test_round_trip.res")`, and asserts every field is bit-equal across the round-trip. (AC-15 from GDD; in-memory only — no slot scheme yet.)
+- [x] **AC-1**: `src/core/save_load/save_game.gd` declares `class_name SaveGame extends Resource` with `const FORMAT_VERSION: int = 2`, `@export var save_format_version: int = FORMAT_VERSION`, `@export var saved_at_iso8601: String`, `@export var section_id: StringName`, `@export var elapsed_seconds: float`, and 7 typed sub-resource `@export` fields (player, inventory, stealth_ai, civilian_ai, documents, mission, failure_respawn).
+- [x] **AC-2**: 7 sub-resource files exist under `src/core/save_load/states/`, each with `class_name` registered: `player_state.gd`, `inventory_state.gd`, `stealth_ai_state.gd`, `civilian_ai_state.gd`, `document_collection_state.gd`, `mission_state.gd`, `failure_respawn_state.gd`. (Per ADR-0003 IG 11; the inner-class @export trap is avoided.)
+- [x] **AC-3**: `src/core/save_load/states/guard_record.gd` declares `class_name GuardRecord extends Resource` with `alert_state: int`, `patrol_index: int`, `last_known_target_position: Vector3`, `current_position: Vector3`. Used as the value type of `StealthAIState.guards: Dictionary` (per-actor record keyed by `actor_id`).
+- [x] **AC-4**: `InventoryState` declares `@export var ammo_magazine: Dictionary` and `@export var ammo_reserve: Dictionary` (untyped Dictionary with doc-comment typing `## StringName -> int`, NOT `TypedDictionary`, per Inventory CR-11 — TypedDictionary `ResourceSaver` stability is unverified post-cutoff).
+- [x] **AC-5**: `MissionState` declares `@export var section_id: StringName`, `@export var objectives_completed: Array[StringName]`, `@export var triggers_fired: Dictionary` (`## StringName -> bool`), `@export var fired_beats: Dictionary` (`## StringName -> bool`).
+- [x] **AC-6**: `DocumentCollectionState` declares `@export var collected: Array[StringName]`.
+- [x] **AC-7**: A round-trip unit test populates a `SaveGame` instance with stub values for all 7 sub-resources (including non-empty `StealthAIState.guards` with one `GuardRecord`, `InventoryState.ammo_magazine` + `ammo_reserve`, and `MissionState.fired_beats`), calls `ResourceSaver.save(sg, "user://test_round_trip.res", ResourceSaver.FLAG_COMPRESS)`, then `ResourceLoader.load("user://test_round_trip.res")`, and asserts every field is bit-equal across the round-trip. (AC-15 from GDD; in-memory only — no slot scheme yet.)
 
 ---
 
@@ -157,7 +157,7 @@ This story is data-layer-only. No SaveLoadService autoload yet (Story 002). No f
 - Naming: `save_game_round_trip_test.gd` (matches Foundation-layer convention from signal-bus stories)
 - Determinism: no random seeds; uses fixed StringName keys; cleans up `user://test_round_trip.res` in teardown
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (suite 38/38 PASS, 9 functions in `save_game_round_trip_test.gd`)
 
 ---
 
@@ -165,3 +165,42 @@ This story is data-layer-only. No SaveLoadService autoload yet (Story 002). No f
 
 - Depends on: None — foundational data layer
 - Unlocks: Story 002 (SaveLoadService needs SaveGame to write/read), Story 004 (duplicate_deep test needs the production schema)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 7/7 PASS (all auto-verified)
+**Suite**: 38/38 PASS, 0 errors, 0 failures, 0 orphans, exit 0
+
+**Files created (10)**:
+- `src/core/save_load/save_game.gd` — `class_name SaveGame extends Resource`, `FORMAT_VERSION: int = 2`, 7 typed sub-resource `@export` fields, `_init()` default-initializes children
+- `src/core/save_load/states/player_state.gd` — `class_name PlayerState`
+- `src/core/save_load/states/inventory_state.gd` — `class_name InventoryState` (untyped Dictionary ammo per Inventory CR-11)
+- `src/core/save_load/states/stealth_ai_state.gd` — `class_name StealthAIState` (guards keyed by actor_id)
+- `src/core/save_load/states/civilian_ai_state.gd` — `class_name CivilianAIState`
+- `src/core/save_load/states/document_collection_state.gd` — `class_name DocumentCollectionState`
+- `src/core/save_load/states/mission_state.gd` — `class_name MissionState` (fired_beats per MLS CR-7)
+- `src/core/save_load/states/failure_respawn_state.gd` — `class_name FailureRespawnState` (placeholder; F&R epic refines)
+- `src/core/save_load/states/guard_record.gd` — `class_name GuardRecord` (top-level per ADR-0003 IG 11)
+- `tests/unit/foundation/save_game_round_trip_test.gd` — 9 test functions; AC-7 round-trip is comprehensive (all 7 sub-resources + nested GuardRecord + StringName key-type preservation per AC-7 spec)
+
+**Deviations**:
+- ADVISORY: TR-SAV-002 registry text lists 6 sub-resources; ADR-0003 + story spec require 7 (adds failure_respawn). Implementation followed ADR. Recommend `/architecture-review` next pass to refresh `tr-registry.yaml` text.
+
+**Code review fixes applied during review**:
+- Added StringName key-type preservation assertion to AC-7 round-trip (qa-tester BLOCKING — story explicitly required `keys()[0] is StringName` check)
+- Added `ResourceLoader.CACHE_MODE_IGNORE` to round-trip load (prevents stale cache returns in repeated same-session runs)
+- Added missing field assertions in round-trip: `player.rotation`, `guard.last_known_target_position`, `inventory.collected_gadget_flags`, `mission.section_id`, `mission.triggers_fired`
+- Wrapped `assert_str()` calls on StringName values with `String()` coercion for GdUnit4 type-safety
+- Added doc comments to `PlayerState.position/rotation/health` fields
+- Replaced `is_equal(2)` with `is_equal(SaveGame.FORMAT_VERSION)` to make the round-trip survive a future FORMAT_VERSION bump
+
+**Tech debt logged**: None. The TR registry staleness is an architecture-doc cleanup task, not code tech debt.
+
+**Test runner notes**:
+- New `class_name`s require one `godot --headless --editor --quit-after 2` invocation to refresh the global class cache before GdUnit4 CLI sees them. Documented in session state.
+- Test cleanup: `after_test()` removes `user://test_round_trip.res` after each test via `DirAccess` with `file_exists()` guard (no-op for non-I/O tests).
+
+**Critical proof point**: AC-7 round-trip succeeded → proves all 7 typed `@export` sub-resources serialize correctly through `ResourceSaver.save(... FLAG_COMPRESS)` + `ResourceLoader.load`. No IG 11 violations (the F2 trap from Sprint 01 verification) slipped through. StringName Dictionary keys preserved. GuardRecord-as-Dictionary-value round-trips cleanly.

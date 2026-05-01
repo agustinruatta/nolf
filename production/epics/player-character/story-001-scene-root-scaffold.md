@@ -1,7 +1,7 @@
 # Story 001: PlayerCharacter scene root scaffold
 
 > **Epic**: Player Character
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — new scene + node hierarchy + enum host files)
@@ -33,12 +33,12 @@
 
 *From GDD `design/gdd/player-character.md` §Detailed Design Core Rules + ADR-0006:*
 
-- [ ] **AC-1**: `res://src/gameplay/player/player_enums.gd` exists with `class_name PlayerEnums extends RefCounted`, declares `enum MovementState { IDLE, WALK, SPRINT, CROUCH, JUMP, FALL, DEAD }` and `enum NoiseType { FOOTSTEP_SOFT, FOOTSTEP_NORMAL, FOOTSTEP_LOUD, JUMP_TAKEOFF, LANDING_SOFT, LANDING_HARD }`. No runtime logic — pure enum host.
-- [ ] **AC-2**: `res://src/gameplay/player/noise_event.gd` exists with `class_name NoiseEvent extends RefCounted`, declaring fields `type: PlayerEnums.NoiseType`, `radius_m: float`, `origin: Vector3`. Doc comment on the class reads: "In-place mutation is intentional (zero-allocation at 80 Hz aggregate AI polling). Callers MUST copy fields before the next physics frame. DO NOT 'fix' this by allocating a new NoiseEvent per spike — see GDD F.4."
-- [ ] **AC-3**: Scene `res://src/gameplay/player/PlayerCharacter.tscn` exists with `CharacterBody3D` as scene root, `class_name PlayerCharacter`, and the following direct children: `CapsuleShape3D` collider node (`CollisionShape3D` wrapper), `Camera3D` (at local Y 1.6 m), `ShapeCast3D` (for ceiling-check, standing dimensions), `HandAnchor` (`Node3D`, child of `Camera3D`).
-- [ ] **AC-4**: In `_ready()`, Eve's CharacterBody3D sets `set_collision_layer_value(PhysicsLayers.LAYER_PLAYER, true)`, clears all other layer bits, then sets `set_collision_mask_value(PhysicsLayers.LAYER_WORLD, true)` and `set_collision_mask_value(PhysicsLayers.LAYER_AI, true)`. Zero bare integer literals for any collision layer or mask assignment.
-- [ ] **AC-5**: `CapsuleShape3D` default shape dimensions in the scene file: `height = 1.7`, `radius = 0.3` (standing pose). The standing height IS the full collider height (not the cylinder portion). Comment in scene or script references GDD Core Rules "total capsule height including hemispherical caps".
-- [ ] **AC-6**: `_physics_process(delta: float) -> void` exists on the PlayerCharacter script (stub body acceptable at this story's scope — movement, health, and noise are owned by later stories). The script declares `var current_state: PlayerEnums.MovementState = PlayerEnums.MovementState.IDLE` and `var velocity: Vector3 = Vector3.ZERO` at class scope with explicit types.
+- [x] **AC-1**: `res://src/gameplay/player/player_enums.gd` exists with `class_name PlayerEnums extends RefCounted`, declares `enum MovementState { IDLE, WALK, SPRINT, CROUCH, JUMP, FALL, DEAD }` and `enum NoiseType { FOOTSTEP_SOFT, FOOTSTEP_NORMAL, FOOTSTEP_LOUD, JUMP_TAKEOFF, LANDING_SOFT, LANDING_HARD }`. No runtime logic — pure enum host.
+- [x] **AC-2**: `res://src/gameplay/player/noise_event.gd` exists with `class_name NoiseEvent extends RefCounted`, declaring fields `type: PlayerEnums.NoiseType`, `radius_m: float`, `origin: Vector3`. Doc comment on the class reads: "In-place mutation is intentional (zero-allocation at 80 Hz aggregate AI polling). Callers MUST copy fields before the next physics frame. DO NOT 'fix' this by allocating a new NoiseEvent per spike — see GDD F.4."
+- [x] **AC-3**: Scene `res://src/gameplay/player/PlayerCharacter.tscn` exists with `CharacterBody3D` as scene root, `class_name PlayerCharacter`, and the following direct children: `CapsuleShape3D` collider node (`CollisionShape3D` wrapper), `Camera3D` (at local Y 1.6 m), `ShapeCast3D` (for ceiling-check, standing dimensions), `HandAnchor` (`Node3D`, child of `Camera3D`).
+- [x] **AC-4**: In `_ready()`, Eve's CharacterBody3D sets `set_collision_layer_value(PhysicsLayers.LAYER_PLAYER, true)`, clears all other layer bits, then sets `set_collision_mask_value(PhysicsLayers.LAYER_WORLD, true)` and `set_collision_mask_value(PhysicsLayers.LAYER_AI, true)`. Zero bare integer literals for any collision layer or mask assignment.
+- [x] **AC-5**: `CapsuleShape3D` default shape dimensions in the scene file: `height = 1.7`, `radius = 0.3` (standing pose). The standing height IS the full collider height (not the cylinder portion). Comment in scene or script references GDD Core Rules "total capsule height including hemispherical caps".
+- [x] **AC-6**: `_physics_process(delta: float) -> void` exists on the PlayerCharacter script (stub body acceptable at this story's scope — movement, health, and noise are owned by later stories). The script declares `var current_state: PlayerEnums.MovementState = PlayerEnums.MovementState.IDLE` and `var velocity: Vector3 = Vector3.ZERO` at class scope with explicit types.
 
 ---
 
@@ -146,7 +146,7 @@ This story establishes the scaffold that all subsequent PlayerCharacter stories 
 - `tests/unit/core/player_character/player_character_scaffold_test.gd` — must exist and pass (AC-1 through AC-6)
 - Naming: `[system]_[scenario]_[expected]` convention per project test standards
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (11 functions; suite 100/100 PASS)
 
 ---
 
@@ -154,3 +154,17 @@ This story establishes the scaffold that all subsequent PlayerCharacter stories 
 
 - Depends on: Signal Bus epic (Story 001 + 002 — `Events` autoload and player domain signals must be declared). ADR-0006 Accepted (all gates closed Sprint 01).
 - Unlocks: Story 002 (camera look), Story 003 (movement state machine), Story 004 (noise interface), Story 005 (interact raycast), Story 006 (health system), Story 007 (respawn + serialization), Story 008 (FPS hands)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 6/6 PASS
+**Suite**: 100/100 PASS, exit 0 (sprint milestone — first 100-test green run)
+**Files (5)**: player_enums.gd, noise_event.gd, player_character.gd, PlayerCharacter.tscn, player_character_scaffold_test.gd (11 tests)
+**Deviations**: ADVISORY — AC-6 `var velocity` redeclaration omitted (Godot 4.x parse error: CharacterBody3D already provides `velocity` as built-in property; documented in script comment). INFO — initial implementation missed clearing scene-default LAYER_WORLD bit; fixed during integration per AC-4 spec.
+**Code Review**: APPROVED (solo mode; suite-pass = full green gate).
+**Tech debt**: None.
+**Critical proof points**: Eve on LAYER_PLAYER only; mask covers WORLD+AI; zero bare integer literals; PlayerEnums hosted on consumer class per ADR-0002 IG 2; NoiseEvent is RefCounted (not Resource) per GDD §F.4 zero-allocation constraint.
+**Unblocks**: Entire PC chain (PC-002..008) + Footstep chain (FS-001..004).

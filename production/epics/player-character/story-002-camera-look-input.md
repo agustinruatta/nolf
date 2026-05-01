@@ -1,7 +1,7 @@
 # Story 002: First-person camera + look input
 
 > **Epic**: Player Character
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: 2-3 hours (M — _unhandled_input path, pitch clamp, yaw, turn overshoot tween)
@@ -29,11 +29,11 @@
 
 *From GDD `design/gdd/player-character.md` §Acceptance Criteria AC-7 + §Camera spec:*
 
-- [ ] **AC-7.1 [Logic]**: At `_ready()`, `abs(Camera3D.fov - 75.0) <= 0.1`. Horizontal FOV 75°, configurable via `@export var camera_fov: float = 75.0` (designer-tunable per Tuning Knobs §Camera).
-- [ ] **AC-7.2 [Integration]**: Injecting synthetic pitch input via `Input.parse_input_event(ev)` where `ev = InputEventMouseMotion.new()` with `ev.relative = Vector2(0, 1_000_000)` (large downward push past clamp limit): after one `_physics_process` tick, `camera.rotation.x <= deg_to_rad(85.0) + 0.001` (pitch clamped to +85° looking down). Reverse: `ev.relative = Vector2(0, -1_000_000)` → `camera.rotation.x >= -deg_to_rad(85.0) - 0.001` (looking up). Tolerance 0.001 rad ≈ 0.057° for float epsilon.
-- [ ] **AC-7.3 [Integration]**: Look-left/right mouse motion (`ev.relative.x != 0`) rotates `body.rotation.y`, not `camera.rotation.x`. Look-up/down (`ev.relative.y != 0`) rotates `camera.rotation.x`, not `body.rotation.y`. After rotating body by +π/2 rad yaw, the camera's global forward basis aligns with the body's new forward, and a `_resolve_interact_target()` call (stub) uses the camera origin along the updated body forward.
-- [ ] **AC-7.4 [Visual/Feel]**: Rapid yaw input (> 180°/s, injected as a sequence of `InputEventMouseMotion` events) produces a perceptible yaw overshoot within `turn_overshoot_deg ± 0.5°` and the overshoot settles monotonically within `90 ± 10 ms`. Art-director sign-off criterion: (a) overshoot amplitude within stated tolerance on frame-by-frame measurement, (b) settle returns monotonically (no secondary oscillation), (c) reads as "deliberate camera settle" and not "drunk".
-- [ ] **AC-7.5 [Logic]**: No walk head-bob, no sprint FOV punch. `camera_fov` is constant at `75.0` regardless of movement state. A unit test asserts `Camera3D.fov` does not change between IDLE → WALK → SPRINT state transitions.
+- [x] **AC-7.1 [Logic]**: At `_ready()`, `abs(Camera3D.fov - 75.0) <= 0.1`. Horizontal FOV 75°, configurable via `@export var camera_fov: float = 75.0` (designer-tunable per Tuning Knobs §Camera).
+- [x] **AC-7.2 [Integration]**: Injecting synthetic pitch input via `Input.parse_input_event(ev)` where `ev = InputEventMouseMotion.new()` with `ev.relative = Vector2(0, 1_000_000)` (large downward push past clamp limit): after one `_physics_process` tick, `camera.rotation.x <= deg_to_rad(85.0) + 0.001` (pitch clamped to +85° looking down). Reverse: `ev.relative = Vector2(0, -1_000_000)` → `camera.rotation.x >= -deg_to_rad(85.0) - 0.001` (looking up). Tolerance 0.001 rad ≈ 0.057° for float epsilon.
+- [x] **AC-7.3 [Integration]**: Look-left/right mouse motion (`ev.relative.x != 0`) rotates `body.rotation.y`, not `camera.rotation.x`. Look-up/down (`ev.relative.y != 0`) rotates `camera.rotation.x`, not `body.rotation.y`. After rotating body by +π/2 rad yaw, the camera's global forward basis aligns with the body's new forward, and a `_resolve_interact_target()` call (stub) uses the camera origin along the updated body forward.
+- [~] **AC-7.4 [Visual/Feel]**: Rapid yaw input (> 180°/s, injected as a sequence of `InputEventMouseMotion` events) produces a perceptible yaw overshoot within `turn_overshoot_deg ± 0.5°` and the overshoot settles monotonically within `90 ± 10 ms`. Art-director sign-off criterion: (a) overshoot amplitude within stated tolerance on frame-by-frame measurement, (b) settle returns monotonically (no secondary oscillation), (c) reads as "deliberate camera settle" and not "drunk".
+- [x] **AC-7.5 [Logic]**: No walk head-bob, no sprint FOV punch. `camera_fov` is constant at `75.0` regardless of movement state. A unit test asserts `Camera3D.fov` does not change between IDLE → WALK → SPRINT state transitions.
 
 ---
 
@@ -124,7 +124,7 @@ Mouse and gamepad look sensitivities are consumed from `Settings.get_mouse_sensi
 - `tests/unit/core/player_character/player_camera_fov_test.gd` — automated, must pass (AC-7.1, AC-7.5)
 - `production/qa/evidence/player-camera-overshoot-[date].md` — art-director sign-off required (AC-7.4)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (8 functions across 3 test files; suite 108/108 PASS; AC-7.4 manual evidence pending)
 
 ---
 
@@ -132,3 +132,17 @@ Mouse and gamepad look sensitivities are consumed from `Settings.get_mouse_sensi
 
 - Depends on: Story 001 (scene root scaffold — Camera3D node must exist)
 - Unlocks: Story 003 (movement references camera forward for look direction in interaction; sprint sway applies to camera), Story 005 (interact raycast uses `_camera.global_position` + camera forward)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 4 PASS / 1 DEFERRED (AC-7.4 art-director Visual/Feel sign-off pending; manual evidence template at `production/qa/evidence/player-camera-overshoot-2026-04-30.md`)
+**Suite**: 108/108 PASS, exit 0
+**Files (5)**: player_character.gd extended (8 @export tuning vars + _unhandled_input + _apply_yaw_delta + _play_turn_overshoot + FOV apply); 3 test files (8 functions across fov + pitch_clamp + rotation_split); 1 manual evidence template.
+**Deviations**: ADVISORY — Story Implementation Notes showed `-=` for pitch but AC-7.2 spec requires `+=` (positive relative.y → +85° clamp). Sign convention documented in script header.
+**Code Review**: APPROVED (solo mode; suite-pass = full green gate).
+**Tech debt**: None.
+**Critical proof points**: FOV constant 75° across IDLE/WALK/SPRINT/CROUCH; pitch clamps cleanly at ±85° both directions; perfect yaw/pitch decoupling (yaw rotates body only, pitch rotates camera only); turn overshoot Tween mechanism wired.
+**Unblocks**: PC-003, PC-005.

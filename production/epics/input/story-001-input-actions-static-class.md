@@ -1,7 +1,7 @@
 # Story 001: InputActions static class + project.godot action catalog
 
 > **Epic**: Input
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 3-4 hours (M — 1 new file + project.godot edit + fixture file + 2 test files)
@@ -35,10 +35,10 @@
 
 *From GDD `design/gdd/input.md` §Acceptance Criteria, scoped to this story:*
 
-- [ ] **AC-INPUT-1.1 [Logic] BLOCKING**: `project.godot [input]` block declares all 36 InputMap actions with their default bindings matching Section C of `design/gdd/input.md`; for every action row, `InputMap.action_has_event(action_name, event)` returns `true` for the listed default keyboard event AND for the listed default gamepad event (where present). Evidence: `tests/unit/core/input/input_action_catalog_test.gd` + fixture `tests/fixtures/input/expected_bindings.yaml`.
-- [ ] **AC-INPUT-1.3 [Logic] BLOCKING**: `res://src/core/input/input_actions.gd` declares `class_name InputActions` and contains exactly **36 constants** (33 gameplay/UI + 3 debug); every constant value is a StringName literal (`&"name"`) that satisfies `InputMap.has_action(value)` when queried in a test scene. Evidence: `tests/unit/core/input/input_actions_constants_test.gd`.
-- [ ] **AC-INPUT-9.1 [Config] BLOCKING**: `res://src/core/input/input_actions.gd` file exists with `class_name InputActions`; no system imports it via `preload("res://src/core/input/...")` literal path — all consumers use the `class_name` global. Evidence: `tests/unit/core/input/input_actions_path_test.gd` (file-existence + class_name check) + CI grep for `preload.*input_actions`.
-- [ ] **AC-INPUT-5.3 [Code-Review] BLOCKING** (partial — debug action constants): debug action constants (`debug_toggle_ai`, `debug_noclip`, `debug_spawn_alert`) do NOT appear in `project.godot [input]` — they are runtime-registered only; the runtime registration block in `InputActions._register_debug_actions()` is wrapped in `if OS.is_debug_build():` AND uses `InputMap.add_action()` + `InputMap.action_add_event()` for each debug action. Evidence: `tools/ci/check_debug_action_gating.sh`.
+- [x] **AC-INPUT-1.1 [Logic] BLOCKING**: `project.godot [input]` block declares all 36 InputMap actions with their default bindings matching Section C of `design/gdd/input.md`; for every action row, `InputMap.action_has_event(action_name, event)` returns `true` for the listed default keyboard event AND for the listed default gamepad event (where present). Evidence: `tests/unit/core/input/input_action_catalog_test.gd` + fixture `tests/fixtures/input/expected_bindings.yaml`.
+- [x] **AC-INPUT-1.3 [Logic] BLOCKING**: `res://src/core/input/input_actions.gd` declares `class_name InputActions` and contains exactly **36 constants** (33 gameplay/UI + 3 debug); every constant value is a StringName literal (`&"name"`) that satisfies `InputMap.has_action(value)` when queried in a test scene. Evidence: `tests/unit/core/input/input_actions_constants_test.gd`.
+- [x] **AC-INPUT-9.1 [Config] BLOCKING**: `res://src/core/input/input_actions.gd` file exists with `class_name InputActions`; no system imports it via `preload("res://src/core/input/...")` literal path — all consumers use the `class_name` global. Evidence: `tests/unit/core/input/input_actions_path_test.gd` (file-existence + class_name check) + CI grep for `preload.*input_actions`.
+- [x] **AC-INPUT-5.3 [Code-Review] BLOCKING** (partial — debug action constants): debug action constants (`debug_toggle_ai`, `debug_noclip`, `debug_spawn_alert`) do NOT appear in `project.godot [input]` — they are runtime-registered only; the runtime registration block in `InputActions._register_debug_actions()` is wrapped in `if OS.is_debug_build():` AND uses `InputMap.add_action()` + `InputMap.action_add_event()` for each debug action. Evidence: `tools/ci/check_debug_action_gating.sh`.
 
 ---
 
@@ -202,7 +202,7 @@ static func _register_debug_action(action: StringName, keycode: Key) -> void:
 - `tools/ci/check_debug_action_gating.sh` — must exist; CI passes with zero violations (AC-INPUT-5.3 partial)
 - `tests/fixtures/input/expected_bindings.yaml` — must exist and reflect GDD Section C
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created — 2026-04-30 (12 functions across 3 test files; suite 79/79 PASS; CI script PASS)
 
 ---
 
@@ -210,3 +210,37 @@ static func _register_debug_action(action: StringName, keycode: Key) -> void:
 
 - Depends on: None — foundational static class with no upstream system dependencies; `project.godot` stub must already have a `[input]` block (Sprint 01 scaffolding)
 - Unlocks: Story 002 (`InputContextStack._ready()` calls `InputActions._register_debug_actions()`), Story 003 (integration tests reference `InputActions.*` constants), Story 004 (CI grep guards validate `InputActions` usage), all subsequent consumer epics (Player Character, Combat, Inventory, Menu System, Save/Load)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-04-30
+**Criteria**: 4/4 PASS (all auto-verified)
+**Suite**: 79/79 PASS, 0 errors, 0 failures, 0 orphans, exit 0
+**CI**: `tools/ci/check_debug_action_gating.sh` PASS
+
+**Files created/modified (7)**:
+- `src/core/input/input_actions.gd` — `class_name InputActions extends RefCounted`, 36 typed StringName constants across 6 groups, `_register_debug_actions()` + `_register_debug_action()` static helpers
+- `project.godot` — appended 32 new `[input]` actions (33 total with the existing ui_cancel); all gameplay/UI actions only; 0 debug actions
+- `tests/fixtures/input/expected_bindings.yaml` — 33-row fixture (one per gameplay/UI action) with kb_event + gamepad_event spec
+- `tests/unit/core/input/input_action_catalog_test.gd` — AC-INPUT-1.1 catalog integrity test
+- `tests/unit/core/input/input_actions_constants_test.gd` — AC-INPUT-1.3 constants count + StringName + duplication checks
+- `tests/unit/core/input/input_actions_path_test.gd` — AC-INPUT-9.1 file existence + class_name + no-preload check
+- `tools/ci/check_debug_action_gating.sh` — AC-INPUT-5.3 CI script (chmod +x)
+
+**Deviations**:
+- ADVISORY: Initial agent draft used `assert_failure(msg: String)` which is not a GdUnit4 API (signature expects Callable). Fixed during integration: replaced all 9 occurrences with the canonical `assert_bool(false).override_failure_message(msg).is_true()` pattern across the 3 test files.
+- INFO: `JOY_BUTTON_START` mapped to button_index=6 (NOT 11); JOY_BUTTON_DPAD_UP=11 per Godot 4.6 SDL3 mapping. Documented in agent's implementation notes.
+
+**Code Review**: APPROVED (solo mode; suite-pass + CI-script-pass = full green gate).
+
+**Tech debt logged**: None.
+
+**Critical proof points**:
+- All 33 gameplay/UI actions registered in project.godot with KB/M + (where applicable) gamepad bindings per ADR-0004 IG 14.
+- 36 InputActions constants declared (33 gameplay/UI + 3 debug); each non-debug constant satisfies `InputMap.has_action()`; debug constants do NOT satisfy `InputMap.has_action()` in non-debug headless run (proves runtime-only registration).
+- ADR-0004 locked actions verified: ui_cancel (Esc + B), interact (E + A), pause (Esc + START).
+- TR-INP-002 drift acknowledged: registry says 30 actions, GDD + this story say 36. Recommend `/architecture-review` to refresh registry.
+
+**Unblocks**: IN-002 (InputContextStack autoload — calls `InputActions._register_debug_actions()` in its `_ready`), the entire Player Character chain (PC-001..005), and all consumer epics that reference InputActions constants.

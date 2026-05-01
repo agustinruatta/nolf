@@ -11,12 +11,14 @@
 height = 1.7
 radius = 0.3
 
-; CapsuleShape3D for the ceiling ShapeCast3D (crouch headroom check).
-; Same standing dimensions as body collider. Story PC-003 will call
-; force_shapecast_update() before reading is_colliding().
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ceiling"]
-height = 1.7
-radius = 0.3
+; SphereShape3D for the ceiling ShapeCast3D (crouch headroom check).
+; A sphere avoids the false-positive floor collision that a full standing
+; capsule would produce. The ShapeCast3D is positioned at the crouched
+; capsule top (local Y = 0.55 = _CROUCH_HEIGHT / 2), so it only probes
+; the gap between crouched and standing height without touching the floor.
+; Radius 0.25 keeps it inside the body capsule (radius 0.3).
+[sub_resource type="SphereShape3D" id="SphereShape3D_ceiling"]
+radius = 0.25
 
 ; PlayerCharacter — Eve's CharacterBody3D scene root.
 ; Script: player_character.gd (class_name PlayerCharacter)
@@ -29,15 +31,18 @@ script = ExtResource("1_player_script")
 shape = SubResource("CapsuleShape3D_body")
 
 ; Ceiling check ShapeCast3D — detects overhead obstruction for crouch-to-stand
-; transition (Story PC-003). target_position probes upward by 0.1 m so even
-; a near-flush ceiling registers as a collision.
+; transition (Story PC-003). Positioned at local Y=0.55 (crouched capsule top =
+; _CROUCH_HEIGHT / 2) so the sphere probe starts just above where the crouched
+; player ends. target_position probes 0.35 m upward, covering the gap from
+; crouched top (0.55) to standing top (0.85) plus a 0.05 m margin.
+; This avoids the false-positive floor collision that a full standing capsule
+; shape would produce when the player is near the ground.
 ; collision_mask: set to PhysicsLayers.MASK_WORLD from script in PC-003 per
-; ADR-0006 IG 1 (no bare integer literals in gameplay code). Editor default
-; mask (1 = bit 0 = World layer) matches MASK_WORLD and is overwritten at
-; runtime to use the constant explicitly.
+; ADR-0006 IG 1 (no bare integer literals in gameplay code).
 [node name="ShapeCast3D" type="ShapeCast3D" parent="."]
-shape = SubResource("CapsuleShape3D_ceiling")
-target_position = Vector3(0, 0.1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("SphereShape3D_ceiling")
+target_position = Vector3(0, 0.35, 0)
 
 ; Camera3D at eye height (1.6 m local Y = approximate eye level for a 1.7 m
 ; capsule). Story PC-002 owns look-input (mouse yaw/pitch), FOV, and head-bob.

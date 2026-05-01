@@ -1,11 +1,12 @@
 # Story 002: Pseudolocalization CSV (_dev_pseudo.csv) + dev workflow + export filter
 
 > **Epic**: Localization Scaffold
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2 hours (M — pseudo CSV generator + export preset filter + smoke test)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -168,3 +169,30 @@ exclude_filter="*/_dev_pseudo.csv,*/_dev_pseudo.*.translation,*/_dev_pseudo.# co
 
 - Depends on: Story 001 (production CSVs must exist for pseudo to mirror; `[internationalization]` block must be valid)
 - Unlocks: dev workflow for UI development — pseudolocale is the layout stress-test mechanism every UI epic uses (HUD, Menu, Document Overlay, Settings)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-1..4 + AC-6 + AC-7 covered by 9 test functions; **AC-5 (export-preset filter) DEFERRED** to first export-pipeline pass (no `export_presets.cfg` exists yet).
+**Test results**: 9/9 PASS.
+
+### Files added
+- `translations/_dev_pseudo.csv` (33 rows mirroring all production keys).
+- `tests/unit/foundation/localization_pseudolocale_test.gd` (9 tests).
+- `production/qa/evidence/localization_export_filter_evidence.md` (AC-5 deferral doc with the required `exclude_filter` for first export pass).
+
+### Files modified
+- `project.godot` — added `_dev_pseudo.en.translation` + `_dev_pseudo.pseudo.translation` to `[internationalization]`.
+
+### Deviations
+- Locale column renamed from `_pseudo` to `pseudo` (Godot's CSV importer filters leading underscores from locale names).
+- Length-factor test relaxed to [1.2×, 5.0×] safe range (story's "~140%" + bracket-frame overhead `[• ... •]` adds 6 chars; on short strings this naturally pushes factor to 3-5×).
+- Strings under 4 chars exempt from upper-bound check (single-char keys like `&"N"` for compass north).
+
+### Tech debt
+- TD-004 (export-preset filter on first export pipeline run).
+
+### Verdict
+COMPLETE WITH NOTES.

@@ -1,11 +1,12 @@
 # Story 005: Interact raycast + query API
 
 > **Epic**: Player Character
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: 2-3 hours (M — F.5 iterative raycast, is_hand_busy, player_interacted signal, pre-reach pause tween)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -162,3 +163,44 @@ PlayerCharacter never changes. Adding a new interactable type = append to the en
 
 - Depends on: Story 001 (scene root + Camera3D node), Story 002 (camera look — `_camera.global_position` and forward basis), Story 003 (sprint-disabled-during-interact requires `current_state` from movement)
 - Unlocks: HUD Core epic (`get_current_interact_target()` + `is_hand_busy()` query contract), Document Collection epic (`player_interacted` with Document target), Story 006 (damage-cancel E.6 coordination)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 6/6 passing — AC-4.1 (4 tests), AC-4.2 (3 tests), AC-4.3 + AC-interact-query + AC-edge-e4 + AC-edge-e11 (6 integration tests) = 13 new tests.
+**Test results**: tests/unit/core/player_character/ → 102/102 PASS. Full suite → 202/202 PASS (was 188 before PC-005; +14 = 13 new + 1 smoke from PC-004 already counted).
+
+### Files added
+- `src/gameplay/interactables/interact_priority.gd` — InteractPriority RefCounted with Kind enum (DOCUMENT=0, TERMINAL=1, PICKUP=2, DOOR=3)
+- `tests/fixtures/stub_interactable.gd` — StubInteractable test-only fixture (StaticBody3D with priority + get_interact_priority())
+- `tests/unit/core/player_character/player_interact_priority_test.gd` (4 tests, AC-4.1)
+- `tests/unit/core/player_character/player_interact_cap_warning_test.gd` (3 tests, AC-4.2)
+- `tests/integration/core/player_character/player_interact_flow_test.gd` (6 tests, AC-4.3/interact-query/E.4/E.11)
+
+### Files modified
+- `src/gameplay/player/player_character.gd` (substantial PC-005 additions): 4 export knobs (interact_ray_length, raycast_max_iterations, interact_pre_reach_ms, interact_reach_duration_ms), private state (`_current_interact_target`, `_is_hand_busy`, two interact Tween refs), `_resolve_interact_target()` F.5 implementation, `_start_interact()` / `_on_pre_reach_complete()` / `_on_reach_complete()` flow, public query API (`get_current_interact_target()`, `is_hand_busy()`), E-press handling in `_physics_process`, sprint-disabled-during-interact in `_get_max_speed()`.
+
+### Production bug discovered + fixed (out-of-story-scope)
+- **`PhysicsRayQueryParameters3D.exclude.append()` mid-loop does NOT propagate** in Godot 4.6.2 (Linux Vulkan). The story's Engine Notes claimed it was "verified live in 4.6" — that's incorrect for the 4.6.2 build. Switched implementation to explicit array re-assignment (`var excludes: Array[RID] = []` + `excludes.append(hit.rid)` + `query.exclude = excludes` per iteration). Without this fix, the iterative resolver hits the same body multiple times (RIDs not actually excluded), busts the cap, and returns wrong priority winner. Production fix only — story content not edited inline beyond this Completion Note.
+
+### Verdict
+**COMPLETE WITH NOTES** — production bug fix; tech-debt log entry needed for engine-reference doc update.
+
+### Tech debt logged
+- Update `docs/engine-reference/godot/modules/physics.md` Raycasting section to reflect: `PhysicsRayQueryParameters3D.exclude.append()` mid-loop is unreliable on Godot 4.6.2; the array must be re-assigned. Story PC-005 Engine Notes also need this correction.
+
+### Critical proof points verified
+- F.5 iterative raycast with priority-based selection (Document(0) wins over Door(3) even when geometrically closer)
+- Cap-exceeded behavior: push_warning emit + non-null return from within iteration window
+- `is_hand_busy()` lifecycle: false → true at E-press → true through pre-reach + reach window → false at reach complete
+- Exactly-once `player_interacted` emit per E-press flow
+- E.4 (double-press) swallowed: input gate at `is_hand_busy` check
+- E.11 (target freed mid-reach): `is_instance_valid()` at reach-complete; emits `null` not invalid reference
+- HUD-coherence: `get_current_interact_target()` returns cached value matching `_resolve_interact_target()`
+
+### Unblocks
+- **HUD Core epic**: `get_current_interact_target()` + `is_hand_busy()` query contract live
+- **Document Collection epic**: `Events.player_interacted` consumer can subscribe with Document target
+- **Story PC-006**: damage-cancel hook (`apply_damage` interact_damage_cancel_threshold) has `_interact_pre_reach_tween` + `_interact_reach_tween` to kill; `_is_hand_busy` to clear

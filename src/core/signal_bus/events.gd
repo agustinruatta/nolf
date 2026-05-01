@@ -32,7 +32,12 @@ signal document_opened(document_id: StringName)
 signal document_closed(document_id: StringName)
 
 # ─── Mission domain ───────────────────────────────────────────────────────
-# section_entered/exited deferred to Level Streaming epic (needs LevelStreamingService.TransitionReason)
+# Section transition signals (Level Streaming epic LS-002).
+# `reason` is LevelStreamingService.TransitionReason — declared here as int to
+# avoid Events↔LSS circular import (same pattern as ui_context_changed below).
+# Subscribers cast: `var r := reason as LevelStreamingService.TransitionReason`.
+signal section_entered(section_id: StringName, reason: int)
+signal section_exited(section_id: StringName, reason: int)
 signal objective_started(objective_id: StringName)
 signal objective_completed(objective_id: StringName)
 signal mission_started(mission_id: StringName)

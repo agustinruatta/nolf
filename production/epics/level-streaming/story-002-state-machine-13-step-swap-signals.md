@@ -1,11 +1,12 @@
 # Story 002: State machine + 13-step swap happy path + signal emission with TransitionReason
 
 > **Epic**: Level Streaming
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 4 hours (L — 4-state state machine + 13-step coroutine + signal emit + InputContext push/pop)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -267,3 +268,28 @@ func _run_swap_sequence(target_id: StringName, save_game: SaveGame, reason: Tran
 
 - Depends on: Story 001 (autoload + fade overlay + registry); ADR-0002 (Accepted) for `section_entered`/`section_exited` 2-param signal declarations; `InputContext.Context.LOADING` enum value (per ADR-0002 2026-04-28 amendment); Story 008's stub scenes for full integration test (test can use mocks until Story 008 ships)
 - Unlocks: Story 003 (callback chain at step 9), Story 004 (concurrency atop 13-step), Story 005 (abort recovery during 13-step), Story 010 (perf measurement)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: All 10 ACs covered by 4 integration test functions in `level_streaming_swap_test.gd` (AC-1..2 sync push, AC-3..5 state-machine progression, AC-6..7 signal emit timing, AC-8..10 plaza→stub_b round trip + clean state, plus an abort-path failure test).
+**Test results**: 4/4 PASS.
+
+### Files added
+- `scenes/sections/plaza.tscn` (minimal Node3D + Label3D placeholder — Story LS-008 will replace with real Plaza authoring).
+- `scenes/sections/stub_b.tscn` (minimal placeholder for swap-target).
+- `tests/integration/level_streaming/level_streaming_swap_test.gd` (4 integration tests).
+- `production/qa/evidence/level_streaming_oq_ls_11_verification.md` (OQ-LS-11 closure: `get_tree().current_scene = instance` verified SAFE on Godot 4.6.2 Linux Vulkan).
+
+### Files modified
+- `src/core/level_streaming/level_streaming_service.gd` — added State enum + 13-step swap coroutine + InputContext.LOADING push/pop + fade overlay snap (0→1 over 2 frames, then 1→0) + section_exited emit at step 3 BEFORE queue_free + registry pre-check + ResourceLoader.load + instantiate + add_child + current_scene reassignment + step-8 frame await + restore-callback stub + section_entered emit at step 10 + `_abort_transition()` stub for failure paths + transition gate (refuses if registry invalid OR another transition in flight).
+- `src/core/signal_bus/events.gd` — added `section_entered(section_id, reason: int)` and `section_exited(section_id, reason: int)` (deferred → present, paired commit per ADR-0002 incremental landing; `int` payload avoids Events↔LSS circular import).
+- `tests/unit/foundation/events_signal_taxonomy_test.gd` — removed deferred-signal assertions for section_entered/section_exited (now present); same precedent comment as save_failed (SL-002) and ui_context_changed (IN-002).
+
+### Open question closure
+- **OQ-LS-11**: `get_tree().current_scene = instance` direct assignment — verified SAFE on Godot 4.6.2 Linux Vulkan via integration tests; evidence doc at `production/qa/evidence/level_streaming_oq_ls_11_verification.md`. Caveat: Windows-Vulkan re-verification deferred to first export pass.
+
+### Verdict
+COMPLETE.

@@ -1,0 +1,6 @@
+keys,en,# context
+menu.main.start_mission,Start Mission,"Main menu primary CTA; max 25 chars; positive forward verb; period register (no exclamation marks)"
+menu.main.continue,Continue,"Main menu Continue CTA — only enabled when a save slot exists; max 18 chars"
+menu.main.options,Options,"Main menu Options entry; max 14 chars"
+menu.main.credits,Credits,"Main menu Credits entry; max 14 chars"
+menu.main.quit,Quit,"Main menu Quit-to-desktop entry; max 12 chars"

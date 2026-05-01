@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://stub_b_mvp"]
+
+[node name="StubBSection" type="Node3D"]
+
+[node name="Label" type="Label3D" parent="."]
+text = "Stub B section"
+position = Vector3(0, 1.5, 0)

@@ -1,10 +1,11 @@
 # Story 004: Subscriber lifecycle pattern + Node payload validity guard
 
 > **Epic**: Signal Bus
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Manifest Version**: 2026-04-29
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -105,3 +106,25 @@
 
 - Depends on: Story 002 (signals must exist for the template + tests to subscribe to)
 - Unlocks: every consumer epic's stories — they reference `subscriber_template.gd` as the implementation pattern
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-7 + AC-12 covered by automated tests; AC-8 (forgotten-disconnect → loud stderr) documented as ADVISORY (no GdUnit4 stderr-capture utility wired up; observed manually).
+**Test results**: 7/7 in `subscriber_lifecycle_test.gd` + 2/2 in `node_payload_validity_grep_test.gd` PASS.
+
+### Files added
+- `src/core/signal_bus/subscriber_template.gd` — canonical reference template (downstream consumer epics inherit/copy this pattern).
+- `tests/unit/foundation/subscriber_lifecycle_test.gd` (7 tests).
+- `tests/unit/foundation/node_payload_validity_grep_test.gd` (2 tests — recursive scan of `src/` for handler signatures, asserts each has `is_instance_valid()` guard or `@lint-ignore validity-guard` annotation).
+
+### Files modified (out-of-scope, justified)
+- `src/core/signal_bus/event_logger.gd` — added validity guards to 4 Node-typed handlers (`_on_player_interacted`, `_on_enemy_damaged`, `_on_enemy_killed`, `_on_civilian_panicked`). The lint test surfaced a real ADR-0002 IG 4 compliance gap; closing it inline keeps the lint green.
+
+### Finding documented for downstream subscribers
+GDScript's typed-arg runtime check rejects freed-Node calls BEFORE the function body runs (`previously freed Object is not a subclass of expected argument class`). The "freed-Node payload reaches handler body" failure mode IG 4 was originally designed against is largely filtered out by the language. The validity guard remains required for: (a) null payloads (legitimate "no source" emit), (b) WeakRef-collected references, (c) forward-compat against Godot 4.7+ relaxing the runtime type-check.
+
+### Verdict
+COMPLETE.

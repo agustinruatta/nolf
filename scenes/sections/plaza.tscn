@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://plaza_stub_mvp"]
+
+[node name="PlazaStub" type="Node3D"]
+
+[node name="Label" type="Label3D" parent="."]
+text = "Plaza (stub)"
+position = Vector3(0, 1.5, 0)

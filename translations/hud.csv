@@ -1,0 +1,4 @@
+keys,en,# context
+hud.health.label,Health,"HUD health bar label; max 12 chars; legible at 1080p with comic-book outline post-process active per period-authenticity pillar"
+hud.objective.label,Objective,"HUD active-objective banner label; max 14 chars; period-authentic plain register (no exclamation marks, no UI noise)"
+hud.compass.directions.north,N,"HUD compass cardinal abbreviation; single character; never translated to non-Latin script (compass tokens are Latin-locked)"

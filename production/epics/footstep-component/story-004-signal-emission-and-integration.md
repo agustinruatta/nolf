@@ -1,11 +1,12 @@
 # Story 004: Signal emission, noise_radius_m mirroring, purity + integration test
 
 > **Epic**: FootstepComponent
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: 3-4 hours (L — full emission wiring + 5 unit test files + 1 integration test file)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -150,3 +151,20 @@ func _emit_footstep() -> void:
 
 - Depends on: Story 001 (scaffold), Story 002 (cadence loop with `_emit_footstep()` stub to replace), Story 003 (`_resolve_surface_tag()` implementation) — all three must be Done
 - Unlocks: Audio Epic Story 005 (footstep variant routing on `footstep_emitted` — Audio's `TR-AUD-007` / `TR-AUD-011`; the signal contract confirmed by this story's integration test is what Audio's story depends on)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-1..6 covered by 7 test functions in a consolidated emission test file.
+**Test results**: 7/7 PASS.
+
+### Files added
+- `tests/unit/core/footstep_component/footstep_signal_emission_test.gd` (7 tests: pure-observer, no _latched_event mutation, purity grep lint, Events autoload route + source pattern check, rate guard ≤4-per-window, Audio handoff payload).
+
+### Files modified
+- `src/gameplay/player/footstep_component.gd` — `_emit_footstep()` now reads `_player.get_noise_level()` for `noise_radius_m` (mirrors PC-owned formula per TR-FC-005; no duplicate noise computation).
+
+### Verdict
+COMPLETE.

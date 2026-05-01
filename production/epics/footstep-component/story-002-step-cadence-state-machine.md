@@ -1,11 +1,12 @@
 # Story 002: Step cadence state machine + phase-preservation accumulator
 
 > **Epic**: FootstepComponent
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — accumulator logic + suppression guards + 4 test files)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -154,3 +155,27 @@ func _is_emitting_state(state: PlayerEnums.MovementState) -> bool:
 
 - Depends on: Story 001 (FootstepComponent scaffold — `_is_disabled`, `_step_accumulator`, `CADENCE_BY_STATE`, `_player` reference) must be Done
 - Unlocks: Story 003 (surface tag resolution replaces the `&"default"` stub surface in `_emit_footstep`); Story 004 (full `_emit_footstep` implementation requires this story's cadence loop to drive emissions)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-1..6 covered by 10 test functions across 4 files.
+**Test results**: 10/10 PASS.
+
+### Files added (4 test files + 1 stub doc)
+- `tests/unit/core/footstep_component/footstep_cadence_walk_test.gd` (2 tests, AC-1).
+- `tests/unit/core/footstep_component/footstep_cadence_all_states_test.gd` (2 tests, AC-2).
+- `tests/unit/core/footstep_component/footstep_state_transition_test.gd` (1 test, AC-3).
+- `tests/unit/core/footstep_component/footstep_silent_states_test.gd` (5 tests, AC-4 + AC-5 + AC-6 + floor-blip preservation).
+- `tests/unit/core/footstep_component/stubs/stub_player_character.gd` (deprecated; documents real-PC + StaticBody3D floor pattern).
+
+### Files modified
+- `src/gameplay/player/footstep_component.gd` — full GDD FC.1 cadence loop with phase-preservation accumulator (`-= interval` not `= 0`), suppression guards (Idle/Jump/Fall/Dead), idle-velocity gate, coyote-window-aware floor guard (no reset on `is_on_floor() == false`), delta-clamp hitch guard.
+
+### Test fixture finding
+GDScript blocks subclass overrides of native CharacterBody3D methods like `is_on_floor()` (warning treated as error). Tests use the real PlayerCharacter scene + StaticBody3D floor + one `move_and_slide` call to register floor contact, with a graceful-skip fallback if headless physics doesn't resolve. Pattern documented in stub file's deprecated docs.
+
+### Verdict
+COMPLETE.

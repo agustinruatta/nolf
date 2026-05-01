@@ -422,14 +422,10 @@ func test_events_taxonomy_deferred_signals_not_present() -> void:
 			"Deferred signal 'civilian_witnessed_event' must not be declared until CivilianAI.WitnessEventType exists"
 	).is_false()
 
-	# Deferred — Level Streaming epic (needs LevelStreamingService.TransitionReason)
-	assert_bool(signal_map.has(&"section_entered")).override_failure_message(
-			"Deferred signal 'section_entered' must not be declared until LevelStreamingService.TransitionReason exists"
-	).is_false()
-
-	assert_bool(signal_map.has(&"section_exited")).override_failure_message(
-			"Deferred signal 'section_exited' must not be declared until LevelStreamingService.TransitionReason exists"
-	).is_false()
+	# section_entered / section_exited are no longer deferred — re-added in
+	# LS-002 with `int` payload (cast from LevelStreamingService.TransitionReason
+	# at emit sites). See the Mission domain test above for signature assertion.
+	# Same precedent as save_failed (SL-002) and ui_context_changed (IN-002).
 
 	# ui_context_changed is no longer deferred — re-added in IN-002 with `int` payload
 	# (cast from InputContextStack.Context at emit sites). See the UI domain test

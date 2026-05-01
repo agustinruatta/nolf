@@ -1,0 +1,3 @@
+keys,en,# context
+cutscenes.opening.title,A Cold Spring in Paris,"Opening cutscene title card; max 40 chars; literary register; subdued (avoid sensational verbs)"
+cutscenes.mission_brief.heading,Mission Brief,"Pre-mission cutscene heading shown on the briefing page; max 18 chars"

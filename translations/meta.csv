@@ -1,0 +1,4 @@
+keys,en,# context
+meta.app.title,The Paris Affair,"Game window title + main-menu masthead; brand string; do NOT translate the word 'Paris' (proper noun) — the period article 'The' may translate per locale convention"
+meta.copyright.year,2026,"Copyright year notice; numeric only; never translated"
+meta.studio.name,Claude Code Game Studios,"Studio attribution shown on splash + credits; brand string; do NOT translate"

@@ -1,0 +1,3 @@
+keys,en,# context
+doc.example.title,Example Document,"Stub Document title for sprint-02 verification; max 32 chars on overlay card; period register. Real Document content owned by Document Collection epic — this stub exists only to verify the doc.csv pipeline."
+doc.example.body,"This is an example document body for localization scaffold verification.","Stub Document body for sprint-02 verification; period plain register. The body uses sentence-case, period-authentic English. Real document content owned by Document Collection epic + writer/translator pipeline."

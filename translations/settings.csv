@@ -1,0 +1,5 @@
+keys,en,# context
+settings.audio.master_volume,Master Volume,"Settings → Audio tab; max 22 chars; pairs with a 0–100 slider"
+settings.video.fullscreen,Fullscreen,"Settings → Video tab toggle label; max 14 chars"
+settings.controls.mouse_sensitivity,Mouse Sensitivity,"Settings → Controls tab; max 24 chars; pairs with a 0.1–5.0 slider"
+settings.accessibility.subtitles,Subtitles,"Settings → Accessibility tab toggle; max 16 chars"

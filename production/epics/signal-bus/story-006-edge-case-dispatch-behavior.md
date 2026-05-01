@@ -1,10 +1,11 @@
 # Story 006: Edge case dispatch behavior — no-dedup + continue-on-error tests
 
 > **Epic**: Signal Bus
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Manifest Version**: 2026-04-29
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -98,3 +99,21 @@
 
 - Depends on: Story 002 (signals exist for these tests to emit), Story 004 (lifecycle pattern referenced for test subscriber setup)
 - Unlocks: nothing within this epic; downstream consumer epics inherit the verified dispatch guarantees
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-15 (no-dedup) + AC-16 (continue-on-error) covered by 7 test functions across 2 files.
+**Test results**: 4/4 in `signal_dispatch_no_dedup_test.gd` + 3/3 in `signal_dispatch_continue_on_error_test.gd` PASS.
+
+### Files added
+- `tests/unit/foundation/signal_dispatch_no_dedup_test.gd` (4 tests: 2-distinct-emits, 2-identical-emits, many-successive, two-recorders × two-emits Cartesian).
+- `tests/unit/foundation/signal_dispatch_continue_on_error_test.gd` (3 tests: crashing-then-normal, normal-then-crashing, both-crashing).
+
+### Engine-version-upgrade smoke value
+These tests serve as upgrade smoke: if Godot 4.7+ changes either dispatch behavior (deduplicates same-frame emits, OR halts dispatch on subscriber error), the affected tests fail and surface the regression immediately. Both behaviors are documented Godot semantics that the project's reactive code relies on.
+
+### Verdict
+COMPLETE.

@@ -1,0 +1,4 @@
+keys,en,# context
+mission.objective.collect_documents,Collect mission documents,"Mission objective banner copy; max 38 chars; period register; imperative verb"
+mission.complete.title,Mission Complete,"Post-mission summary screen heading; max 22 chars"
+mission.failure.title,Mission Compromised,"Failure-respawn screen heading; max 24 chars; period-authentic euphemism (avoid 'You died' / 'Game Over' modern UX phrasing)"

@@ -139,6 +139,9 @@ func _connect_all() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_player_interacted(target: Node3D) -> void:
+	if not is_instance_valid(target):
+		print(_format_log_line(&"player_interacted", ["<null/freed>"]))
+		return
 	print(_format_log_line(&"player_interacted", [target]))
 
 func _on_player_footstep(surface: StringName, noise_radius_m: float) -> void:
@@ -240,10 +243,14 @@ func _on_player_health_changed(current: float, max_health: float) -> void:
 	print(_format_log_line(&"player_health_changed", [current, max_health]))
 
 func _on_enemy_damaged(enemy: Node, amount: float, source: Node) -> void:
-	print(_format_log_line(&"enemy_damaged", [enemy, amount, source]))
+	var enemy_repr: Variant = enemy if is_instance_valid(enemy) else "<null/freed>"
+	var source_repr: Variant = source if is_instance_valid(source) else "<null/freed>"
+	print(_format_log_line(&"enemy_damaged", [enemy_repr, amount, source_repr]))
 
 func _on_enemy_killed(enemy: Node, killer: Node) -> void:
-	print(_format_log_line(&"enemy_killed", [enemy, killer]))
+	var enemy_repr: Variant = enemy if is_instance_valid(enemy) else "<null/freed>"
+	var killer_repr: Variant = killer if is_instance_valid(killer) else "<null/freed>"
+	print(_format_log_line(&"enemy_killed", [enemy_repr, killer_repr]))
 
 func _on_weapon_fired(weapon: Resource, position: Vector3, direction: Vector3) -> void:
 	print(_format_log_line(&"weapon_fired", [weapon, position, direction]))
@@ -257,6 +264,9 @@ func _on_player_damaged(amount: float, source: Node, is_critical: bool) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_civilian_panicked(civilian: Node, cause_position: Vector3) -> void:
+	if not is_instance_valid(civilian):
+		print(_format_log_line(&"civilian_panicked", ["<null/freed>", cause_position]))
+		return
 	print(_format_log_line(&"civilian_panicked", [civilian, cause_position]))
 
 

@@ -1,10 +1,11 @@
 # Story 005: Anti-pattern enforcement — forbidden patterns + CI grep guards
 
 > **Epic**: Signal Bus
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Manifest Version**: 2026-04-29
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -113,3 +114,24 @@
 
 - Depends on: Story 002 (signal declarations exist; AC-14 needs the `setting_changed` declaration to exist before counting can return 1)
 - Unlocks: nothing within this epic; cross-epic the registered forbidden patterns enforce on every PR
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-10/13/14 covered by 4 grep-style guards; AC-9 (cross-autoload coupling) documented as code-review checkpoint.
+**Test results**: 4/4 in `anti_pattern_grep_test.gd` PASS.
+
+### Files added
+- `tests/unit/foundation/anti_pattern_grep_test.gd` — 4 tests:
+  1. AC-10: no `Events.emit_*` wrapper-emit calls in `src/`.
+  2. AC-13: no `enum` declarations on `events.gd`.
+  3. AC-14: exactly one `: Variant` annotation on `events.gd` (the `setting_changed` exception).
+  4. Defense-in-depth: `events.gd` has zero `func`/`var`/`const` declarations.
+
+### Codebase status at story closure
+Already compliant with all 4 patterns — zero violations existed. The tests now CI-enforce the rules going forward.
+
+### Verdict
+COMPLETE.

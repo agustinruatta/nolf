@@ -1,11 +1,12 @@
 # Story 001: SectionRegistry Resource + LSS autoload boot + CanvasLayer fade overlay scaffold
 
 > **Epic**: Level Streaming
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — autoload registration + Resource scaffold + CanvasLayer setup)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -244,3 +245,23 @@ sections = {
 
 - Depends on: Save/Load Story 002 (`SaveLoad` autoload at line 3 must exist for line-5 ordering to be valid); ADR-0007 (Accepted)
 - Unlocks: Story 002 (state machine uses the autoload + registry + fade overlay)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: All 10 ACs covered by 12 test functions in `level_streaming_service_boot_test.gd`.
+**Test results**: 12/12 PASS.
+
+### Files added
+- `src/core/level_streaming/section_registry.gd` (Resource class with `has_section`/`path`/`display_name_loc_key`/`section_ids` API).
+- `assets/data/section_registry.tres` (registry resource with plaza + stub_b entries).
+- `scenes/ErrorFallback.tscn` (minimal placeholder Control + Label + Background).
+- `tests/unit/level_streaming/level_streaming_service_boot_test.gd` (12 tests).
+
+### Files modified
+- `src/core/level_streaming/level_streaming_service.gd` — replaced Sprint 01 verification stub with the full LS-001 scaffold (TransitionReason enum, SectionRegistry loader with type-guard, persistent FadeOverlay CanvasLayer 127, persistent ErrorFallbackLayer CanvasLayer 126 with preloaded scene, public query API).
+
+### Verdict
+COMPLETE.

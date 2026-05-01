@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SectionRegistry" load_steps=2 format=3 uid="uid://section_registry_mvp"]
+
+[ext_resource type="Script" path="res://src/core/level_streaming/section_registry.gd" id="1_section_registry"]
+
+[resource]
+script = ExtResource("1_section_registry")
+sections = {
+&"plaza": {
+"path": "res://scenes/sections/plaza.tscn",
+"display_name_loc_key": "meta.section.plaza"
+},
+&"stub_b": {
+"path": "res://scenes/sections/stub_b.tscn",
+"display_name_loc_key": "meta.section.stub_b"
+}
+}

@@ -1,0 +1,8 @@
+[gd_scene load_steps=4 format=3 uid="uid://adr0008_synth_load"]
+
+[ext_resource type="Script" path="res://prototypes/verification-spike/perf_synthetic_load.gd" id="1_synth"]
+[ext_resource type="Script" path="res://prototypes/verification-spike/stub_player_character.gd" id="2_stubpc"]
+[ext_resource type="Script" path="res://prototypes/verification-spike/stub_guard.gd" id="3_stubguard"]
+
+[node name="PerfSyntheticLoad" type="Node3D"]
+script = ExtResource("1_synth")

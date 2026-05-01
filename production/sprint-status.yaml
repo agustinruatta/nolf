@@ -6,7 +6,7 @@ goal: "Land Foundation + Core code so Eve can walk in a streaming Plaza scene wi
 start: "2026-05-04"
 end: "2026-05-22"
 generated: "2026-04-30"
-updated: "2026-04-30 (PC-002 closed — 108/108 tests)"
+updated: "2026-05-01 (ALL 24 Must-Have stories COMPLETE — 293/293 tests; sprint-02 critical path closed)"
 
 stories:
   # ─── Must Have — Critical Path ──────────────────────────────────────────
@@ -41,29 +41,29 @@ stories:
     name: "Subscriber lifecycle pattern + Node payload validity guard"
     file: "production/epics/signal-bus/story-004-subscriber-lifecycle-validity.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
-    blocker: "depends on SB-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: SB-005
     name: "Anti-pattern enforcement — forbidden patterns + CI grep guards"
     file: "production/epics/signal-bus/story-005-anti-pattern-enforcement.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on SB-004"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: SB-006
     name: "Edge case dispatch behavior — no-dedup + continue-on-error tests"
     file: "production/epics/signal-bus/story-006-edge-case-dispatch-behavior.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on SB-004"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: SL-001
     name: "SaveGame Resource + 7 typed sub-resources scaffolding"
     file: "production/epics/save-load/story-001-save-game-resource-scaffold.md"
@@ -104,29 +104,29 @@ stories:
     name: "CSV registration + tr() runtime + project.godot loc config"
     file: "production/epics/localization-scaffold/story-001-csv-registration-tr-runtime.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
     blocker: ""
-    completed: ""
+    completed: "2026-05-01"
   - id: LS-001
     name: "SectionRegistry + LSS autoload boot + fade overlay scaffold"
     file: "production/epics/level-streaming/story-001-section-registry-autoload-fade-overlay.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.8
-    blocker: "depends on SL-001"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: LS-002
     name: "State machine + 13-step swap happy path + signal emission"
     file: "production/epics/level-streaming/story-002-state-machine-13-step-swap-signals.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.8
-    blocker: "depends on LS-001 + SB-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: IN-001
     name: "InputActions static class"
     file: "production/epics/input/story-001-input-actions-static-class.md"
@@ -167,65 +167,65 @@ stories:
     name: "Movement state machine + locomotion"
     file: "production/epics/player-character/story-003-movement-state-machine.md"
     priority: must-have
-    status: ready-for-dev
-    owner: "gameplay-programmer"
+    status: done
+    owner: "godot-gdscript-specialist"
     estimate_days: 0.6
-    blocker: "depends on PC-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: PC-004
     name: "Noise perception surface (get_noise_level, etc.)"
     file: "production/epics/player-character/story-004-noise-perception-surface.md"
     priority: must-have
-    status: ready-for-dev
-    owner: "gameplay-programmer"
+    status: done
+    owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on PC-003"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: PC-005
     name: "Interact raycast + query API"
     file: "production/epics/player-character/story-005-interact-raycast.md"
     priority: must-have
-    status: ready-for-dev
-    owner: "gameplay-programmer"
+    status: done
+    owner: "godot-gdscript-specialist"
     estimate_days: 0.6
-    blocker: "depends on PC-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: FS-001
     name: "FootstepComponent scaffold"
     file: "production/epics/footstep-component/story-001-footstep-component-scaffold.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.3
-    blocker: "depends on PC-003"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: FS-002
     name: "Step cadence state machine"
     file: "production/epics/footstep-component/story-002-step-cadence-state-machine.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on FS-001"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: FS-003
     name: "Surface detection raycast"
     file: "production/epics/footstep-component/story-003-surface-detection-raycast.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on FS-001"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: FS-004
     name: "Signal emission + integration (footstep_emitted)"
     file: "production/epics/footstep-component/story-004-signal-emission-and-integration.md"
     priority: must-have
-    status: ready-for-dev
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on FS-002 + FS-003 + SB-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
 
   # ─── Should Have — pull in if Must-Have wraps early ─────────────────────
   - id: SL-005
@@ -268,11 +268,11 @@ stories:
     name: "Pseudolocalization CSV + dev workflow + export filter"
     file: "production/epics/localization-scaffold/story-002-pseudolocalization-csv-export-filter.md"
     priority: should-have
-    status: backlog
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on LOC-001"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
 
   # ─── Nice to Have — stretch only if everything above lands ──────────────
   - id: OUT-001

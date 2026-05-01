@@ -1,0 +1,6 @@
+keys,en,# context
+credits.section.design,Design,"Credits section header; max 14 chars"
+credits.section.programming,Programming,"Credits section header; max 18 chars"
+credits.section.art,Art,"Credits section header; max 8 chars"
+credits.section.audio,Audio,"Credits section header; max 10 chars"
+credits.section.thanks,Special Thanks,"Credits section header; max 18 chars"

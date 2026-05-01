@@ -1,11 +1,12 @@
 # Story 001: FootstepComponent node scaffold + parent assertion
 
 > **Epic**: FootstepComponent
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 1-2 hours (S — new script file + one test file)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -135,3 +136,19 @@ var CADENCE_BY_STATE: Dictionary = {}
 
 - Depends on: PlayerCharacter script (`src/gameplay/player/player_character.gd`) must be committed so `get_parent() is PlayerCharacter` resolves; `PhysicsLayers` class at `res://src/core/physics_layers.gd` (verified Sprint 01).
 - Unlocks: Story 002 (cadence loop requires the scaffold fields and `_player` reference), Story 003 (surface resolution uses `_player.global_transform.origin`)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-1..4 all covered by 11 test functions across 2 files.
+**Test results**: 11/11 PASS in `tests/unit/core/footstep_component/`.
+
+### Files added
+- `src/gameplay/player/footstep_component.gd` (scaffold — class declaration, parent-type assertion, 4 export knobs, private state vars, `NOISE_BY_STATE`-equivalent `CADENCE_BY_STATE` typed dict, no-op `_physics_process` stub).
+- `tests/unit/core/footstep_component/footstep_parent_assertion_test.gd` (5 tests).
+- `tests/unit/core/footstep_component/footstep_scaffold_fields_test.gd` (6 tests including untyped-var lint).
+
+### Verdict
+COMPLETE.

@@ -1,11 +1,12 @@
 # Story 003: Surface detection raycast + tag vocabulary
 
 > **Epic**: FootstepComponent
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — raycast implementation + 4 test files; mock physics space required)
 > **Manifest Version**: 2026-04-30
+> **Completed**: 2026-05-01
 
 ## Context
 
@@ -150,3 +151,23 @@ func _resolve_surface_tag() -> StringName:
 
 - Depends on: Story 001 (scaffold — `_player` reference, `surface_raycast_depth_m` knob, `_is_disabled` flag) must be Done; `PhysicsLayers.MASK_FOOTSTEP_SURFACE` constant exists in `src/core/physics_layers.gd` (verified Sprint 01)
 - Unlocks: Story 004 (`_emit_footstep()` calls `_resolve_surface_tag()` to get the surface for the signal payload); Story 002 can proceed in parallel (cadence loop stubs `&"default"` — surface resolution is independent)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-1..5 covered by 6 test functions in a consolidated test file.
+**Test results**: 6/6 PASS.
+
+### Files added
+- `tests/unit/core/footstep_component/footstep_surface_resolution_test.gd` (6 tests covering marble/door priority, no-body fallback, missing-tag warning throttle, surface boundary crossing, all 7 vocabulary tags parametrized, ADR-0006 grep-compliance lint).
+
+### Files modified
+- `src/gameplay/player/footstep_component.gd` — added `_resolve_surface_tag()` (downward raycast on `MASK_FOOTSTEP_SURFACE`, body.get_meta with default fallback, exclude self-RID) + `_warn_missing_surface_tag()` throttled warning (one per body via instance_id Dictionary). Updated `_emit_footstep()` to use the resolved surface (replaces `&"default"` stub from FS-002).
+
+### Tech debt
+- TD-007 (`_warned_bodies` cache survives mission-load — clear on PC-007 respawn).
+
+### Verdict
+COMPLETE.

@@ -1,0 +1,4 @@
+keys,en,# context
+dialogue.guard.alert.line_01,Who's there?,"Guard SUSPICIOUS state vocal cue; max 30 chars on screen; period register; spoken in French in-fiction but UI shows localized text per accessibility-subtitles GDD"
+dialogue.guard.combat.line_01,Halt!,"Guard COMBAT state engagement cue; max 14 chars; sharp imperative; one-syllable in source"
+dialogue.eve.interact.line_01,Worth a look.,"Eve internal monologue on inspecting a Document; max 24 chars; period register; understated tone per character voice doc"

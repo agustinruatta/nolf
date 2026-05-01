@@ -341,14 +341,22 @@ func _ready() -> void:
 
 ## Look input consumed in _unhandled_input per GDD §Input processing location.
 ## Mouse motion: yaw delta → body.rotation.y; pitch delta → camera.rotation.x.
-## Sign convention: positive relative.y (mouse down) → positive rotation.x (look down).
+##
+## Sign convention (Godot 4 Camera3D, default forward = -Z):
+##   Rotation around +X axis follows the right-hand rule, so +rotation.x
+##   tilts the forward vector toward +Y — i.e. the camera looks UP.
+##   Therefore mouse-down (positive relative.y, "want to look down") must
+##   SUBTRACT from rotation.x. The pitch clamp uses ±pitch_clamp_deg with
+##   negative = looking down past horizon, positive = looking up past horizon.
+##
 ## PC-002 AC-7.2, AC-7.3.
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var motion: InputEventMouseMotion = event as InputEventMouseMotion
 		_apply_yaw_delta(-motion.relative.x * mouse_sensitivity_x)
-		# +relative.y (mouse down) → +rotation.x (look down) → clamped at +85°.
-		_camera.rotation.x += motion.relative.y * mouse_sensitivity_y
+		# +relative.y (mouse down) → −rotation.x (look down). Without the
+		# sign flip the axis is inverted (mouse-down would tilt camera up).
+		_camera.rotation.x -= motion.relative.y * mouse_sensitivity_y
 		_camera.rotation.x = clampf(
 			_camera.rotation.x,
 			-deg_to_rad(pitch_clamp_deg),

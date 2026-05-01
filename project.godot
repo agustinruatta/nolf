@@ -12,6 +12,7 @@ config_version=5
 
 config/name="The Paris Affair"
 config/description="A 1960s spy thriller — pre-production verification spike build."
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [autoload]

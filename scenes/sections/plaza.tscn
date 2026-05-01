@@ -1,7 +1,156 @@
-[gd_scene format=3 uid="uid://plaza_stub_mvp"]
+[gd_scene load_steps=7 format=3 uid="uid://plaza_vs_2026_05_01"]
 
-[node name="PlazaStub" type="Node3D"]
+; Plaza Section — first vertical-slice walkable scene.
+;
+; This replaces the LS-002 stub (Node3D + Label3D) with a runnable demo of
+; the foundation systems. Geometry is intentionally placeholder primitives
+; (CSG nodes) — production assets land in a later content pass. The shape is
+; a small enclosed 20m x 20m room with a few crates and a pillar so the
+; player has something to walk around for the camera/movement demo.
+;
+; Conventions:
+;   - Floor at world y=0; PlayerSpawn marker at y=1.0 so the capsule
+;     (height=1.7) does not penetrate the floor on the first physics tick.
+;   - Walls are 4 m tall, 0.5 m thick.
+;   - Collision layer = 1 (LAYER_WORLD per ADR-0006 / PhysicsLayers).
+;     PlayerCharacter masks WORLD, so collision works without further wiring.
+;   - PlayerSpawn (Marker3D) is read by Main.gd at boot to position the
+;     PlayerCharacter instance.
+;
+; Visual style alignment with the NOLF 1 brief lives in
+; prototypes/visual_reference/ and will land in a later iteration of the
+; outline pipeline + lighting pass — not in scope for this VS.
 
-[node name="Label" type="Label3D" parent="."]
-text = "Plaza (stub)"
-position = Vector3(0, 1.5, 0)
+[sub_resource type="StandardMaterial3D" id="mat_floor"]
+albedo_color = Color(0.58, 0.55, 0.50, 1.0)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.78, 0.70, 0.42, 1.0)
+roughness = 0.78
+
+[sub_resource type="StandardMaterial3D" id="mat_prop"]
+albedo_color = Color(0.42, 0.30, 0.22, 1.0)
+roughness = 0.65
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.32, 0.36, 0.45, 1.0)
+sky_horizon_color = Color(0.78, 0.72, 0.55, 1.0)
+ground_horizon_color = Color(0.55, 0.50, 0.42, 1.0)
+ground_bottom_color = Color(0.22, 0.20, 0.18, 1.0)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.65, 0.62, 0.55, 1.0)
+ambient_light_sky_contribution = 0.45
+ambient_light_energy = 0.7
+tonemap_mode = 2
+glow_enabled = false
+
+[node name="Plaza" type="Node3D"]
+
+; ── Environment ──────────────────────────────────────────────────────────
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 8, 0)
+light_color = Color(1.0, 0.92, 0.78, 1.0)
+light_energy = 1.15
+shadow_enabled = true
+
+; ── Floor (20m x 20m, 0.5m thick) ─────────────────────────────────────────
+[node name="Floor" type="CSGBox3D" parent="."]
+size = Vector3(20, 0.5, 20)
+position = Vector3(0, -0.25, 0)
+material = SubResource("mat_floor")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+; ── Perimeter walls (4 m tall, 0.5 m thick, enclosing the 20x20 floor) ──
+[node name="WallNorth" type="CSGBox3D" parent="."]
+size = Vector3(20, 4, 0.5)
+position = Vector3(0, 2, -10)
+material = SubResource("mat_wall")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallSouth" type="CSGBox3D" parent="."]
+size = Vector3(20, 4, 0.5)
+position = Vector3(0, 2, 10)
+material = SubResource("mat_wall")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallEast" type="CSGBox3D" parent="."]
+size = Vector3(0.5, 4, 20)
+position = Vector3(10, 2, 0)
+material = SubResource("mat_wall")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="WallWest" type="CSGBox3D" parent="."]
+size = Vector3(0.5, 4, 20)
+position = Vector3(-10, 2, 0)
+material = SubResource("mat_wall")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+; ── Props (a few crates so the player has something to walk around) ─────
+[node name="Crate1" type="CSGBox3D" parent="."]
+size = Vector3(1.2, 1.2, 1.2)
+position = Vector3(3, 0.6, -2)
+material = SubResource("mat_prop")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="Crate2" type="CSGBox3D" parent="."]
+size = Vector3(1.2, 1.2, 1.2)
+position = Vector3(3, 1.8, -2)
+material = SubResource("mat_prop")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="Crate3" type="CSGBox3D" parent="."]
+size = Vector3(1.2, 1.2, 1.2)
+position = Vector3(-4, 0.6, 3)
+material = SubResource("mat_prop")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+[node name="Pillar" type="CSGBox3D" parent="."]
+size = Vector3(0.8, 4, 0.8)
+position = Vector3(-3, 2, -4)
+material = SubResource("mat_wall")
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+
+; ── Spawn marker (Main.gd reads this transform to place PlayerCharacter) ─
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 5)
+
+; ── Reference label (confirms the right scene loaded) ──────────────────
+[node name="WelcomeLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -8)
+text = "PLAZA — Vertical Slice
+WASD: walk  ·  Mouse: look
+Shift: sprint  ·  Ctrl: crouch
+F5: quicksave  ·  F9: quickload  ·  Esc: quit"
+font_size = 32
+outline_size = 4
+modulate = Color(1, 1, 1, 1)
+billboard = 1

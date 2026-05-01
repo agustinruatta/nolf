@@ -6,17 +6,19 @@
 # SectionRegistry loader, persistent fade overlay (CanvasLayer 127), and
 # ErrorFallback layer (CanvasLayer 126) that survive scene swaps.
 #
-# The 13-step section-swap state machine + register_restore_callback chain land
-# in Stories LS-002 + LS-003. This file is the foundation those stories build
-# on.
+# The 13-step section-swap state machine landed in Story LS-002.
+# The register_restore_callback chain (step 9 synchronous invocation) landed
+# in Story LS-003.
 #
 # Autoload position: line 5 (after Events 1, EventLogger 2, SaveLoad 3,
 # InputContext 4) per ADR-0007 §Key Interfaces. `_ready()` may safely reference
 # autoloads at lines 1–4 only (Cross-Autoload Reference Safety rule 2).
 #
 # Implements: Story LS-001 (autoload boot + fade overlay scaffold)
-# Requirements: TR-LS-001, TR-LS-002, TR-LS-004, TR-LS-012
-# GDD: design/gdd/level-streaming.md §Detailed Design CR-1, CR-3
+#             Story LS-002 (13-step section-swap coroutine)
+#             Story LS-003 (register_restore_callback chain + step 9 sync invocation)
+# Requirements: TR-LS-001, TR-LS-002, TR-LS-004, TR-LS-012, TR-LS-013
+# GDD: design/gdd/level-streaming.md §Detailed Design CR-1, CR-2, CR-3
 # ADRs: ADR-0007 (Autoload Load Order Registry), ADR-0003 (Save Format Contract)
 
 extends Node
@@ -91,6 +93,14 @@ var _pending_respawn_save_game: SaveGame = null
 ## drain). Story LS-002 leaves this as a stub field.
 var _pending_quicksave: bool = false
 
+## Ordered list of restore callbacks registered at autoload boot (Story LS-003).
+## Each callable receives (target_section_id: StringName, save_game: SaveGame,
+## reason: TransitionReason) and MUST return synchronously (no `await`).
+## Registration order determines invocation order at step 9 of the swap.
+## Deregistration is post-MVP; callbacks registered here live for the
+## application lifetime.
+var _restore_callbacks: Array[Callable] = []
+
 
 # ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -151,6 +161,65 @@ func is_transitioning() -> bool:
 ## Returns the current section_id (or &"" before any transition has occurred).
 func get_current_section_id() -> StringName:
 	return _current_section_id
+
+
+## Registers a callable to be invoked synchronously at step 9 of every
+## section-swap sequence (Story LS-003, TR-LS-013, ADR-0007 CR-2).
+##
+## CONTRACT:
+## - Call ONLY at autoload boot (during the registering system's `_ready()`).
+##   Post-boot registration is unsupported at MVP; deregistration is post-MVP.
+## - The callback MUST NOT `await` anything. Violations are detected in debug
+##   builds via pre/post-frame-counter comparison and logged via `push_error`.
+## - The callback receives 3 positional args:
+##     target_section_id: StringName — the incoming section
+##     save_game: SaveGame           — the restore data (null on NEW_GAME)
+##     reason: TransitionReason      — why the transition was triggered
+## - The callback MUST call `save_game.duplicate_deep()` before assigning
+##   sub-resource state to live systems (per ADR-0003 caller-side discipline).
+## - If `save_game == null` (NEW_GAME path), initialize system defaults; skip
+##   restore logic.
+##
+## Why frame-delta detection: `await get_tree().process_frame` (the dominant
+## violation pattern) advances Engine.get_process_frames() by 1+. A synchronous
+## callback returns within the same engine frame; post_frame == pre_frame.
+##
+## Example (called from a save-consumer autoload's _ready):
+##   func _ready() -> void:
+##       LevelStreamingService.register_restore_callback(_on_restore)
+##
+##   func _on_restore(section_id: StringName, save_game: SaveGame, reason: int) -> void:
+##       if save_game == null:
+##           _reset_to_defaults()
+##           return
+##       var data: MissionState = save_game.duplicate_deep().mission
+##       _apply_mission_state(data)
+func register_restore_callback(callback: Callable) -> void:
+	if not callback.is_valid():
+		push_warning("[LSS] register_restore_callback called with invalid Callable; skipping")
+		return
+	_restore_callbacks.append(callback)
+
+
+## Returns the number of registered restore callbacks.
+## TEST-ONLY helper — do NOT call from production code.
+## Exists because `_restore_callbacks` is private; unit tests cannot directly
+## read its size. This accessor avoids making the array public.
+## Name intentionally lacks the leading underscore so the public-callable
+## intent is unambiguous (a `_`-prefixed name signals "internal" which would
+## conflict with cross-class test invocation).
+func get_restore_callback_count_for_test() -> int:
+	return _restore_callbacks.size()
+
+
+## Clears the registered restore callbacks. TEST-ONLY helper — do NOT call
+## from production code. Exists exclusively to let unit tests exercise the
+## empty-array path of `_invoke_restore_callbacks` (AC-2 edge case from
+## Story LS-003 §QA Test Cases). After calling this, callers MUST re-register
+## any callbacks they need; the autoload otherwise persists for the
+## application lifetime.
+func clear_restore_callbacks_for_test() -> void:
+	_restore_callbacks.clear()
 
 
 # ── Public transition API ──────────────────────────────────────────────────
@@ -259,8 +328,9 @@ func _run_swap_sequence(
 	# Step 8: await one frame so _ready()'s call_deferred chains run.
 	await get_tree().process_frame
 
-	# Step 9: invoke registered restore callbacks. Story LS-003 implements;
-	# this story leaves a no-op stub so the call site is in the right place.
+	# Step 9: invoke registered restore callbacks synchronously in registration
+	# order (Story LS-003). All callbacks must complete before step 10's
+	# section_entered emit so that subscribers observe fully-restored state.
 	_invoke_restore_callbacks(target_id, save_game, reason)
 
 	# Step 10: emit section_entered (state changes to FADING_IN immediately
@@ -287,16 +357,47 @@ func _run_swap_sequence(
 	_transitioning = false
 
 
-## Story LS-003 stub — no-op for LS-002. The full callback chain registers
-## handlers via `register_restore_callback(section_id, callback)` and invokes
-## them here with `(target_id, save_game, reason)`. LS-002 leaves the call
-## site in the right place; LS-003 implements the chain.
+## Iterates `_restore_callbacks` in registration order and calls each one
+## synchronously with `(target_id, save_game, reason)` (Story LS-003,
+## TR-LS-013). Invoked at step 9 — after step 8's await, before step 10's
+## section_entered emit.
+##
+## No-await contract enforcement (debug builds only, per AC-6):
+## Pre- and post-call frame counters are compared. A non-zero delta means the
+## callback issued an `await`, which violates the synchronous-return contract
+## and would cause step 10 to fire from a different engine frame than intended.
+## The violation is logged but does NOT halt the chain — subsequent callbacks
+## still run. This is intentional: per AC-5, errors inside a callback must not
+## skip later callbacks. GDScript's interpreter does not unwind the for-loop on
+## `push_error`; the iteration continues naturally.
+##
+## Runtime-invalid callables (freed object, bad method name) are skipped with a
+## push_warning — distinct from the registration-time validity check in
+## `register_restore_callback`.
 func _invoke_restore_callbacks(
-	_target_id: StringName,
-	_save_game: SaveGame,
-	_reason: TransitionReason
+	target_id: StringName,
+	save_game: SaveGame,
+	reason: TransitionReason
 ) -> void:
-	pass
+	for cb: Callable in _restore_callbacks:
+		if not cb.is_valid():
+			push_warning("[LSS] restore callback invalid at step 9; skipping")
+			continue
+
+		var pre_frame: int = Engine.get_process_frames()
+		cb.call(target_id, save_game, reason)
+		var post_frame: int = Engine.get_process_frames()
+
+		# AC-6: debug-only no-await contract check. The frame counter advances
+		# by 1+ if the callback issued any `await`. This check is intentionally
+		# debug-only — shipping builds skip it and let the transition continue
+		# even if a violation occurred.
+		if OS.is_debug_build() and post_frame != pre_frame:
+			var cb_name: String = cb.get_method() if cb.get_object() != null else "<unknown>"
+			push_error(
+				"[LSS] restore callback violated no-await contract: %s (pre=%d post=%d frames)"
+				% [cb_name, pre_frame, post_frame]
+			)
 
 
 ## Story LS-005 stub — minimal abort recovery for LS-002. Resets state, pops

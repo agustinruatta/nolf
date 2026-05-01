@@ -1,7 +1,7 @@
 # Story 001: PostProcessStack autoload scaffold + chain-order const table
 
 > **Epic**: Post-Process Stack
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — new autoload file + registration + const table + unit test)
@@ -114,7 +114,23 @@ src/foundation/post_process/
 - Covers: AC-1 (class reflection), AC-3 (autoload presence), AC-4 (CHAIN_ORDER assertion), AC-5 (no forward autoload reference via source grep)
 - Determinism: no external state; pure reflection + constant assertion
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/foundation/post_process_stack/post_process_stack_scaffold_test.gd` (10 test functions covering AC-1, AC-3, AC-4, AC-5). Suite total: 369/369 PASS.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 6/6 — AC-1/3/4/5 fully auto-verified via 10 tests; AC-2 (project.godot ordering) verified by existing autoload entry preserved at position 6 (`PostProcessStack="*res://src/core/rendering/post_process_stack.gd"`); AC-6 (cold-boot ≤50 ms) is advisory per story note (gate cannot fully close until ADR-0008 reaches Accepted with hardware verification).
+**Test Evidence**: `tests/unit/foundation/post_process_stack/post_process_stack_scaffold_test.gd`
+**Code Review**: APPROVED inline (10/10 tests + 369/369 full suite all green; first-run class cache refresh required after creating new class_name; AC-5 grep correctly excludes comment lines, matches `Name.` and `Name(` only — won't trip on doc references)
+**Deviations**: One — story implementation note specifies file location `src/foundation/post_process/post_process_stack.gd`, but the existing Sprint 01 autoload entry in project.godot was already locked to `src/core/rendering/post_process_stack.gd` (matching the SaveLoad/Events `src/core/...` precedent). Used the existing path (no project.godot ordering change needed; preserves ADR-0007 §Key Interfaces verbatim).
+**Suite trajectory**: 359 → 369 (+10 tests).
+**Files modified**:
+- `src/core/rendering/post_process_stack.gd` (was 21-line Sprint 01 stub; expanded to 99 lines with `class_name PostProcessStackService extends Node`; CHAIN_ORDER const lock; `is_sepia_active` public read-only property; stub `enable_sepia_dim()`/`disable_sepia_dim()` for PPS-003)
+**Files created**:
+- `tests/unit/foundation/post_process_stack/post_process_stack_scaffold_test.gd` (10 test functions: 4 class-shape + 1 autoload presence + 4 CHAIN_ORDER lock + 1 forward-reference grep)
+**Out-of-scope deferred**: CompositorEffect (PPS-002), tween state machine (PPS-003), Document Overlay handshake (PPS-004), glow ban (PPS-005), resolution scale (PPS-006), perf verification (PPS-007). All correctly excluded.
 
 ---
 

@@ -1,7 +1,7 @@
 # Story 001: AudioManager node scaffold + 5-bus structure
 
 > **Epic**: Audio
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — new file + bus verification test)
@@ -148,7 +148,23 @@ func _setup_sfx_pool() -> void:
 - Covers AC-1 (bus count + named buses), AC-2 (class_name), AC-3 (pool size + bus routing), AC-4 (no Master routing), AC-5 (pool freed with parent)
 - Determinism: no random seeds; headless-safe (Godot audio server is initialized in headless mode)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/foundation/audio/audiomanager_bus_structure_test.gd` (14 test functions covering AC-1..AC-5 + idempotency guard). Suite total: 342/342 PASS.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 5/5 passing — all auto-verified via 14 test functions (6 AC-1 bus checks + idempotency, 2 AC-2 class_name/extends, 3 AC-3 pool size/bus/parent, 1 AC-4 master-routing scan, 1 AC-5 free-with-parent).
+**Test Evidence**: `tests/unit/foundation/audio/audiomanager_bus_structure_test.gd` (246 lines)
+**Code Review**: APPROVED inline (14/14 AUD-001 tests pass; no regression in 328-test baseline; implementation matches story implementation notes line-by-line).
+**Deviations**: One minor — initial impl included `super._ready()` call which is parser-rejected in GDScript 4 because Node._ready() has no concrete body (it's a virtual hook). Removed; doc-comment on `_ready()` now explains why super is intentionally not called. No semantic impact.
+**Suite trajectory**: 328 baseline → 342 after AUD-001 (+14 tests).
+**Files modified**: None (new directory).
+**Files created**:
+- `src/audio/audio_manager.gd` (98 lines: class_name AudioManager extends Node; BUS_NAMES + SFX_POOL_SIZE constants; idempotent `_setup_buses()`; `_setup_sfx_pool()` pre-allocating 16 AudioStreamPlayer3D children routed to &"SFX")
+- `tests/unit/foundation/audio/audiomanager_bus_structure_test.gd` (246 lines, 14 test functions)
+**Out-of-scope deferred** (correctly): Signal Bus subscriptions (AUD-002), music players (AUD-003), VO ducking (AUD-004), footstep routing (AUD-005). All correctly excluded per story.
 
 ---
 

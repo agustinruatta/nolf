@@ -284,7 +284,10 @@ func test_save_to_slot_rename_failed_emits_save_failed_and_cleans_up_tmp() -> vo
 # AC-6 — game_saved emit on success
 # ---------------------------------------------------------------------------
 
-## A successful save emits game_saved exactly once with (slot, section_id).
+## A successful manual save to slot 3 emits game_saved twice: once for slot 3
+## (the requested slot) and once for slot 0 (the CR-4 mirror — Story SL-006).
+## The first emission carries slot=3; the second carries slot=0. Both carry the
+## same section_id. No save_failed is emitted on a clean success path.
 func test_save_to_slot_emits_game_saved_with_slot_and_section_id() -> void:
 	# Arrange
 	_service = auto_free(SaveLoadService.new())
@@ -293,11 +296,15 @@ func test_save_to_slot_emits_game_saved_with_slot_and_section_id() -> void:
 	# Act
 	var ok: bool = _service.save_to_slot(3, sg)
 
-	# Assert
+	# Assert — save succeeded
 	assert_bool(ok).is_true()
-	assert_int(_game_saved_calls.size()).is_equal(1)
+
+	# Assert — 2 game_saved emissions: slot 3 first, then the CR-4 mirror slot 0.
+	assert_int(_game_saved_calls.size()).is_equal(2)
 	assert_int(int(_game_saved_calls[0]["slot"])).is_equal(3)
 	assert_str(String(_game_saved_calls[0]["section_id"])).is_equal("restaurant")
+	assert_int(int(_game_saved_calls[1]["slot"])).is_equal(0)
+	assert_str(String(_game_saved_calls[1]["section_id"])).is_equal("restaurant")
 	assert_int(_save_failed_reasons.size()).is_equal(0)
 
 

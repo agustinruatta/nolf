@@ -1,7 +1,7 @@
 # Story 001: OutlineTier class scaffold — constants, set_tier(), validation
 
 > **Epic**: Outline Pipeline
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — one static class, one unit test file)
@@ -135,7 +135,24 @@ Tier constants must use `const int` (not `enum`) so they can be used as `@export
 - Test file naming follows project convention: `[system]_[feature]_test.gd`
 - Tests must be deterministic and isolated: each test creates and frees its own `MeshInstance3D` with a new `ArrayMesh`; no cross-test state; no filesystem I/O
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/foundation/outline_pipeline/outline_tier_test.gd` (17 test functions covering AC-1..AC-7). Suite total: 359/359 PASS.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 7/7 passing — all auto-verified via 17 test functions.
+**Test Evidence**: `tests/unit/foundation/outline_pipeline/outline_tier_test.gd`
+**Code Review**: APPROVED inline (full 17/17 OUT-001 tests + 359/359 suite all pass after two iterations of fixes)
+**Deviations**:
+1. **Production: assert() → debug-guarded push_error()**. Story implementation note specified `assert(tier >= 0 and tier <= 3, ...)` followed by `clampi(tier, 0, 3)` claiming "clampi runs regardless." In practice GDScript's `assert()` aborts the function in headless debug builds, so clampi never ran and the defense-in-depth clamp couldn't apply. Replaced with `if OS.is_debug_build() and (tier < 0 or tier > 3): push_error(...)` — preserves story intent (debug log + release silent clamp) without aborting the function. AC-4 wording is fully satisfied (invalid tiers fire a debug-only error message AND get clamped by clampi).
+2. Tests use `await assert_error(callback).is_push_error("...")` to capture the debug error from GdUnit4's error monitor without failing the test.
+**Suite trajectory**: 342 baseline → 359 after OUT-001 (+17 tests)
+**Files created**:
+- `src/rendering/outline/outline_tier.gd` (139 lines: `class_name OutlineTier extends RefCounted`; 4 const int tier constants NONE/HEAVIEST/MEDIUM/LIGHT = 0/1/2/3; `static func set_tier(mesh, tier)` with debug-guard push_error + clampi defense + per-surface BaseMaterial3D / ShaderMaterial / null-slot dispatch; `_apply_stencil_to_base_material` private helper writing stencil_mode=3, stencil_flags=2, stencil_compare=0, stencil_reference=safe_tier per Godot 4.6 API)
+- `tests/unit/foundation/outline_pipeline/outline_tier_test.gd` (17 test functions: 6 constants + class shape + 4 set_tier valid/invalid/boundary + 2 multi-surface/null-slot + 1 escape-hatch reassignment + 3 helpers)
+**Out-of-scope deferred**: CompositorEffect (OUT-002), jump-flood shader (OUT-003), resolution-scale formula (OUT-004), Plaza scene placement (OUT-005), per-system call sites (each upstream epic). All correctly excluded.
 
 ---
 

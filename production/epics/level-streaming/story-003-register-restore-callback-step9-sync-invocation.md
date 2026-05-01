@@ -1,7 +1,7 @@
 # Story 003: register_restore_callback chain + step 9 synchronous invocation
 
 > **Epic**: Level Streaming
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2 hours (M — registration API + sync invocation loop + no-await assertion)
@@ -207,7 +207,7 @@ func test_callback_invoked_with_correct_args() -> void:
 - Naming follows Foundation-layer convention
 - Determinism: probe callbacks use deterministic test markers; no random data; signal-spy uses Engine frame counters not wall clock
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created at `tests/unit/level_streaming/level_streaming_restore_callback_test.gd`
 
 ---
 
@@ -215,3 +215,18 @@ func test_callback_invoked_with_correct_args() -> void:
 
 - Depends on: Story 002 (13-step coroutine; this story extends step 9)
 - Unlocks: Mission Scripting epic, F&R epic, Menu System epic — each registers a callback for their per-system state restore
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 9/9 passing — AC-6 with degraded coverage (no-deadlock asserted; push_error message capture deferred until GdUnit4 exposes stable `assert_error()`).
+**Test Evidence**: `tests/unit/level_streaming/level_streaming_restore_callback_test.gd` — 11 test functions, 11/11 PASS, exit 0. Full project regression 304/304 PASS.
+**Files modified**:
+- `src/core/level_streaming/level_streaming_service.gd` — added `_restore_callbacks: Array[Callable]`, `register_restore_callback()` public API, `get_restore_callback_count_for_test()` + `clear_restore_callbacks_for_test()` test-only accessors, fleshed-out `_invoke_restore_callbacks()` body with debug-only no-await contract enforcement (~+95 LOC).
+**Code Review**: Complete — godot-gdscript-specialist verdict CLEAN (post-remediation); qa-tester verdict TESTABLE (post-remediation, AC-2 empty-array no-op test added); inline `/code-review` APPROVED.
+**Deviations**:
+- ADVISORY — AC-6 push_error message-content not asserted (GdUnit4 capability limitation; documented in test docstring; tech-debt candidate when GdUnit4 upgrades).
+- ADVISORY — Lambda probes accumulate in `_restore_callbacks` for the rest of the test run (no deregistration API at MVP per ADR-0007). Mitigated by `_wait_for_idle(≥3.0)` timeouts and documented in suite header.
+**Tech debt logged**: None — both advisories tracked here in Completion Notes; AC-6 message-capture upgrade is post-MVP work conditional on GdUnit4 enhancement.

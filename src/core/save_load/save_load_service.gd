@@ -41,6 +41,21 @@ enum FailureReason {
 ## Created on demand by save_to_slot if missing.
 const SAVE_DIR: String = "user://saves/"
 
+## Total number of save slots (slot 0 through slot 7 inclusive).
+## Slot 0 is reserved for autosave. Slots 1–7 are player-controlled manual saves.
+## ADR-0003 IG 7 + TR-SAV-004.
+const SLOT_COUNT: int = 8
+
+## The autosave slot index. Written at every section transition, explicit F5
+## Quicksave action, and as a CR-4 mirror on every manual save (slots 1–7).
+## Death respawn always loads slot 0 — see GDD CR-4 rationale.
+const AUTOSAVE_SLOT: int = 0
+
+## Inclusive range of player-controlled manual save slots.
+## Vector2i(x, y) where x = first manual slot, y = last manual slot.
+## A save to any slot in this range also writes slot 0 as a mirror (CR-4).
+const MANUAL_SLOT_RANGE: Vector2i = Vector2i(1, 7)
+
 
 # ---------------------------------------------------------------------------
 # Lifecycle
@@ -58,59 +73,86 @@ func _ready() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Public API — slot existence probe
+# ---------------------------------------------------------------------------
+
+## Returns true if user://saves/slot_<slot>.res exists on disk; false otherwise.
+##
+## Cost: ≤1 ms — single FileAccess.file_exists call (no Resource load).
+## Used by the Menu System (8-slot grid render) and F9 Quickload (Story 007)
+## to check slot occupancy without loading the full SaveGame Resource.
+##
+## Out-of-range guard: returns false and logs a warning for any slot value
+## outside [0, SLOT_COUNT). This is defense-in-depth for callers passing
+## invalid slots — not a hard error, so callers can stay simple.
+##
+## Usage example:
+##   if SaveLoad.slot_exists(0):
+##       SaveLoad.load_from_slot(0)  # quickload the autosave
+##   else:
+##       show_no_quicksave_toast()
+func slot_exists(slot: int) -> bool:
+	if slot < 0 or slot >= SLOT_COUNT:
+		push_warning(
+			"Save/Load: slot_exists(%d) out of range [0..%d]" % [slot, SLOT_COUNT - 1]
+		)
+		return false
+	var path: String = "%sslot_%d.res" % [SAVE_DIR, slot]
+	return FileAccess.file_exists(path)
+
+
+# ---------------------------------------------------------------------------
 # Public API — save
 # ---------------------------------------------------------------------------
 
-## Atomically writes the given SaveGame to user://saves/slot_<slot>.res.
+## Atomically writes the given SaveGame to user://saves/slot_<slot>.res and
+## writes a paired metadata sidecar to user://saves/slot_<slot>_meta.cfg.
 ##
-## Atomic write protocol (ADR-0003 IG 5):
-##   1. Ensure SAVE_DIR exists.
-##   2. ResourceSaver.save(save_game, slot_<slot>.tmp.res, FLAG_COMPRESS).
-##   3. If non-OK: emit save_failed(IO_ERROR), return false (previous final
-##      file untouched).
-##   4. DirAccess.rename(tmp, final).
-##   5. If non-OK: clean up tmp, emit save_failed(RENAME_FAILED), return
-##      false (previous final file untouched).
-##   6. Emit Events.game_saved(slot, save_game.section_id), return true.
+## CR-4 mirror (ADR-0003 IG 7 + GDD CR-4): if slot is in the manual save
+## range [1, 7], this method also writes slot 0 as an autosave mirror so
+## that death respawn (which always loads slot 0) lands at the player's most
+## recent manual save rather than at section start. The mirror is a
+## convenience, not a correctness invariant — if the mirror write fails, the
+## manual save is still committed (game_saved fires for the manual slot), and
+## save_failed(IO_ERROR) fires for the mirror failure. Per IG 9, the previous
+## slot 0 content is preserved by the atomic-write protocol in that case.
 ##
-## NOTE: this method does NOT write the metadata sidecar — Story SL-005 owns
-## that. The service emits game_saved on the .res rename success; callers
-## that need metadata can subscribe to game_saved and write the sidecar.
+## Emit order on a manual save (slot 1–7): game_saved(slot, ...) fires FIRST
+## (manual save committed), then game_saved(0, ...) fires for the mirror.
+## Subscribers that only care about manual saves filter to slot != 0.
 ##
-## Returns true on full success; false on any failure (with a save_failed
-## emit identifying the reason).
+## Returns true on success (including partial-success where sidecar failed);
+## false only when the primary slot write itself failed. Mirror failure is
+## non-fatal (returns true, push_warning logged).
+##
+## Usage example:
+##   var sg := build_save_game()  # caller assembles state from owning systems
+##   var ok := SaveLoad.save_to_slot(3, sg)
+##   if not ok:
+##       show_save_error_dialog()
 func save_to_slot(slot: int, save_game: SaveGame) -> bool:
-	# Step 1 — ensure SAVE_DIR exists. Idempotent; a no-op if it already does.
-	var dir_err: Error = DirAccess.make_dir_recursive_absolute(SAVE_DIR)
-	if dir_err != OK and dir_err != ERR_ALREADY_EXISTS:
-		Events.save_failed.emit(FailureReason.IO_ERROR)
+	# Write the requested slot atomically (7-step protocol in helper).
+	var ok: bool = _save_to_slot_atomic(slot, save_game)
+	if not ok:
 		return false
 
-	var tmp_path: String = SAVE_DIR + "slot_%d.tmp.res" % slot
-	var final_path: String = SAVE_DIR + "slot_%d.res" % slot
+	# CR-4: manual save (slots 1–7) also writes slot 0 as the autosave mirror.
+	# Rationale: death respawn always loads slot 0; if the player just saved
+	# manually, they expect respawn to land at the manual save, not section start.
+	# This is the ONLY place in the codebase where a direct slot-0 write is
+	# initiated by the service for the mirror path (AC-7 single-source-of-truth).
+	if slot >= MANUAL_SLOT_RANGE.x and slot <= MANUAL_SLOT_RANGE.y:
+		var mirror_ok: bool = _save_to_slot_atomic(AUTOSAVE_SLOT, save_game)
+		if not mirror_ok:
+			# Manual save committed; mirror failed. game_saved(slot, ...) already
+			# fired inside _save_to_slot_atomic above. save_failed(IO_ERROR) or
+			# save_failed(RENAME_FAILED) was emitted inside the failed mirror
+			# _save_to_slot_atomic call. Return true — manual save semantically
+			# succeeded (ADR-0003 IG 9: never destroy a good save).
+			push_warning(
+				"Save/Load: slot %d saved but slot 0 mirror failed" % slot
+			)
 
-	# Step 2 — write to tmp file. tmp suffix MUST end in `.res` per F1.
-	var save_err: Error = _save_resource(save_game, tmp_path, ResourceSaver.FLAG_COMPRESS)
-
-	# Step 3 — bail out on save failure. Previous final file untouched.
-	if save_err != OK:
-		# Best-effort tmp cleanup (may not exist if save_err was an early
-		# failure). Ignore cleanup failures — IG 9 forbids destructive recovery.
-		_remove_if_exists(tmp_path)
-		Events.save_failed.emit(FailureReason.IO_ERROR)
-		return false
-
-	# Step 4 — atomic rename. Linux verified in Sprint 01 G2; Windows TBD.
-	var rename_err: Error = _rename_file(tmp_path, final_path)
-
-	# Step 5 — bail out on rename failure. Previous final file still untouched.
-	if rename_err != OK:
-		_remove_if_exists(tmp_path)
-		Events.save_failed.emit(FailureReason.RENAME_FAILED)
-		return false
-
-	# Step 6 — success. Emit game_saved with slot + section_id.
-	Events.game_saved.emit(slot, save_game.section_id)
 	return true
 
 
@@ -177,8 +219,127 @@ func load_from_slot(slot: int) -> SaveGame:
 
 
 # ---------------------------------------------------------------------------
+# Public API — metadata sidecar (ADR-0003 IG 8)
+# ---------------------------------------------------------------------------
+
+## Returns a Dictionary of metadata fields for the given slot without loading
+## the full .res file. The Menu System MUST use this method to render save
+## cards — it MUST NOT call load_from_slot for display purposes.
+##
+## Fast path: reads slot_<slot>_meta.cfg via ConfigFile.load.
+## Fallback path: if the sidecar is absent, reads saved_at_iso8601 from the
+##   .res itself and returns a minimal Dictionary with defaults for other keys.
+## Empty path: if both files are absent, returns an empty Dictionary {}.
+##   Callers test result.is_empty() to detect "slot has no save" (Menu: EMPTY
+##   slot state).
+##
+## The returned Dictionary always contains these keys when non-empty:
+##   section_id          : String   (e.g., "restaurant")
+##   section_display_name: String   (e.g., "meta.section.restaurant")
+##   saved_at_iso8601    : String   (e.g., "2026-04-30T14:30:00")
+##   elapsed_seconds     : float
+##   screenshot_path     : String   (empty at MVP; reserved for Menu System epic)
+##   save_format_version : int
+##
+## Usage example:
+##   var meta := SaveLoad.slot_metadata(slot_index)
+##   if meta.is_empty():
+##       show_empty_slot_card(slot_index)
+##   else:
+##       show_save_card(meta["section_display_name"], meta["saved_at_iso8601"])
+func slot_metadata(slot: int) -> Dictionary:
+	var meta_path: String = SAVE_DIR + "slot_%d_meta.cfg" % slot
+	var res_path: String = SAVE_DIR + "slot_%d.res" % slot
+
+	# Fast path — sidecar present. Avoids full .res load (ADR-0003 IG 8).
+	if FileAccess.file_exists(meta_path):
+		var cfg: ConfigFile = ConfigFile.new()
+		if cfg.load(meta_path) == OK:
+			return _meta_dict_from_cfg(cfg)
+
+	# Sidecar missing — fallback to partial recovery from the .res itself.
+	# This path accepts the full .res load cost (acceptable per GDD Edge Cases
+	# note: "fallback path WILL load the .res").
+	if FileAccess.file_exists(res_path):
+		return _fallback_meta_from_res(res_path)
+
+	# Both missing — slot is empty.
+	return {}
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers — overridable for fault injection in tests
 # ---------------------------------------------------------------------------
+
+## Executes the full 7-step atomic write protocol for a single slot.
+##
+## This is the internal building block used by save_to_slot (once for the
+## primary slot, and once for the CR-4 mirror on manual saves). It is NOT
+## a test seam — it is a private implementation detail. To fault-inject at
+## the ResourceSaver or DirAccess level, override _save_resource or
+## _rename_file respectively (the existing test seams below).
+##
+## Steps:
+##   1. Ensure SAVE_DIR exists (idempotent).
+##   2. ResourceSaver.save to tmp file.
+##   3. If non-OK: emit save_failed(IO_ERROR), return false.
+##   4. DirAccess.rename(tmp, final).
+##   5. If non-OK: clean up tmp, emit save_failed(RENAME_FAILED), return false.
+##   6. Write metadata sidecar (partial-success: sidecar fail logs, does not abort).
+##   7. Emit Events.game_saved(slot, section_id), return true.
+func _save_to_slot_atomic(slot: int, save_game: SaveGame) -> bool:
+	# Step 1 — ensure SAVE_DIR exists. Idempotent; a no-op if it already does.
+	var dir_err: Error = DirAccess.make_dir_recursive_absolute(SAVE_DIR)
+	if dir_err != OK and dir_err != ERR_ALREADY_EXISTS:
+		Events.save_failed.emit(FailureReason.IO_ERROR)
+		return false
+
+	var tmp_path: String = SAVE_DIR + "slot_%d.tmp.res" % slot
+	var final_path: String = SAVE_DIR + "slot_%d.res" % slot
+
+	# Step 2 — write to tmp file. tmp suffix MUST end in `.res` per F1.
+	var save_err: Error = _save_resource(save_game, tmp_path, ResourceSaver.FLAG_COMPRESS)
+
+	# Step 3 — bail out on save failure. Previous final file untouched.
+	if save_err != OK:
+		# Best-effort tmp cleanup (may not exist if save_err was an early
+		# failure). Ignore cleanup failures — IG 9 forbids destructive recovery.
+		_remove_if_exists(tmp_path)
+		Events.save_failed.emit(FailureReason.IO_ERROR)
+		return false
+
+	# Step 4 — atomic rename. Linux verified in Sprint 01 G2; Windows TBD.
+	var rename_err: Error = _rename_file(tmp_path, final_path)
+
+	# Step 5 — bail out on rename failure. Previous final file still untouched.
+	if rename_err != OK:
+		_remove_if_exists(tmp_path)
+		Events.save_failed.emit(FailureReason.RENAME_FAILED)
+		return false
+
+	# Step 6 — write metadata sidecar. The .res is already committed above, so
+	# sidecar failure is a partial-success: log, do not abort. Callers may
+	# observe the fallback path from slot_metadata() on subsequent reads.
+	var meta_path: String = SAVE_DIR + "slot_%d_meta.cfg" % slot
+	var cfg: ConfigFile = ConfigFile.new()
+	cfg.set_value("meta", "section_id", String(save_game.section_id))
+	cfg.set_value("meta", "section_display_name", _section_display_name_key(save_game.section_id))
+	cfg.set_value("meta", "saved_at_iso8601", save_game.saved_at_iso8601)
+	cfg.set_value("meta", "elapsed_seconds", save_game.elapsed_seconds)
+	cfg.set_value("meta", "screenshot_path", "")
+	cfg.set_value("meta", "save_format_version", save_game.save_format_version)
+	var sidecar_err: Error = _write_sidecar(cfg, meta_path)
+	if sidecar_err != OK:
+		push_warning(
+			"Save/Load: sidecar write failed for slot %d (err=%d) — partial-success path" % [
+				slot, sidecar_err
+			]
+		)
+
+	# Step 7 — success. Emit game_saved with slot + section_id.
+	Events.game_saved.emit(slot, save_game.section_id)
+	return true
+
 
 ## Test seam: subclasses may override to force a specific Error result for
 ## ResourceSaver fault-injection coverage (AC-4). Production code MUST NOT
@@ -213,3 +374,58 @@ func _remove_if_exists(path: String) -> bool:
 	if not FileAccess.file_exists(path):
 		return false
 	return DirAccess.remove_absolute(path) == OK
+
+
+## Test seam: subclasses may override to force a specific Error result from
+## the sidecar ConfigFile.save step (AC-6 partial-success fault injection).
+## Production code MUST NOT call this directly — use save_to_slot.
+func _write_sidecar(cfg: ConfigFile, path: String) -> Error:
+	return cfg.save(path)
+
+
+## Builds the 6-field metadata Dictionary from a successfully-loaded ConfigFile
+## sidecar. All values are read from the [meta] section; missing keys fall back
+## to typed defaults so the returned Dictionary always has the full 6 fields.
+func _meta_dict_from_cfg(cfg: ConfigFile) -> Dictionary:
+	return {
+		"section_id": cfg.get_value("meta", "section_id", ""),
+		"section_display_name": cfg.get_value("meta", "section_display_name", ""),
+		"saved_at_iso8601": cfg.get_value("meta", "saved_at_iso8601", ""),
+		"elapsed_seconds": cfg.get_value("meta", "elapsed_seconds", 0.0),
+		"screenshot_path": cfg.get_value("meta", "screenshot_path", ""),
+		"save_format_version": cfg.get_value("meta", "save_format_version", SaveGame.FORMAT_VERSION),
+	}
+
+
+## Builds a minimal fallback Dictionary by loading the .res and extracting
+## saved_at_iso8601. Used when the sidecar is missing (partial-success path
+## from AC-3; also handles the corrupt-or-null .res case per AC-4).
+##
+## If the .res is corrupt, null, or lacks saved_at_iso8601, all values are
+## empty/default — the function NEVER throws.
+func _fallback_meta_from_res(res_path: String) -> Dictionary:
+	var fallback: Dictionary = {
+		"section_id": "",
+		"section_display_name": "",
+		"saved_at_iso8601": "",
+		"elapsed_seconds": 0.0,
+		"screenshot_path": "",
+		"save_format_version": SaveGame.FORMAT_VERSION,
+	}
+	var loaded: Resource = _load_resource(res_path)
+	if loaded == null or not (loaded is SaveGame):
+		return fallback
+	var sg: SaveGame = loaded as SaveGame
+	fallback["saved_at_iso8601"] = sg.saved_at_iso8601
+	return fallback
+
+
+## Maps a section_id StringName to a localization key string.
+## At MVP: simple key-prefix interpolation per ADR-0003 IG 8.
+## Localization Scaffold epic owns refinement of the key scheme.
+##
+## Examples:
+##   _section_display_name_key(&"restaurant") -> "meta.section.restaurant"
+##   _section_display_name_key(&"")           -> "meta.section."
+func _section_display_name_key(section_id: StringName) -> String:
+	return "meta.section." + String(section_id)

@@ -1,7 +1,7 @@
 # Story 005: Metadata sidecar (slot_N_meta.cfg) + slot_metadata API
 
 > **Epic**: Save / Load
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — sidecar write integration into save_to_slot + slot_metadata API + fallback path)
@@ -168,7 +168,7 @@ func slot_metadata(slot: int) -> Dictionary:
 - Naming follows Foundation-layer convention
 - Determinism: tests clean up `user://saves/` in setup AND teardown; constructed metadata fixtures use known timestamps and section IDs
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/foundation/save_load_metadata_sidecar_test.gd` (10 test functions; full suite 314/314 PASS)
 
 ---
 
@@ -176,3 +176,24 @@ func slot_metadata(slot: int) -> Dictionary:
 
 - Depends on: Story 002 (`save_to_slot` is the integration point for sidecar write), Story 003 (fallback path's `.res` read uses the same `ResourceLoader.load` pattern), Story 001 (SaveGame has `saved_at_iso8601` and `save_format_version` fields)
 - Unlocks: Menu System epic (Load Game screen renders save cards from `slot_metadata()`); Story 006 (slot scheme can use `slot_metadata().is_empty()` as a slot-state probe)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 8/8 passing (all auto-verified via 10 unit test functions in `tests/unit/foundation/save_load_metadata_sidecar_test.gd`; 2 of those tests are regression guards added during code-review remediation)
+**Deviations**: None — ADR-0003 IG 8 fully satisfied; manifest version matches current (2026-04-30); no scope drift
+**Test Evidence**: Logic — `tests/unit/foundation/save_load_metadata_sidecar_test.gd` (314/314 full unit + integration suite PASS, 0 errors / 0 failures / 0 flaky / 0 orphans, exit 0)
+**Code Review**: Complete (solo mode; godot-gdscript-specialist + qa-tester invoked inline). godot-gdscript-specialist APPROVED WITH SUGGESTIONS (4 minor non-blocking advisories on type strictness). qa-tester GAPS resolved during review:
+- Gap 1 (AC-6 step ordering): closed via new test `test_save_to_slot_emits_game_saved_after_sidecar_write_in_correct_order` (sequence-tracking subclass asserts rename → write_sidecar → game_saved triple)
+- Gap 2 (corrupt sidecar): adapted to `test_slot_metadata_with_sidecar_missing_meta_section_returns_defaults` after discovering Godot 4.6 `ConfigFile.load()` is permissive on garbage bytes; the actual defensive layer is `_meta_dict_from_cfg`'s `get_value()` defaults — test now guards the missing-`[meta]`-section regression path
+- Gaps 3-5 remain advisory-only (low priority; not closed)
+
+**Files modified (1)**:
+- `src/core/save_load/save_load_service.gd` — +109 LOC. Added: `slot_metadata(slot: int) -> Dictionary` public API (fast/fallback/empty paths), `_write_sidecar` test seam, `_meta_dict_from_cfg` helper, `_fallback_meta_from_res` helper, `_section_display_name_key` helper. Extended `save_to_slot` with step 6 (sidecar write after rename, before `game_saved` emit; partial-success on `ConfigFile.save() != OK` per ADR-0003 IG 8).
+
+**Files created (1)**:
+- `tests/unit/foundation/save_load_metadata_sidecar_test.gd` — 10 test functions; 3 fault-injection subclasses (`_SidecarFailingService`, `_LoadResTrackingService`, `_SequenceTrackingService`); deterministic timestamps; before/after `_clean_save_dir` cleanup.
+
+**Unblocks**: Menu System epic (Load Game screen renders save cards from `slot_metadata()`); SL-006 (slot scheme can use `slot_metadata().is_empty()` as a slot-state probe).

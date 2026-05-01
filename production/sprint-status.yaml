@@ -6,7 +6,7 @@ goal: "Land Foundation + Core code so Eve can walk in a streaming Plaza scene wi
 start: "2026-05-04"
 end: "2026-05-22"
 generated: "2026-04-30"
-updated: "2026-05-01 (ALL 24 Must-Have stories COMPLETE — 293/293 tests; sprint-02 critical path closed)"
+updated: "2026-05-01 (ALL 31 STORIES COMPLETE — 24 Must-Have + 5 Should-Have + 2 Nice-to-Have; 369/369 tests; Sprint 02 fully closed; ready for QA cycle)"
 
 stories:
   # ─── Must Have — Critical Path ──────────────────────────────────────────
@@ -232,38 +232,38 @@ stories:
     name: "Metadata sidecar (slot_N_meta.cfg) + slot_metadata API"
     file: "production/epics/save-load/story-005-metadata-sidecar-slot-metadata-api.md"
     priority: should-have
-    status: backlog
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
-    blocker: "depends on SL-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: SL-006
     name: "8-slot scheme + slot 0 mirror on manual save (CR-4)"
     file: "production/epics/save-load/story-006-eight-slot-scheme-slot-zero-mirror.md"
     priority: should-have
-    status: backlog
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.4
-    blocker: "depends on SL-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: LS-003
     name: "register_restore_callback chain + step 9 sync invocation"
     file: "production/epics/level-streaming/story-003-register-restore-callback-step9-sync-invocation.md"
     priority: should-have
-    status: backlog
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
-    blocker: "depends on LS-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: AUD-001
     name: "AudioManager node scaffold + 5-bus structure"
     file: "production/epics/audio/story-001-audiomanager-node-scaffold.md"
     priority: should-have
-    status: backlog
+    status: done
     owner: "godot-gdscript-specialist"
     estimate_days: 0.6
-    blocker: "depends on SB-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"
   - id: LOC-002
     name: "Pseudolocalization CSV + dev workflow + export filter"
     file: "production/epics/localization-scaffold/story-002-pseudolocalization-csv-export-filter.md"
@@ -279,17 +279,17 @@ stories:
     name: "OutlineTier class scaffold — constants, set_tier(), validation"
     file: "production/epics/outline-pipeline/story-001-outline-tier-class-scaffold.md"
     priority: nice-to-have
-    status: backlog
+    status: done
     owner: "godot-shader-specialist"
     estimate_days: 0.6
     blocker: ""
-    completed: ""
+    completed: "2026-05-01"
   - id: PPS-001
     name: "PostProcessStack autoload scaffold + chain-order const"
     file: "production/epics/post-process-stack/story-001-autoload-scaffold-chain-order.md"
     priority: nice-to-have
-    status: backlog
+    status: done
     owner: "godot-shader-specialist"
     estimate_days: 0.6
-    blocker: "depends on SB-002"
-    completed: ""
+    blocker: ""
+    completed: "2026-05-01"

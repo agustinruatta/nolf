@@ -1,7 +1,7 @@
 # Story 006: 8-slot scheme + slot 0 mirror on manual save (CR-4)
 
 > **Epic**: Save / Load
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 1-2 hours (S — slot-scheme helpers + CR-4 dual-write logic)
@@ -161,7 +161,20 @@ func save_to_slot(slot: int, save_game: SaveGame) -> bool:
 - Naming follows Foundation-layer convention
 - Determinism: tests clean up `user://saves/` in setup AND teardown; mock injection for AC-6 uses a deterministic fault wrapper, not random failure
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/foundation/save_load_slot_scheme_test.gd` (14 test functions covering AC-1..AC-7 + 2 advisory-gap-closure regression guards). Suite total: 328/328 PASS.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: 7/7 passing — all auto-verified via 14 test functions (12 AC-coverage + 2 regression guards from code-review remediation).
+**Test Evidence**: `tests/unit/foundation/save_load_slot_scheme_test.gd` (407 → 480 lines after gap-closure pass)
+**Code Review**: APPROVED (godot-gdscript-specialist + qa-tester run in parallel; 0 must-fix; 4 advisory suggestions; 2 advisory gaps closed via additional tests, 2 left advisory: GAP-1 push_warning capture seam too invasive for low value; GAP-2 grep regex edge case is theoretical — current pattern correctly fails on realistic regression).
+**Deviations**: None. Refactor preserves byte-equivalent behavior in `_save_to_slot_atomic` helper. Manifest version 2026-04-30 matches current. Full ADR-0003 IG 5/7/8/9 compliance.
+**Suite trajectory**: 314 baseline → 326 after SL-006 initial impl (12 new tests) → 328 after gap-closure (+2 regression guards: mirror RENAME_FAILED variant + primary-fail-skips-mirror).
+**Files modified**: `src/core/save_load/save_load_service.gd` (+90 LOC: 3 constants `SLOT_COUNT`/`AUTOSAVE_SLOT`/`MANUAL_SLOT_RANGE`; `slot_exists()` public API; refactored `save_to_slot()` to call `_save_to_slot_atomic` helper + CR-4 mirror branch; preserved 7-step protocol intact in extracted helper).
+**Files created**: `tests/unit/foundation/save_load_slot_scheme_test.gd` (14 test functions; 4 fault-injection subclasses: `_MirrorFailingService`, `_MirrorRenameFailingService`, `_PrimaryFailingService`, signal-spy infrastructure).
 
 ---
 

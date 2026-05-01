@@ -1,20 +1,102 @@
 # res://src/core/rendering/post_process_stack.gd
 #
-# PostProcessStack — sepia dim + outline post-process owner. Per ADR-0004
-# Implementation Guideline 7 + `design/gdd/post-process-stack.md` §5.
-# Registered as autoload key `PostProcessStack` at line 6 of project.godot
-# per ADR-0007 §Key Interfaces.
+# PostProcessStackService — sepia-dim + outline post-process owner.
 #
-# Real behaviour: owns sepia-dim CanvasLayer state; subscribes to
-# Events.setting_changed for resolution_scale; coordinates with the
-# CompositorEffect outline pass (per ADR-0001).
+# Implements: Story PPS-001 (autoload scaffold + chain-order const)
+# Requirements: TR-PP-001, TR-PP-007
+# Governing ADRs: ADR-0007 (Autoload Load Order), ADR-0008 (Performance Budget)
+#                 ADR-0004 IG 7 + design/gdd/post-process-stack.md §5
 #
-# This file is a Sprint 01 verification-spike stub — pass-through so the
-# autoload entry resolves. Real implementation lands during ADR-0001 / 0004
-# verification or in the Post-Process Stack production story.
+# RESPONSIBILITY (this story, PPS-001 — scaffold only):
+#   • Declare the canonical chain-order constant (CHAIN_ORDER) — the locked
+#     visual-stack order per GDD Core Rule 1; any reorder must change this
+#     const so the lock is git-diffable.
+#   • Expose the public sepia-dim API surface (`is_sepia_active`,
+#     `enable_sepia_dim()`, `disable_sepia_dim()`) as stubs. Bodies land in
+#     PPS-002 (CompositorEffect shader) and PPS-003 (tween state machine).
+#
+# AUTOLOAD POSITION (ADR-0007 §Key Interfaces):
+#   1: Events
+#   2: EventLogger
+#   3: SaveLoad
+#   4: InputContext
+#   5: LevelStreamingService
+#   6: PostProcessStack          ← this file
+#   7: Combat
+#   8: FailureRespawn
+#   9: MissionLevelScripting
+#  10: SettingsService
+#
+# CROSS-AUTOLOAD REFERENCE SAFETY (ADR-0007 IG 4):
+#   _ready() at position 6 may reference Events / EventLogger / SaveLoad /
+#   InputContext / LevelStreamingService (positions 1–5). It MUST NOT
+#   reference Combat / FailureRespawn / MissionLevelScripting /
+#   SettingsService (positions 7–10) — those load AFTER this file.
+#
+# OUT OF SCOPE in PPS-001 (deferred):
+#   • Sepia-dim CompositorEffect shader resource — PPS-002
+#   • Tween state machine inside enable/disable — PPS-003
+#   • Document Overlay handshake — PPS-004
+#   • WorldEnvironment glow ban — PPS-005
+#   • Resolution scale wiring — PPS-006
+#
+# Class name / autoload key split mirrors Events/SignalBusEvents and
+# SaveLoad/SaveLoadService precedents — class_name `PostProcessStackService`
+# is distinct from autoload key `PostProcessStack`, avoiding any
+# class-hides-singleton parser conflict.
 
+class_name PostProcessStackService
 extends Node
 
+# ── Chain Order (GDD Core Rule 1) ──────────────────────────────────────────
+
+## The locked render-chain order for the post-process stack. Outline runs
+## first (writes outline pixels onto the scene buffer), then sepia_dim
+## (full-screen tint over the outline), then resolution_scale (final upscale).
+##
+## DO NOT reorder this array without a Core Rule 1 amendment in
+## design/gdd/post-process-stack.md and a fresh visual-sign-off cycle. The
+## CHAIN_ORDER assertion in PostProcessStackScaffoldTest is the trip-wire.
+const CHAIN_ORDER: Array[StringName] = [&"outline", &"sepia_dim", &"resolution_scale"]
+
+
+# ── Public state ───────────────────────────────────────────────────────────
+
+## True when the sepia-dim overlay is currently active (FADING_IN, ACTIVE, or
+## FADING_OUT in the Story PPS-003 state machine). Document Overlay (PPS-004)
+## reads this to guard against double-calls to enable_sepia_dim().
+##
+## Read-only from outside — use enable_sepia_dim() / disable_sepia_dim() to
+## change. GDScript does not enforce read-only at the language level; this is
+## a documented contract.
+var is_sepia_active: bool = false
+
+
+# ── Lifecycle ──────────────────────────────────────────────────────────────
 
 func _ready() -> void:
+	# Position 6 — only Events/EventLogger/SaveLoad/InputContext/
+	# LevelStreamingService are constructed at this point. No subscriptions
+	# at this story; PPS-006 will subscribe to Events.setting_changed for
+	# resolution_scale once the Settings epic exposes the key.
+	pass
+
+
+# ── Public API — sepia dim ─────────────────────────────────────────────────
+
+## Begins fading in the sepia-dim overlay. Idempotent — calling while sepia
+## is already active is a no-op (PPS-003 state machine handles state checks).
+##
+## STUB at PPS-001 — body lands in PPS-003.
+func enable_sepia_dim() -> void:
+	# TODO: implemented in PPS-003 (tween state machine).
+	pass
+
+
+## Begins fading out the sepia-dim overlay. Idempotent — calling while sepia
+## is already inactive is a no-op (PPS-003 state machine handles state checks).
+##
+## STUB at PPS-001 — body lands in PPS-003.
+func disable_sepia_dim() -> void:
+	# TODO: implemented in PPS-003 (tween state machine).
 	pass

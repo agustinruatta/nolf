@@ -1,22 +1,23 @@
 # Session State
 
-**Last updated:** 2026-05-01 — Sprint 02 in progress. PC-003 implementation landed (test suite green). **11/24 Must-Have stories done** + PC-003 awaiting `/code-review` and `/story-done`. Test suite: **143/143 PASS** (was 108 + 35 new from PC-003).
+**Last updated:** 2026-05-01 — Sprint 02 **Must-Have layer COMPLETE**. **24/24 Must-Have stories done** + 1 Should-Have (LOC-002) done. Test suite: **293/293 PASS** (zero failures, zero orphans, exit 0). All Sprint 02 work committed (HEAD: `05e5f14 Implemented specs`). Tech-debt register has 7 active items (TD-001..TD-007).
 
 ## Next Action — START HERE
 
-PC-003 implementation is complete and green. Open follow-ups:
+Sprint 02 critical path is closed. The remaining Sprint 02 backlog is Should-Have / Nice-to-Have only — they ship Sprint 02 if time permits, or roll to Sprint 03.
 
-1. `/code-review src/gameplay/player/player_character.gd tests/unit/core/player_character/player_walk_speed_test.gd tests/unit/core/player_character/player_sprint_speed_test.gd tests/unit/core/player_character/player_crouch_speed_test.gd tests/unit/core/player_character/player_jump_apex_test.gd tests/unit/core/player_character/player_jump_safe_range_test.gd tests/unit/core/player_character/player_hard_landing_scaled_test.gd tests/unit/core/player_character/player_state_machine_test.gd tests/unit/core/player_character/player_ceiling_check_test.gd`
-2. `/story-done production/epics/player-character/story-003-movement-state-machine.md`
+**Ready Should-Have stories** (any can be picked next):
 
-After PC-003 closes, ready stories in priority order:
+- **LS-003** (register_restore_callback chain + step 9 sync invocation) — **READY** per `/story-readiness` 2026-05-01. Dep LS-002 ✅; ADR-0007 + ADR-0003 Accepted; TR-LS-013 active; manifest current. Path: `production/epics/level-streaming/story-003-register-restore-callback-step9-sync-invocation.md`. Logic story, 2h estimate.
+- **SL-005** (DI-friendly SaveLoadService — corruption-recovery + slot-isolation) — Save/Load epic continuation.
+- **SL-006** (NEW_GAME path + autosave throttle policy) — Save/Load epic continuation.
+- **AUD-001** (BusManager autoload + SoundCategoryRegistry) — Audio Foundation kickoff.
 
-- **PC-004** (Noise level state + spike-latch — directly unblocked by PC-003; replaces PC-003's stub `_latch_noise_spike()` with full latching policy: highest-radius-wins, auto-expiry, multi-guard parity)
-- **PC-005** (Interact raycast — depends on PC-002 ✅; uses camera forward for the F.5 raycast)
-- **LOC-001** (CSV registration + tr() runtime — no deps)
-- **SB-004** (subscriber lifecycle + Node validity guard — Signal Bus continuation)
+**Ready Nice-to-Have stories**:
+- **OUT-001** (Outline pipeline kickoff — material + post-process slot)
+- **PPS-001** (Post-Process Stack — 4.6 glow rework verification)
 
-**Recommended next**: PC-003 close-out (`/code-review` → `/story-done`), then **PC-004** to complete the noise pipeline ahead of Stealth AI integration.
+**Recommended next**: **LS-003** (closes the Level Streaming critical-path step 9 ahead of Mission Scripting / F&R / Menu integration). Alternatively, commit current 120-file working tree first (24 Must-Have story implementations + tests + ADR-0008 spike + 7 evidence docs + tech-debt register).
 
 Sprint plan: `production/sprints/sprint-02-foundation-core.md` (24 Must-Have / 5 Should-Have / 2 Nice-to-Have stories, 3-week cadence).
 QA plan: `production/qa/qa-plan-sprint-02-2026-04-30.md`.

@@ -16,6 +16,10 @@
 #   camera forward, priority resolver (Document 0 < Terminal 1 < Pickup 2 < Door 3),
 #   E-press flow with pre-reach pause + reach Tween, player_interacted signal emit
 #   via Events autoload, is_hand_busy() / get_current_interact_target() query API.
+# PC-008 (FPS hands rendering): SubViewport at FOV 55°, HandsOutlineMaterial via
+#   material_overlay, resolution_scale uniform wired to Events.setting_changed.
+#   Hands do NOT call OutlineTier.set_tier — inverted-hull exception per ADR-0005.
+#   HandsCamera.global_transform synced to main Camera3D each _process frame.
 #
 # Collision layer setup per ADR-0006 IG 1 + IG 6: this body sets its OWN
 # layer (LAYER_PLAYER) and masks the layers it COLLIDES AGAINST (WORLD + AI).
@@ -43,6 +47,7 @@
 #             Story PC-003 (movement state machine + locomotion)
 #             Story PC-004 (noise perception surface)
 #             Story PC-005 (interact raycast + query API)
+#             Story PC-008 (FPS hands rendering — SubViewport, inverted-hull outline)
 # GDD: design/gdd/player-character.md §Detailed Design Core Rules
 
 class_name PlayerCharacter
@@ -289,6 +294,22 @@ var _interact_reach_tween: Tween = null
 @onready var _collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var _shape_cast: ShapeCast3D = $ShapeCast3D
 
+# ── PC-008: FPS hands node refs ────────────────────────────────────────────
+
+## HandsCamera inside the SubViewport. global_transform synced to _camera
+## each _process frame so hands track the player's view. FOV 55° (narrower
+## than world FOV 75°) per ADR-0005 §Decision, GDD §Tuning Knobs.
+@onready var _hands_camera: Camera3D = $Camera3D/SubViewport/HandsCamera
+
+## HandsMesh placeholder (production: rigged Skeleton3D/HandsMesh — PENDING art asset).
+## material_overlay is set to HandsOutlineMaterial in _ready(). Must NOT have
+## OutlineTier.set_tier() called on it (CI lint: tests/ci/hands_not_on_outline_tier_lint.gd).
+@onready var _hands_mesh: MeshInstance3D = $Camera3D/SubViewport/HandsCamera/HandsMesh
+
+## ShaderMaterial for the inverted-hull outline — read from _hands_mesh.material_overlay
+## after _ready() applies it. Used by _on_setting_changed to update resolution_scale.
+var _hands_material: ShaderMaterial = null
+
 
 # ── Built-in virtual methods ───────────────────────────────────────────────
 
@@ -337,6 +358,41 @@ func _ready() -> void:
 	# PC-004 — Compute latch duration in frames from the exported seconds value.
 	# 0.15 s × 60 Hz = 9 frames (ai-programmer B-2 fix 2026-04-21). TR-PC-014.
 	_spike_latch_duration_frames = int(spike_latch_duration_sec * Engine.physics_ticks_per_second)
+
+	# PC-008 — Wire HandsOutlineMaterial via material_overlay.
+	# material_overlay, NOT material_override: overlay preserves the mesh's per-surface
+	# PBR fill materials while adding the inverted-hull outline on top.
+	# material_override would clobber fill materials. ADR-0005 IG 7, GDD AC-9.1.
+	#
+	# NOTE: hands do NOT call OutlineTier.set_tier() — inverted-hull is the
+	# explicit ADR-0005 exception to ADR-0001's stencil contract.
+	# CI lint rule in tests/ci/hands_not_on_outline_tier_lint.gd enforces this.
+	var hands_mat_resource := preload("res://src/gameplay/player/hands_outline_material.tres")
+	# Duplicate so this instance's resolution_scale doesn't bleed into the shared resource.
+	_hands_material = hands_mat_resource.duplicate() as ShaderMaterial
+	if _hands_mesh != null:
+		_hands_mesh.material_overlay = _hands_material
+
+	# PC-008 — Subscribe to resolution_scale changes via Events signal bus.
+	# ADR-0002 IG 3: guard with is_connected before connecting (idempotent).
+	# ADR-0005 IG 4: same signal source used by ADR-0001's CompositorEffect.
+	if not Events.setting_changed.is_connected(_on_setting_changed):
+		Events.setting_changed.connect(_on_setting_changed)
+
+
+## PC-008: Syncs HandsCamera global_transform to main Camera3D each display frame.
+## Uses _process (NOT _physics_process) because SubViewport rendering is per-display
+## frame, not per-physics tick. ADR-0005 §Implementation Guidelines §Hands camera sync.
+func _process(_delta: float) -> void:
+	if _hands_camera != null and _camera != null:
+		_hands_camera.global_transform = _camera.global_transform
+
+
+## PC-008: Disconnect Events.setting_changed on exit to prevent stale callbacks.
+## ADR-0002 IG 3: always use is_connected guard before disconnecting.
+func _exit_tree() -> void:
+	if Events.setting_changed.is_connected(_on_setting_changed):
+		Events.setting_changed.disconnect(_on_setting_changed)
 
 
 ## Look input consumed in _unhandled_input per GDD §Input processing location.
@@ -919,6 +975,25 @@ func _on_reach_complete() -> void:
 	# E.11: target freed mid-reach → emit null (not an invalid node reference).
 	Events.player_interacted.emit(target)
 	_is_hand_busy = false
+
+
+## PC-008 — ADR-0005-G3: Updates HandsOutlineMaterial resolution_scale uniform when
+## the graphics resolution_scale setting changes. Wired to Events.setting_changed.
+##
+## Fires when category = &"graphics" AND name = &"resolution_scale" AND value is float.
+## All other category/name pairs are silently ignored (defensive filter).
+## Multiple emits in one frame: the last value wins (no accumulation).
+##
+## This method is the production close of ADR-0005 Gate 3. It ensures hands outline
+## width scales proportionally with the world outline (ADR-0001's CompositorEffect
+## reads the same signal source). ADR-0005 IG 4, ADR-0002, GDD AC-9.2 (stub only
+## until Settings & Accessibility GDD lands — see AC-9.2 blocked note in story).
+func _on_setting_changed(
+	category: StringName, setting_name: StringName, value: Variant
+) -> void:
+	if category == &"graphics" and setting_name == &"resolution_scale" and value is float:
+		if _hands_material != null:
+			_hands_material.set_shader_parameter(&"resolution_scale", value as float)
 
 
 ## Applies a single yaw delta to body.rotation.y and detects rapid-yaw to

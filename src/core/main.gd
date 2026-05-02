@@ -67,7 +67,9 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	_spawn_world()
+	_apply_plaza_outline_tiers()  # Stencil-tag CSG geometry before camera attaches.
 	_spawn_player()
+	_attach_outline_compositor()
 	_spawn_toast_overlay()
 	_push_gameplay_context()
 	_connect_savesignal_feedback()
@@ -99,6 +101,50 @@ func _spawn_player() -> void:
 	var cam: Camera3D = _player.get_node_or_null("Camera3D") as Camera3D
 	if cam != null:
 		cam.make_current()
+
+
+## Tag plaza CSG geometry with stencil-reference values so the outline pass
+## has something to draw outlines around. Walls + floor + pillar = Tier 3
+## LIGHT (1.5 px); the three crates = Tier 1 HEAVIEST (4 px) so the demo
+## visibly shows tier variation.
+##
+## CSGShape3D nodes carry a `material` property (StandardMaterial3D); the
+## outline pipeline reads stencil_mode/flags/compare/reference from that
+## material. OutlineTier.set_tier() targets MeshInstance3D specifically, so
+## here we set the stencil props directly on the CSG materials.
+func _apply_plaza_outline_tiers() -> void:
+	if _plaza == null:
+		return
+	var heaviest: Array[String] = ["Crate1", "Crate2", "Crate3"]
+	for child: Node in _plaza.get_children():
+		if not (child is CSGShape3D):
+			continue
+		var csg: CSGShape3D = child as CSGShape3D
+		if csg.material == null or not (csg.material is BaseMaterial3D):
+			continue
+		var mat: BaseMaterial3D = (csg.material as BaseMaterial3D).duplicate() as BaseMaterial3D
+		var tier: int = OutlineTier.HEAVIEST if heaviest.has(csg.name) else OutlineTier.LIGHT
+		mat.stencil_mode = 3                    # STENCIL_MODE_CUSTOM
+		mat.stencil_flags = 2                   # Write
+		mat.stencil_compare = 0                 # Always
+		mat.stencil_reference = tier
+		csg.material = mat
+
+
+## Attach the OutlineCompositorEffect to the player camera via a Compositor
+## resource. The CompositorEffect reads the stencil values written above and
+## draws the comic-book outline as POST_OPAQUE pass.
+func _attach_outline_compositor() -> void:
+	if _player == null:
+		return
+	var cam: Camera3D = _player.get_node_or_null("Camera3D") as Camera3D
+	if cam == null:
+		push_warning("Main: cannot attach outline — Camera3D not found.")
+		return
+	var effect: OutlineCompositorEffect = OutlineCompositorEffect.new()
+	var compositor: Compositor = Compositor.new()
+	compositor.compositor_effects = [effect]
+	cam.compositor = compositor
 
 
 func _push_gameplay_context() -> void:

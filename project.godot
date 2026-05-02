@@ -237,6 +237,7 @@ quickload={
 
 [internationalization]
 
+locale/fallback="en"
 locale/translations=PackedStringArray("res://translations/overlay.en.translation", "res://translations/hud.en.translation", "res://translations/menu.en.translation", "res://translations/settings.en.translation", "res://translations/meta.en.translation", "res://translations/dialogue.en.translation", "res://translations/cutscenes.en.translation", "res://translations/mission.en.translation", "res://translations/credits.en.translation", "res://translations/doc.en.translation", "res://translations/_dev_pseudo.en.translation", "res://translations/_dev_pseudo.pseudo.translation")
 
 [layer_names]

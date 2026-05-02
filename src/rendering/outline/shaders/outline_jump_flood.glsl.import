@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bo5xl0x25ek38"
+path="res://.godot/imported/outline_jump_flood.glsl-4197f3289f50dac0d5076d337e429849.res"
+
+[deps]
+
+source_file="res://src/rendering/outline/shaders/outline_jump_flood.glsl"
+dest_files=["res://.godot/imported/outline_jump_flood.glsl-4197f3289f50dac0d5076d337e429849.res"]
+
+[params]
+

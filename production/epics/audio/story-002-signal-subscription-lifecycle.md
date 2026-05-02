@@ -1,7 +1,7 @@
 # Story 002: Signal subscription lifecycle — connect/disconnect registry
 
 > **Epic**: Audio
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — subscription wiring + lifecycle test)
@@ -166,3 +166,22 @@ func _on_actor_became_alerted(
 
 - Depends on: Story 001 DONE (AudioManager class must exist for subscription wiring)
 - Unlocks: Story 003 (section-entered handler body), Story 004 (ducking handlers), Story 005 (footstep + stinger handlers)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-1..AC-5 covered with 16 lifecycle tests + 2 CI lint tests. AC-1 verifies 8 of 9 VS-subset signals connected (deviation: actor_became_alerted not yet declared in events.gd). AC-2 verifies all connections drop on _exit_tree. AC-3 idempotent disconnect verified via mock no-op subclass. AC-4 freed-Node payload safety covered (handler bodies are stubs but pattern proved). AC-5 enforced by CI grep lint test.
+**Test Evidence**: `tests/unit/foundation/audio/audiomanager_subscription_lifecycle_test.gd` + `tests/ci/audio_subscriber_only_lint.gd`
+**Code Review**: APPROVED inline — 8 connect/disconnect pairs all guarded by is_connected; 9 stub handlers with correct signatures matching events.gd taxonomy; `is_instance_valid` guard pattern documented for Node-payload handlers; subscriber-only invariant holds.
+**Deviations**:
+1. **`Events.actor_became_alerted` not declared in events.gd** — deferred with the AI/Stealth domain (requires StealthAI.AlertCause + StealthAI.Severity enums per ADR-0002 amendment). Handler stub `_on_actor_became_alerted` exists in audio_manager.gd but is NOT wired by `_connect_signal_bus`. Will land alongside Stealth AI epic.
+2. **CI lint format-string parens fix** — initial CI lint test had `%` operator binding tighter than `+` causing parse error. Fixed by wrapping the format strings in parens before applying `%`.
+**Suite trajectory**: 400 → 418 (+18 tests).
+**Files modified**:
+- `src/audio/audio_manager.gd` (extended from 98 to ~250 lines: `_connect_signal_bus()` + `_disconnect_signal_bus()` + 9 stub handlers + `_exit_tree()` lifecycle hook)
+**Files created**:
+- `tests/unit/foundation/audio/audiomanager_subscription_lifecycle_test.gd` (16 tests: AC-1 8 connect-state checks + AC-2 8 disconnect-state checks + AC-3 idempotent disconnect via mock + AC-4 freed-Node payload safety)
+- `tests/ci/audio_subscriber_only_lint.gd` (2 CI lint tests: Events-prefixed-emit grep + bare-emit defence-in-depth)
+**Out-of-scope deferred** (correctly): AUD-003 music players + section handlers; AUD-004 VO ducking + document mute + respawn cut; AUD-005 footstep routing + COMBAT stinger.

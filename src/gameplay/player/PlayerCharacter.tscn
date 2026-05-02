@@ -1,6 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://bpc001scaffold1"]
+[gd_scene load_steps=7 format=3 uid="uid://bpc001scaffold1"]
 
 [ext_resource type="Script" path="res://src/gameplay/player/player_character.gd" id="1_player_script"]
+
+; HandsOutlineMaterial — applied as material_overlay on HandsMesh (NOT material_override).
+; material_overlay preserves per-surface PBR fill materials; material_override would
+; clobber them. ADR-0005 IG 7, GDD AC-9.1.
+[ext_resource type="Material" path="res://src/gameplay/player/hands_outline_material.tres" id="2_hands_outline_mat"]
 
 ; CapsuleShape3D for the player body collider.
 ; height = 1.7 m is the TOTAL capsule height including hemispherical caps,
@@ -19,6 +24,21 @@ radius = 0.3
 ; Radius 0.25 keeps it inside the body capsule (radius 0.3).
 [sub_resource type="SphereShape3D" id="SphereShape3D_ceiling"]
 radius = 0.25
+
+; BoxMesh — placeholder hand geometry for PC-008.
+; Dimensions: 0.1 m wide × 0.05 m tall × 0.2 m deep — hand-scale stand-in.
+; PENDING: replace with rigged Skeleton3D + HandsMesh when art team delivers
+; the production hand asset (tracked at ADR-0005 G4 followup).
+; Smoothed vertex normals are a hard authoring requirement for the production
+; mesh (ADR-0005 IG 5) — sharp breaks cause inverted-hull outline artifacts.
+[sub_resource type="BoxMesh" id="BoxMesh_hands_placeholder"]
+size = Vector3(0.1, 0.05, 0.2)
+
+; StandardMaterial3D fill — provides the visible hand surface under the outline.
+; The outline hull (inverted-hull cull_front pass) is applied via material_overlay,
+; which renders ON TOP of this fill material without clobbering it.
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hands_fill"]
+albedo_color = Color(0.8, 0.7, 0.6, 1.0)
 
 ; PlayerCharacter — Eve's CharacterBody3D scene root.
 ; Script: player_character.gd (class_name PlayerCharacter)
@@ -49,6 +69,75 @@ target_position = Vector3(0, 0.35, 0)
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 
-; HandAnchor — attachment point for FPS hands SubViewport (Story PC-008).
-; Child of Camera3D so hands track with camera rotation automatically.
+; HandAnchor — attachment point preserved from Story PC-001 scaffold.
+; Child of Camera3D so it tracks with camera rotation automatically.
+; NOTE: SubViewport hierarchy for PC-008 lives directly under Camera3D
+; (not under HandAnchor) because HandsCamera must track the Camera3D
+; global_transform each _process frame via code in player_character.gd.
 [node name="HandAnchor" type="Node3D" parent="Camera3D"]
+
+; ── PC-008: FPS Hands SubViewport ─────────────────────────────────────────
+;
+; Hands render in a dedicated SubViewport at FOV 55° (narrower than world
+; FOV 75°) to prevent stretched-arm perspective distortion at wide FOV.
+; The SubViewport has its own framebuffer; hands cannot participate in
+; ADR-0001's stencil contract. Outline is baked in via inverted-hull shader
+; on HandsMesh.material_overlay (ADR-0005 §Decision, §Architecture).
+;
+; update_mode = UPDATE_ALWAYS: hands must render every frame including when
+; paused (document-overlay screens show idle hands per GDD §E.5). ADR-0005 IG 9.
+; transparent_bg = true: world outline visible through gaps between fingers
+; when composited. ADR-0005 IG 10.
+[node name="SubViewport" type="SubViewport" parent="Camera3D"]
+size = Vector2i(1920, 1080)
+transparent_bg = true
+update_mode = 3
+
+; HandsCamera — Camera3D inside the SubViewport, FOV 55°.
+; global_transform is synced to the main Camera3D each _process frame in
+; player_character.gd so hands track the player's view direction.
+; FOV 55° is narrower than world FOV 75° — standard FPS-hands convention
+; (avoids "gorilla arms" at wide FOV). ADR-0005 §Decision, GDD §Tuning Knobs.
+[node name="HandsCamera" type="Camera3D" parent="Camera3D/SubViewport"]
+fov = 55.0
+
+; HandsMesh — placeholder box mesh (stand-in for production rigged hands).
+; PENDING art asset replacement: rigged Skeleton3D + animated hands mesh.
+; Tracked at ADR-0005 G4 followup. Art authoring requirement: smoothed vertex
+; normals across all finger joints and wrist (ADR-0005 IG 5).
+;
+; Position: ~right-hand pose at (0.15, -0.15, -0.4) in HandsCamera local space.
+; Intended to appear in lower-right of screen in first-person view.
+;
+; material_overlay = hands_outline_material.tres (inverted-hull outline pass).
+; material_override = null (must NOT be set — overlay preserves fill materials).
+; The surface material (fill pass) is StandardMaterial3D_hands_fill.
+; DO NOT call OutlineTier.set_tier() on this node — hands use ADR-0005
+; inverted-hull, NOT ADR-0001 stencil. CI lint guards this invariant.
+[node name="HandsMesh" type="MeshInstance3D" parent="Camera3D/SubViewport/HandsCamera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -0.15, -0.4)
+mesh = SubResource("BoxMesh_hands_placeholder")
+material_overlay = ExtResource("2_hands_outline_mat")
+surface_material_override/0 = SubResource("StandardMaterial3D_hands_fill")
+
+; ── PC-008: CanvasLayer + SubViewportContainer ────────────────────────────
+;
+; CanvasLayer at layer=10 renders OVER the main 3D scene (after ADR-0001's
+; outline CompositorEffect completes) and UNDER the HUD (layers 8–9) and
+; document overlays (layer 20). This ordering ensures the world outline is
+; already baked into the main framebuffer before hands are composited on top.
+; ADR-0005 IG 11, §Architecture diagram.
+;
+; NOTE: CanvasLayer is parented to PlayerCharacter root (NOT to Camera3D)
+; because CanvasLayer is a 2D node that renders in screen-space — it should
+; not move with the 3D camera node's 3D transform hierarchy.
+[node name="HandsCanvasLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+; SubViewportContainer renders the hands SubViewport texture as a full-screen
+; overlay. Size matches the full viewport so the hands SubViewport composites
+; correctly over the main 3D scene.
+[node name="SubViewportContainer" type="SubViewportContainer" parent="HandsCanvasLayer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+stretch = true

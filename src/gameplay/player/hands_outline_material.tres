@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://hands_outline_mat_001"]
+
+; HandsOutlineMaterial — ShaderMaterial resource for the FPS hands inverted-hull outline.
+;
+; Implements: Story PC-008 (FPS hands rendering), ADR-0005 §Key Interfaces.
+; Applied via MeshInstance3D.material_overlay in player_character.gd _ready().
+;
+; Default uniforms baked in here so the shader has correct starting values
+; before player_character.gd sets resolution_scale from Settings at runtime.
+; outline_color:       vec4(0.102, 0.102, 0.102, 1.0) — Art Bible #1A1A1A
+; outline_world_width: 0.006 — ~4 px visual at 1080p native (ADR-0005 IG 3)
+; resolution_scale:    1.0   — overridden at runtime from Settings signal
+;
+; DO NOT apply material_override to the hands mesh — use material_overlay.
+; material_override would clobber per-surface PBR fill materials. (ADR-0005 IG 7)
+
+[ext_resource type="Shader" path="res://src/gameplay/player/hands_outline_material.gdshader" id="1_hands_shader"]
+
+[resource]
+shader = ExtResource("1_hands_shader")
+shader_parameter/outline_color = Color(0.102, 0.102, 0.102, 1.0)
+shader_parameter/outline_world_width = 0.006
+shader_parameter/resolution_scale = 1.0

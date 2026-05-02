@@ -1,7 +1,7 @@
 # Story 004: Resolution-scale kernel formula — Formula 2 implementation + Settings wiring
 
 > **Epic**: Outline Pipeline
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — formula implementation, Settings signal wiring, unit-testable math)
@@ -137,7 +137,25 @@ The `SettingsService` API for reading `resolution_scale` at startup is: `Setting
 - `tests/unit/foundation/outline_pipeline/outline_tier_kernel_formula_test.gd` — must exist and pass (AC-3, AC-4, AC-5 formula math; deterministic, no GPU context required)
 - Signal subscription integration test OR documented verification that `resolution_scale` member updates on signal emission (AC-2, AC-7 — can be a lightweight GUT scene-based test)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Created and passing — `tests/unit/foundation/outline_pipeline/outline_tier_kernel_formula_test.gd` (16 unit tests). Suite total: 400/400 PASS.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-01
+**Criteria**: AC-2, AC-3, AC-4, AC-5, AC-7, AC-8 fully covered. AC-1, AC-6 are cross-epic dependencies on Settings & Accessibility (documented as `pending` in QA plan).
+**Test Evidence**: `tests/unit/foundation/outline_pipeline/outline_tier_kernel_formula_test.gd`
+**Code Review**: APPROVED inline — formula matches GDD Formula 2 exactly; minimum 0.5 px clamp per GDD §Formulas; defensive divide-by-zero guard on render_height; type-guard `value is float` rejects malformed payloads; idempotent lazy-connect; thread-safety comment documents single-float atomicity.
+**Deviations**:
+1. **Lazy-connect on first `_render_callback`** instead of `_init`/`_ready`: Resources don't run inside the scene tree, and Events autoload may not be ready when a CompositorEffect is parsed as a sub-resource. Lazy-connect via `_ensure_settings_signal_connected()` solves this safely.
+2. **AC-1 SettingsService startup read** is deferred — the Settings & Accessibility epic owns that boot-time read. The OutlineCompositorEffect picks up the value via Events broadcast instead. Documented as cross-epic dep in QA plan.
+**Suite trajectory**: 384 → 400 (+16 tests).
+**Files modified**:
+- `src/rendering/outline/outline_compositor_effect.gd` (added `_compute_kernel_actual` static formula helper, `_settings_signal_connected` flag, `_ensure_settings_signal_connected` lazy-connect helper, `_on_setting_changed` handler with category/name/value-type guards; replaced placeholder `BASE × resolution_scale` math in Stage 2 dispatch with the full Formula 2 invocation)
+**Files created**:
+- `tests/unit/foundation/outline_pipeline/outline_tier_kernel_formula_test.gd` (16 tests: 6 production-tier formula correctness + 3 minimum-clamp boundaries + 1 divide-by-zero guard + 1 1440p scale-up + 4 signal-handler correctness/rejection + 1 idempotency)
+**Out-of-scope deferred** (correctly): AC-1 SettingsService startup read; AC-6 Iris Xe/RTX 2060+ default branch; OUT-005 visual sign-off + perf measurement.
 
 ---
 

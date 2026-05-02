@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://csg54sfw7hcfb"
+path="res://.godot/imported/stencil_pass.glsl-ae2b9948c53558b9e647527e9176bbc9.res"
+
+[deps]
+
+source_file="res://src/rendering/outline/shaders/stencil_pass.glsl"
+dest_files=["res://.godot/imported/stencil_pass.glsl-ae2b9948c53558b9e647527e9176bbc9.res"]
+
+[params]
+

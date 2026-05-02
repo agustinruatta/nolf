@@ -1,0 +1,138 @@
+[gd_scene load_steps=12 format=3 uid="uid://out_pipeline_plaza_demo_2026_05_01"]
+
+; Outline Pipeline — Plaza reference demo scene (OUT-005).
+;
+; Purpose: exercise the full production outline pipeline (OUT-001..004) on a
+; controlled set of stand-in primitives, one per stencil tier. The user opens
+; this scene and runs it (F6 in editor) to capture the screenshot evidence
+; and perf measurement that close OUT-005.
+;
+; Layout:
+;   - DirectionalLight3D — single cascade per ADR-0008 constraint
+;   - Camera3D with Compositor + OutlineCompositorEffect attached
+;   - GroundPlane (Tier 3 LIGHT, stencil_reference = 3)
+;   - GuardStandIn (Tier 2 MEDIUM, capsule, stencil_reference = 2)
+;   - DocumentStandIn (Tier 1 HEAVIEST, plane, stencil_reference = 1)
+;   - SignageStandIn (Tier 1 HEAVIEST, box, stencil_reference = 1)
+;   - DocumentDimRect on CanvasLayer 10 — Tier 0 (no stencil) — must NOT
+;     produce an outline at the rect edges
+;   - HandsSubViewportContainer on CanvasLayer 10 — empty SubViewport
+;     (transparent_bg) — proves no stencil corruption at SubViewport overlap
+;
+; Stencil writes: each tier mesh's StandardMaterial3D has stencil_mode = 3
+; (CUSTOM), stencil_flags = 2 (Write), stencil_compare = 0 (Always),
+; stencil_reference = T. This is exactly what OutlineTier.set_tier() does
+; programmatically; here it is baked into the scene so opening and running
+; reproducibly drives the pipeline.
+;
+; Run procedure:
+;   1. Open this scene in Godot 4.6 editor
+;   2. Press F6 to run the current scene
+;   3. Take a screenshot at native 1920x1080
+;   4. Use a pixel ruler (GIMP, Krita, etc.) to measure outline thickness
+;      at each tier silhouette — record values in
+;      production/qa/evidence/story-005-visual-signoff.md
+;   5. Sample outline color at each tier silhouette — record values
+;   6. Capture 300 frames via the Godot Profiler (Remote Profiler →
+;      Visual → Frame), record p95 of the CompositorEffect cost — log
+;      values in production/qa/evidence/story-005-slot1-perf-evidence.md
+
+[ext_resource type="Script" path="res://src/rendering/outline/outline_compositor_effect.gd" id="1_outline_eff"]
+
+[sub_resource type="Resource" id="OutlineEffect_inst"]
+script = ExtResource("1_outline_eff")
+
+[sub_resource type="Compositor" id="Compositor_main"]
+compositor_effects = Array[CompositorEffect]([SubResource("OutlineEffect_inst")])
+
+[sub_resource type="StandardMaterial3D" id="mat_ground_tier3"]
+albedo_color = Color(0.55, 0.50, 0.42, 1.0)
+roughness = 0.85
+stencil_mode = 3
+stencil_flags = 2
+stencil_compare = 0
+stencil_reference = 3
+
+[sub_resource type="StandardMaterial3D" id="mat_guard_tier2"]
+albedo_color = Color(0.62, 0.20, 0.20, 1.0)
+roughness = 0.65
+stencil_mode = 3
+stencil_flags = 2
+stencil_compare = 0
+stencil_reference = 2
+
+[sub_resource type="StandardMaterial3D" id="mat_document_tier1"]
+albedo_color = Color(0.92, 0.88, 0.74, 1.0)
+roughness = 0.40
+stencil_mode = 3
+stencil_flags = 2
+stencil_compare = 0
+stencil_reference = 1
+
+[sub_resource type="PlaneMesh" id="plane_ground"]
+size = Vector2(20, 20)
+
+[sub_resource type="CapsuleMesh" id="capsule_guard"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="PlaneMesh" id="plane_document"]
+size = Vector2(0.6, 0.85)
+
+[sub_resource type="BoxMesh" id="box_signage"]
+size = Vector3(1.0, 0.6, 0.05)
+
+[node name="PlazaOutlinePipelineDemo" type="Node3D"]
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 8, 0)
+light_color = Color(1.0, 0.92, 0.78, 1.0)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_max_distance = 50.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 4)
+fov = 75.0
+compositor = SubResource("Compositor_main")
+current = true
+
+[node name="GroundPlane" type="MeshInstance3D" parent="."]
+mesh = SubResource("plane_ground")
+material_override = SubResource("mat_ground_tier3")
+
+[node name="GuardStandIn" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, 0)
+mesh = SubResource("capsule_guard")
+material_override = SubResource("mat_guard_tier2")
+
+[node name="DocumentStandIn" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.0, 0)
+mesh = SubResource("plane_document")
+material_override = SubResource("mat_document_tier1")
+
+[node name="SignageStandIn" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.5, -1)
+mesh = SubResource("box_signage")
+material_override = SubResource("mat_document_tier1")
+
+[node name="HudCanvasLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="DocumentDimRect" type="ColorRect" parent="HudCanvasLayer"]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 480.0
+offset_bottom = 270.0
+color = Color(0, 0, 0, 0.55)
+
+[node name="HandsSubViewportContainer" type="SubViewportContainer" parent="HudCanvasLayer"]
+offset_left = 1280.0
+offset_top = 540.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+
+[node name="HandsSubViewport" type="SubViewport" parent="HudCanvasLayer/HandsSubViewportContainer"]
+transparent_bg = true
+size = Vector2i(640, 540)
+render_target_update_mode = 4

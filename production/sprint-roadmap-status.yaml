@@ -1,0 +1,160 @@
+# Multi-Sprint Roadmap Status — Pre-Art Integration
+# Source: production/sprints/multi-sprint-roadmap-pre-art.md
+# Bootstraps: production/sprints/sprint-bootstrap-prompts.md
+# Launcher:   tools/run-next-sprint.sh
+#
+# Manually updated when a sprint closes. Per-sprint detail lives in
+# production/sprint-status.yaml (auto-managed).
+
+generated: "2026-05-02"
+last_updated: "2026-05-02"
+roadmap_doc: "production/sprints/multi-sprint-roadmap-pre-art.md"
+roadmap_goal: "Drive every code-ready story to completion against proxy/placeholder geometry, so when art assets land the integration is a swap rather than new code."
+stop_gate: "Art assets become the critical-path blocker (post-Sprint 08)."
+
+current_sprint: 3
+current_sprint_status: "code-complete; user visual sign-off pending on OUT-005"
+
+inventory_at_planning:
+  total_stories_in_backlog: 124
+  code_ready_no_art: 62
+  art_blocked: 62
+  adr_0004_blocked: 9   # 4 doc-overlay + 4 menu-system + 1 settings-accessibility
+  pre_art_roadmap_load: 68   # 62 code-ready + the spillover/integration buffer in Sprint 08
+
+sprints:
+  - number: 4
+    slug: "stealth-ai-foundation"
+    theme: "the level becomes alive — guards perceive, suspect, search, alert, reset"
+    status: "planned"
+    story_count: 16
+    epics:
+      - epic: "stealth-ai"
+        stories: 10
+        ids: ["all"]
+      - epic: "input"
+        stories: 5
+        ids: ["INP-001", "INP-002", "INP-004", "INP-005", "INP-006"]
+      - epic: "player-character"
+        stories: 1
+        ids: ["PC-006"]
+    estimated_agent_days: 4.5
+    hard_stops:
+      - "Stealth signal-architecture ambiguity → escalate to godot-specialist"
+      - "Visual sign-off on alert-state debug UI if added"
+    bootstrap_section: "Sprint 04 — Stealth AI Foundation"
+    deliverable: "Placeholder capsule guard patrols the Plaza VS scene, perceives the player, escalates suspicion through documented tiers, resets. Save-load round-trips guard state."
+
+  - number: 5
+    slug: "mission-loop-persistence"
+    theme: "failure has consequences and progress survives"
+    status: "planned"
+    story_count: 16
+    epics:
+      - epic: "save-load"
+        stories: 5
+        ids: ["SL-002", "SL-003", "SL-006", "SL-007", "SL-009"]
+      - epic: "failure-respawn"
+        stories: 6
+        ids: ["all"]
+      - epic: "mission-level-scripting"
+        stories: 5
+        ids: ["all"]
+    estimated_agent_days: 4
+    hard_stops:
+      - "ADR-0007 amendment if mission-vs-failure ordering re-ambiguates"
+      - "Manifest-version bump decision for save format"
+    bootstrap_section: "Sprint 05 — Mission Loop & Persistence"
+    deliverable: "Death → respawn → objective state preserved → quicksave/quickload round-trips through a level transition. Mission objective triggers fire via scripted volumes."
+
+  - number: 6
+    slug: "ui-shell"
+    theme: "the screen reads as final on placeholder geometry"
+    status: "planned"
+    story_count: 18
+    epics:
+      - epic: "hud-core"
+        stories: 6
+        ids: ["all"]
+      - epic: "hud-state-signaling"
+        stories: 3
+        ids: ["all"]
+      - epic: "settings-accessibility"
+        stories: 5
+        ids: ["ready-only — 1 ADR-0004-blocked story DEFERRED"]
+      - epic: "localization-scaffold"
+        stories: 4
+        ids: ["LOC-001", "LOC-003", "LOC-004", "LOC-005"]
+    estimated_agent_days: 4
+    hard_stops:
+      - "**ADR-0004 mandatory status report at sprint close** — surfaces 9 blocked stories"
+      - "Visual sign-off on HUD field opacity (Restaurant + Bomb Chamber contrast — art bible §7E)"
+    bootstrap_section: "Sprint 06 — UI Shell (HUD + Settings)"
+    deliverable: "Plaza VS demo shows real HUD with placeholder numerals, alert cue responds to Sprint-04 stealth state, settings menu round-trips photosensitivity + master volume."
+
+  - number: 7
+    slug: "audio-document-logic"
+    theme: "audio carries the alert state, documents are collectible (logic only)"
+    status: "planned"
+    story_count: 12
+    epics:
+      - epic: "audio"
+        stories: 3
+        ids: ["AUD-003", "AUD-004", "AUD-005"]
+      - epic: "document-collection"
+        stories: 5
+        ids: ["all — overlay UI is a separate epic, ADR-0004-blocked"]
+      - epic: "post-process-stack"
+        stories: 4
+        ids: ["PPS-003", "PPS-005", "PPS-006", "PPS-007"]
+    estimated_agent_days: 3.5
+    hard_stops:
+      - "Alert-tier music asset gap (logic ships with placeholder; surface commission ask)"
+      - "Glow rework verification gate (ADR-0008 4.6 compatibility)"
+    bootstrap_section: "Sprint 07 — Audio Body & Document Logic"
+    deliverable: "Alert music tier shifts on Sprint-04 stealth-state transitions, documents pick up and persist to save, post-process chain composes correctly with the outline pipeline."
+
+  - number: 8
+    slug: "level-streaming-integration"
+    theme: "seamless section transitions across the full pipeline; close every code-ready epic"
+    status: "planned"
+    story_count: 6
+    epics:
+      - epic: "level-streaming"
+        stories: 6
+        ids: ["LS-001", "LS-004", "LS-005", "LS-006", "LS-009", "LS-010"]
+    estimated_agent_days: 3
+    hard_stops:
+      - "ROADMAP CLOSE — art-integration handoff package mandatory at sprint close"
+      - "/asset-spec run for hero asset list — Eve hands, Eve full body, PHANTOM grunt + variants, Eiffel bay modules x3, bomb device"
+    bootstrap_section: "Sprint 08 — Level Streaming Body & Integration Hardening"
+    deliverable: "Full mission loop on proxy art: patrol → perceive → evade → collect doc → alert → fail → respawn → save/load → section transition. Project is art-integration-ready."
+
+post_roadmap_preview:
+  - sprint: 9
+    note: "Asset spec authoring + pause for art commission. NOT autonomous-executable."
+  - sprint: "10+"
+    note: "Art integration as .glb files arrive. Eve FPS hands first (closes ADR-0005 G4)."
+  - sprint: "~12"
+    note: "First slice with final look — Plaza section playable end-to-end with final art. This is the user's original target."
+
+global_stop_conditions:
+  # The autonomous executor stops on ANY of these. See roadmap for full text.
+  - "ADR ambiguity or amendment required"
+  - "Scope drift flagged by /scope-check"
+  - "Visual sign-off needed (screenshot diff, contrast playtest)"
+  - "Art asset surfaces as hard blocker (.glb mesh, animation rig, VO line, final texture)"
+  - "ADR-0004 status requires action (Sprint 06 close)"
+  - "Test failure or regression — never patch by skipping tests"
+  - "Cross-sprint dependency invalidates a planned sprint"
+  - "Tech-debt register grows beyond 12 items (currently 7: TD-001..TD-007)"
+
+execution:
+  mode: "user-driven session per sprint (not claude.ai cron)"
+  reason: "Project uses Anthropic API account; /schedule requires claude.ai auth"
+  procedure:
+    - "Run tools/run-next-sprint.sh to print the bootstrap prompt for the next sprint"
+    - "Start a fresh `claude` session in the project root"
+    - "Paste the bootstrap prompt; session executes autonomously until a stop condition"
+    - "Resolve any surfaced blocker, then start next session and paste the same prompt — agent resumes from active.md"
+  no_commits: "All commits remain user-driven per CLAUDE.md collaboration protocol"

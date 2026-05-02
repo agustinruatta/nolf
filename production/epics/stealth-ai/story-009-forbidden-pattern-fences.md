@@ -1,7 +1,7 @@
 # Story 009: Forbidden pattern fences + CI grep gates
 
 > **Epic**: Stealth AI
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 1-2 hours (S — CI shell assertions, static grep tests, no new runtime code)
@@ -113,7 +113,40 @@ The `player_footstep` prohibition is load-bearing for the perception-seam archit
 **Required evidence**:
 - `tests/unit/feature/stealth_ai/stealth_ai_forbidden_patterns_test.gd` — AC-SAI-3.12 (all 6 grep assertions)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 7 grep fence tests; suite 630/630 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 7/7 PASSING (AC-1..AC-7 all verified by 7 grep fence tests; AC-6 active since SAI-002 closed earlier this sprint, no `pending` marker needed)
+
+**Test Evidence**:
+- `tests/unit/feature/stealth_ai/stealth_ai_forbidden_patterns_test.gd` (NEW, ~250 LOC, 7 fence tests):
+  - AC-1: `test_no_player_footstep_subscription_in_sai_source` (pull-only / no push subscription)
+  - AC-2: `test_no_sync_navigation_server_calls_in_sai_source` (NavigationServer3D.map_get_path forbidden)
+  - AC-3: `test_no_call_deferred_in_guard_gd` (synchronicity contract)
+  - AC-4: `test_no_bare_physics_layer_integers_in_sai_source` (PhysicsLayers.* required; integer 0 sensor exception)
+  - AC-5: `test_events_gd_has_zero_enum_declarations` (ADR-0002 IG 2 fence)
+  - AC-6: `test_events_gd_contains_all_six_sai_signal_declarations` (presence sweep)
+  - AC-6+: `test_guard_incapacitated_cause_is_typed_as_int_not_enum` (cross-autoload convention)
+- Suite: **630/630 PASS** exit 0 (baseline 623 + 7 new SAI-009 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `tests/unit/feature/stealth_ai/stealth_ai_forbidden_patterns_test.gd` (NEW) — single test file with 7 grep fences. No production source changes (this story is pure CI gates).
+
+**Code Review**: Self-reviewed inline (single test file; comment-skip helper extracts to `_file_contains_in_code` for reuse across AC-1, AC-2, AC-6 to avoid doc-comment false positives)
+
+**Deviations Logged**:
+- **Comment-skip discipline added during inline fix**. Initial test had AC-2 + AC-6 false positives because doc-comments in `patrol_controller.gd` mention `NavigationServer3D.map_get_path` (the FORBIDDEN pattern's name) and `events.gd` had a comment about `CombatSystemNode.DamageType`. Fix: added `_file_contains_in_code(path, needle)` helper that strips full-line and inline comments before searching. The grep fences now match only on actual code, not on documentation.
+- **AC-6 `pending` marker not used**: SAI-002 was DONE earlier this sprint, so AC-6 (signal signature presence sweep) is active immediately, no `pending()` skip required.
+- **CI integration**: tests run as part of the standard headless test suite (`godot -s -d res://addons/gdUnit4/bin/GdUnitCmdTool.gd ... --headless`). No separate `.github/workflows/` shell step needed — fences are GDScript tests like any other.
+- **`_SAI_DIRS` scope**: limited to `src/gameplay/stealth/` (no `src/ai/` directory exists in this project's structure; SAI source lives under `src/gameplay/stealth/`). When/if `src/ai/` is added, append it to `_SAI_DIRS`.
+
+**Tech Debt Logged**: None.
+
+**Unlocks**: Story 010 (perf harness inherits the "no sync nav calls" fence; combined with the perf budget, the async-nav contract is end-to-end protected)
 
 ---
 

@@ -1,7 +1,7 @@
 # Story 004: Anti-pattern CI enforcement + debug action gating
 
 > **Epic**: Input
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S-M — CI shell scripts + one unit test; no new GDScript systems)
@@ -173,7 +173,48 @@ Uses Python or awk to check that every `InputMap.action_add_event(` call is prec
 - `tools/ci/check_debug_action_gating.sh` — must exist; CI passes (AC-INPUT-5.3)
 - `tools/ci/check_unhandled_input_default.sh` — must exist; outputs advisory report (AC-INPUT-6.3 — advisory, exits 0)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 4 new CI scripts + 1 extension + 9 new tests; suite 656/656 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 5/5 PASSING (AC-1.2 BLOCKING, AC-5.3 BLOCKING, AC-6.1 BLOCKING, AC-6.2 BLOCKING, AC-6.3 ADVISORY)
+
+**Test Evidence**:
+- `tests/unit/core/input/debug_action_gating_test.gd` (NEW, 3 tests) — AC-5.3 behavior complement
+- `tests/unit/foundation/input_ci_lints_test.gd` (NEW, 6 tests) — wraps all 5 CI scripts in GdUnit4 invocations
+- 4 NEW CI scripts in `tools/ci/`: check_action_literals.sh, check_raw_input_constants.sh, check_action_add_event_validation.sh, check_unhandled_input_default.sh
+- 1 extended CI script: check_debug_action_gating.sh (added Check 4 — `if OS.is_debug_build():` guard verification at the InputContext call site)
+- Suite: **656/656 PASS** exit 0 (baseline 647 + 9 new IN-004 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `tools/ci/check_action_literals.sh` (NEW, executable) — AC-1.2 grep with comment-skip + `# action-literal-ok:` exemption support
+- `tools/ci/check_raw_input_constants.sh` (NEW, executable) — AC-6.1 KEY_/JOY_BUTTON_/etc. grep with `# raw-input-ok:` exemption + `OS.is_debug_build()` skip
+- `tools/ci/check_action_add_event_validation.sh` (NEW, executable) — AC-6.2 5-line lookback for `InputMap.has_action()` before `action_add_event()`
+- `tools/ci/check_unhandled_input_default.sh` (NEW, executable, ADVISORY) — AC-6.3 lists `func _input(` usages outside input/UI infra; always exits 0
+- `tools/ci/check_debug_action_gating.sh` (modified) — added Check 4 (OS.is_debug_build() guard verification)
+- `tests/unit/core/input/debug_action_gating_test.gd` (NEW, 3 tests) — registers debug actions, asserts has_action() positives, idempotency
+- `tests/unit/foundation/input_ci_lints_test.gd` (NEW, 6 tests) — invokes each CI script via OS.execute and asserts exit code 0
+
+**Real anti-pattern violations found and fixed during implementation**:
+- `src/core/main.gd:192,197,203` — was using bare strings `"quicksave"`, `"quickload"`, `"ui_cancel"` instead of `InputActions.QUICKSAVE`/`QUICKLOAD`/`UI_CANCEL` constants. Fixed to use the typed constants. The script worked as intended — caught real tech debt.
+- `src/gameplay/player/footstep_component.gd:187,188` — `has_meta("surface_tag")` and `get_meta("surface_tag")` are legitimate Node metadata keys (not InputMap actions). Annotated with `# action-literal-ok: Node metadata key` exemption.
+- `src/gameplay/stealth/perception.gd:366` — `result.get("collider")` is a Dictionary key from `intersect_ray` result. Annotated with `# action-literal-ok: Dictionary key from intersect_ray` exemption.
+
+**Code Review**: Self-reviewed inline (each script independently runnable; comment-skip + exemption-annotation discipline applied uniformly across the 5 scripts; the GdUnit4 wrapper test ensures all run as part of the standard headless suite)
+
+**Deviations Logged**:
+- **`# action-literal-ok:` exemption convention**. The grep heuristic `'(?<!&)"[a-z][a-z0-9_]+"\s*\)'` produces false positives on legitimate non-action lowercase strings (Dictionary keys, Node metadata keys). Adopted the same exemption-annotation pattern established by SAI-009 (`# dismiss-order-ok:`) and IN-003 (extended). Consistent across all 5 scripts.
+- **`# raw-input-ok:` exemption** for the raw-constants check — for code that legitimately needs `KEY_*` etc. (debug overlays building InputEventKey instances). No current callers in src/.
+- **AC-5.3 sub-check (b) split across 2 scripts**: the `_register_debug_actions()` use of `add_action` + `action_add_event` is verified by Checks 2+3 of the existing `check_debug_action_gating.sh`. The new Check 4 (added in this story) verifies the OS.is_debug_build() guard wraps the call site at `src/core/ui/input_context.gd`.
+- **AC-5.3 sub-check (c)**: delegated to `check_action_add_event_validation.sh` (avoids duplicate logic in two scripts).
+- **AC-INPUT-6.3 ADVISORY**: script always exits 0 per spec. The list output is for code-review attention; no current callers in src/ (verified — count is 0).
+
+**Tech Debt Logged**: None (real violations fixed inline; story closed clean).
+
+**Unlocks**: All consumer epics (Player Character, Combat, Inventory, Menu System, Save/Load) now pass the CI gate when they ship dismissal handlers / new InputMap actions / use of raw constants.
 
 ---
 

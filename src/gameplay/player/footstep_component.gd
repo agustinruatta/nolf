@@ -184,8 +184,8 @@ func _resolve_surface_tag() -> StringName:
 		# No body below player at all. Don't warn (would spam in mid-air).
 		return &"default"
 	var body: Object = hit["collider"]
-	if body.has_meta("surface_tag"):
-		return body.get_meta("surface_tag") as StringName
+	if body.has_meta("surface_tag"):  # action-literal-ok: Node metadata key, not an InputMap action.
+		return body.get_meta("surface_tag") as StringName  # action-literal-ok: Node metadata key.
 	# Body present but missing tag — log once per body.
 	_warn_missing_surface_tag(body)
 	return &"default"

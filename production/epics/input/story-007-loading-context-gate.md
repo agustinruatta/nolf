@@ -1,7 +1,7 @@
 # Story 007: LOADING context gate integration
 
 > **Epic**: Input
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: 2-3 hours (S-M — 1 integration test file; LOADING enum value already present in ADR-0004)
@@ -123,7 +123,28 @@ func _unhandled_input(event: InputEvent) -> void:
 **Required evidence**:
 - `tests/integration/core/input/loading_context_gate_test.gd` — must exist and pass (AC-INPUT-8.1)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 6 tests; suite 693/693 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 2/2 PASSING (AC-8.1, LOADING enum presence)
+
+**Test Evidence**: `tests/integration/core/input/loading_context_gate_test.gd` (NEW, 6 tests):
+- LOADING enum resolves at parse time
+- push(LOADING) executes without crash
+- AC-8.1: fire_primary swallowed during LOADING
+- AC-8.1: quicksave swallowed during LOADING
+- AC-8.1: handlers fire normally after pop returns to GAMEPLAY
+- ui_context_changed emits both transitions (GAMEPLAY→LOADING and LOADING→GAMEPLAY)
+
+Suite: **693/693 PASS** exit 0 (baseline 687 + 6 new IN-007 tests).
+
+**Files Modified / Created**: 1 new test file. No production code changes (Story 002 already had the LOADING enum value per ADR-0004 Amendment A6 from Sprint 02; this story validates the gate behavior using fixtures stand-in for LevelStreamingService / Combat / Save-Load).
+
+**INPUT EPIC COMPLETE**: All Sprint 04 Input stories (IN-003, IN-004, IN-005, IN-006, IN-007) now closed. Sprint progress 15/16; only PC-006 remains.
 
 ---
 

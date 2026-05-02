@@ -1,7 +1,7 @@
 # Story 006: Health system (apply_damage, apply_heal, signals)
 
 > **Epic**: Player Character
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — apply_damage rounding, death transition, signal emission order, apply_heal, DEAD guard)
@@ -184,7 +184,44 @@ No dedicated `player_healed` signal at MVP — HUD listens to `player_health_cha
 - `tests/unit/core/player_character/player_heal_test.gd` — must pass (AC-heal)
 - `tests/unit/core/player_character/player_damage_cancel_interact_test.gd` — must pass (AC-damage-cancel-interact)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 6 new test files (32 tests); suite 725 tests, 0 failures.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 7/7 PASSING (AC-5.1, AC-5.2, AC-5.3, AC-10.1, AC-10.2, AC-heal, AC-latch-clear, AC-damage-cancel-interact)
+
+**Test Evidence**:
+- `tests/unit/core/player_character/player_damage_basic_test.gd` (NEW, 3 tests) — AC-5.1
+- `tests/unit/core/player_character/player_damage_rounding_guard_test.gd` (NEW, 6 tests) — AC-5.2
+- `tests/unit/core/player_character/player_damage_lethal_test.gd` (NEW, 4 tests) — AC-5.3
+- `tests/unit/core/player_character/player_signal_taxonomy_test.gd` (NEW, 5 tests) — AC-10.1, AC-10.2
+- `tests/unit/core/player_character/player_heal_test.gd` (NEW, 6 tests) — AC-heal
+- `tests/unit/core/player_character/player_dead_state_latch_clear_test.gd` (NEW, 3 tests) — AC-latch-clear
+- `tests/unit/core/player_character/player_damage_cancel_interact_test.gd` (NEW, 5 tests) — AC-damage-cancel-interact
+- Suite: **725 tests / 0 failures** (baseline 693 + 32 new PC-006 tests; per-suite Statistics confirm zero failures across all suites)
+
+**Files Modified / Created**:
+- `src/gameplay/combat/combat_system.gd` (modified) — added `class_name CombatSystemNode`; added stub enums `DamageType { TEST, OUT_OF_BOUNDS }` and `DeathCause { UNKNOWN }`; added stub `static func damage_type_to_death_cause()` returning UNKNOWN. Real Combat & Damage GDD will replace these stubs.
+- `src/core/signal_bus/events.gd` (modified) — added `signal player_died(cause: int)` per cross-autoload convention (int payload cast from CombatSystemNode.DeathCause at emit sites — matches save_failed/ui_context_changed/section_entered precedent)
+- `tests/unit/foundation/events_signal_taxonomy_test.gd` (modified) — flipped `player_died` deferred-absence assertion to positive-presence with TYPE_INT signature check (same pattern used by SAI-002 for the SAI signals)
+- `src/gameplay/player/player_character.gd` (modified) — added `@export var max_health: int = 100`, `@export var interact_damage_cancel_threshold: float = 10.0`, `var health: int = 100`; added `health = max_health` initialisation in `_ready()`; appended `func apply_damage(amount, source, damage_type)` and `func apply_heal(amount, source)` at end of file (sole health mutators per coding-standards forbidden pattern `health_mutation_outside_apply_damage`)
+- 7 new test files (32 tests total)
+
+**Code Review**: Self-reviewed inline. Implementation follows GDD §F.6 / §F.7 verbatim. Signal emission order (player_damaged → player_health_changed → player_died) verified by emission-log spy in player_damage_basic_test.gd. DEAD-state guard verified via apply_damage subsequent-call test + apply_heal blocked-while-dead test.
+
+**Deviations Logged**:
+- **CombatSystemNode is a stub for PC-006**. The `damage_type_to_death_cause()` mapping returns `UNKNOWN` for all DamageType values. Real mapping table lands with the Combat & Damage GDD. This story unblocks the contract; the real implementation supersedes the stub.
+- **`Events.player_died(cause: int)` not `cause: CombatSystemNode.DeathCause`**. Cross-autoload convention (same as save_failed.reason, ui_context_changed.new_ctx, section_entered.reason): events.gd must NOT import CombatSystemNode to avoid cross-autoload reference. Subscribers cast: `var cause := payload as CombatSystemNode.DeathCause`. Documented in events.gd doc comment.
+- **`is_critical = false` hardcoded at MVP**. The `player_damaged` signal includes an `is_critical: bool` payload field. PC-006 always emits `false` because crit-hit logic is post-MVP. The signal stays signature-stable; the value will be set by Combat & Damage when crits land.
+- **`apply_heal` does not emit a signal at full health**. Optimisation: if health was already at max_health, the heal is a no-op and no `player_health_changed` is emitted. Documented in `apply_heal` doc comment. Test: `test_heal_at_full_health_emits_no_signal`.
+- **`NoiseEvent.type` field name (not `noise_type`)**. The story's pseudo-code referenced `noise_type` but the production NoiseEvent class uses `type` as the field. Tests use `type`.
+
+**Tech Debt Logged**: None.
+
+**SPRINT 04 COMPLETE**: All 16 stories now closed. Stealth AI epic (10/10), Input epic (5/5 sprint stories), Player Character (1/1 sprint story).
 
 ---
 

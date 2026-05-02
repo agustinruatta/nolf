@@ -1,7 +1,7 @@
 # Story 005: F.5 thresholds + combined score + state escalation/de-escalation
 
 > **Epic**: Stealth AI
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 3-4 hours (L — transition matrix test, 19-edge reversibility matrix, combined score)
@@ -163,7 +163,45 @@ No state-machine dwell floor (per GDD §Detailed Rules "No state-machine dwell f
 - `tests/unit/feature/stealth_ai/stealth_ai_force_alert_state_test.gd` — AC-SAI-3.5
 - `tests/unit/feature/stealth_ai/stealth_ai_receive_damage_synchronicity_test.gd` — AC-SAI-1.11 (synchronicity only; damage routing deferred post-VS)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 61 new tests across 6 files; suite 557/557 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 8/8 PASSING (AC-1 UNAWARE→SUSPICIOUS, AC-2 SUSPICIOUS→UNAWARE de-escalation path, AC-3 19-edge matrix incl. forbidden-paths, AC-4 5-pair combined score, AC-5 cause tie-break, AC-6 force_alert_state lattice/SCRIPTED/terminal, AC-7 threshold exports, AC-8 synchronicity)
+
+**Test Evidence**:
+- `tests/unit/feature/stealth_ai/stealth_ai_unaware_to_suspicious_test.gd` — 9 tests (AC-1 + AC-5 cause tie-break)
+- `tests/unit/feature/stealth_ai/stealth_ai_suspicious_to_unaware_test.gd` — 4 tests (AC-2 de-escalation path via _de_escalate_to)
+- `tests/unit/feature/stealth_ai/stealth_ai_reversibility_matrix_test.gd` — 14 tests (AC-3 9 legal + 3 forbidden + 2 terminal-rejection)
+- `tests/unit/feature/stealth_ai/stealth_ai_combined_score_test.gd` — 9 tests (AC-4 5-pair matrix + threshold gating)
+- `tests/unit/feature/stealth_ai/stealth_ai_force_alert_state_test.gd` — 19 tests (AC-6 lattice escalation, terminal rejection, SCRIPTED, ALERTED_BY_OTHER, signal order; AC-7 threshold exports)
+- `tests/unit/feature/stealth_ai/stealth_ai_receive_damage_synchronicity_test.gd` — 6 tests (AC-8 pre-connected lambda observes post-mutation state via 4 different code paths)
+- Suite: **557/557 PASS** exit 0 (baseline 496 + 61 new SAI-005 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `src/gameplay/stealth/perception.gd` (modified) — added `sound_accumulator: float = 0.0` stub field for F.5 combined-score read (F.2 sound fill is post-VS but the field must exist now)
+- `src/gameplay/stealth/guard.gd` (modified, ~370 LOC total) — upgraded `current_alert_state: int = 0` stub to typed `StealthAI.AlertState = StealthAI.AlertState.UNAWARE` (closes SAI-001 follow-up); added 5 `@export_range` thresholds (t_suspicious 0.3, t_searching 0.6, t_combat 0.95, t_decay_unaware 0.1, t_decay_searching 0.35) + 3 timer exports (suspicion_timeout_sec 4.0, search_timeout_sec 12.0, combat_lost_target_sec 8.0); added `_last_stimulus_position: Vector3` private; added `_compute_combined()`, `_determine_cause()`, `_evaluate_transitions()`, `_de_escalate_to()`, `_transition_to(new_state, cause_override)`, `force_alert_state(new_state, cause)` methods; `@onready var _perception: Perception = $Perception` typed
+- `src/gameplay/stealth/Guard.tscn` (modified) — attached `perception.gd` script to the Perception child node via new ext_resource; this is the integration step that was deferred from SAI-004
+- 6 new test files (61 tests total)
+
+**Code Review**: Self-reviewed inline (state machine logic verified via 19-edge matrix; synchronicity contract verified via 4 different signal paths; closure-capture pattern correctly applied across all 6 test files)
+
+**Deviations Logged**:
+- **AC-2 SUSPICIOUS→UNAWARE timer mechanism deferred to Story 007**. The transition emit path (`_de_escalate_to`) is fully implemented and tested in SAI-005. The trigger mechanism (timer firing after `suspicion_timeout_sec` of combined score < `t_decay_unaware`) is Story 007 scope. Tests directly call `_de_escalate_to(UNAWARE)` to exercise the signal path.
+- **GDScript closure-capture: primitive vars require Array[T] boxing**. Lambda subscribers cannot mutate captured primitive locals (GDScript captures int/bool by VALUE). All 6 test files use the `Array[int] = [-1]` / `Array[bool] = [false]` boxing pattern with `[0]` index access in lambda body. This is a known GDScript idiom — applied consistently across SAI-005 tests.
+- **Signal.disconnect_all() does NOT exist**. Initial test drafts used `Events.signal.disconnect_all()` — invalid API. Refactored all 6 test files to store callables (`var on_X: Callable = func(...)`) and use `Events.signal.disconnect(on_X)` for targeted cleanup. This is the correct pattern (also avoids disconnecting subscribers from other tests / production wiring).
+- **`force_alert_state(SCRIPTED)` DOES emit `actor_became_alerted`**. Story AC-6 was initially ambiguous: "Propagation is NOT fired for cause == SCRIPTED" was interpreted to mean "F.4 propagation chain is suppressed" (post-VS scope), NOT "actor_became_alerted is suppressed". `actor_became_alerted` IS the consumer-facing event for audio/UI/etc. Implementation: `actor_became_alerted` fires for SCRIPTED with `stimulus_position = guard.global_position` and severity from `_compute_severity` (MAJOR for SEARCHING+ targets); only `ALERTED_BY_OTHER` cause suppresses `actor_became_alerted` (the one-hop invariant). Documented in `_transition_to` doc comment.
+- **No `_physics_process` orchestration**. Story 006/007 will add the per-frame orchestration that drives `_evaluate_transitions()`. SAI-005 tests call it directly.
+- **Tests instantiate Guard.tscn (not standalone Guard)**. Now that perception.gd is attached to the Perception child, `Guard.tscn.instantiate()` produces a fully-wired guard with a typed `_perception: Perception` accessor. Tests use this scene-load pattern uniformly.
+
+**Tech Debt Logged**: None.
+
+**Unlocks**: Story 006 (state-driven patrol/investigate/combat behavior — reads `current_alert_state` and dispatches behavior), Story 007 (de-escalation timer logic — calls `_de_escalate_to` from a per-frame ticker when combined score stays below threshold), Story 008 (audio stinger subscriber — wires `Events.alert_state_changed` and consumes the `severity` payload to gate stinger emission)
+
+**Story 001 follow-up CLOSED**: `current_alert_state` is now typed `StealthAI.AlertState` defaulting to `UNAWARE`. The integer-stub-vs-typed-enum gap from SAI-001 is fully resolved.
 
 ---
 

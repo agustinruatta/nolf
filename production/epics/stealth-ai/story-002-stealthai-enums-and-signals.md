@@ -1,7 +1,7 @@
 # Story 002: StealthAI enums + Events.gd signal declarations
 
 > **Epic**: Stealth AI
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — 2 new files, Events.gd amendment, signal purity tests)
@@ -129,7 +129,51 @@ For VS, `guard_incapacitated` and `guard_woke_up` are post-VS in terms of subscr
 - `tests/unit/feature/stealth_ai/stealth_ai_severity_rule_test.gd` — 42-cell matrix (AC-SAI-3.4)
 - `tests/unit/foundation/events_sai_signals_test.gd` — signal declarations + purity (AC-2 + AC-3)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 26 new tests across 3 files; suite 470/470 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 5/5 PASSING (all auto-verified via 26 new test functions; full 42-cell severity matrix green)
+
+**Test Evidence**:
+- `tests/unit/feature/stealth_ai/stealth_ai_enums_test.gd` — 10 tests (AC-1 enum presence + value counts + zero-pin)
+- `tests/unit/feature/stealth_ai/stealth_ai_severity_rule_test.gd` — 8 tests (AC-4 full 42-cell matrix + 5 row-invariants + 2 canonical sanity checks)
+- `tests/unit/foundation/events_sai_signals_test.gd` — 8 tests (AC-2 signal presence + arg counts + AC-3 enum-purity grep)
+- AC-3 `func`/`var`/`const` purity continues to be enforced by `tests/unit/foundation/events_purity_test.gd` (pre-existing) — `events_sai_signals_test.gd` adds the new `enum ` purity pin
+- Suite: **470/470 PASS** exit 0 (baseline 444 + 26 new SAI-002 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `src/gameplay/stealth/stealth_ai.gd` (NEW, 99 LOC) — class StealthAI with 4 enums (AlertState×6, AlertCause×7, Severity×2, TakedownType×2) + static `_compute_severity` rule
+- `src/core/signal_bus/events.gd` (modified) — appended 6 SAI-domain signal declarations (lines 99-105); updated SKELETON STATUS comment + AI/Stealth domain header comment
+- `tests/unit/feature/stealth_ai/stealth_ai_enums_test.gd` (NEW, ~140 LOC, 10 test functions)
+- `tests/unit/feature/stealth_ai/stealth_ai_severity_rule_test.gd` (NEW, ~190 LOC, 8 test functions, includes 42-cell matrix oracle)
+- `tests/unit/foundation/events_sai_signals_test.gd` (NEW, ~187 LOC, 8 test functions)
+- `tests/unit/foundation/events_signal_taxonomy_test.gd` (modified) — removed 6 deferred-absence assertions for SAI signals (lines 434-457 in original); replaced with 5-line comment block pointing to the new positive-presence tests in `events_sai_signals_test.gd`
+
+**Code Review**: APPROVED WITH SUGGESTIONS (godot-gdscript-specialist + qa-tester invoked inline)
+- godot-gdscript-specialist: MINOR ISSUES → 2 advisories applied inline:
+  1. Typed enum loop variables in test files (`for state: StealthAI.AlertState in ...` instead of `for state: int in ...`) — improves static-typing rigor per CLAUDE.md
+  2. Extracted `var actual: StealthAI.Severity = ...` to avoid double-invocation in failure messages (UNCONSCIOUS + DEAD row tests)
+- qa-tester: TESTABLE → 3 NITs documented (all advisory, all deferred):
+  1. `test_alert_state_members_resolve_by_name` uses `is_greater_equal(0)` rather than specific ordinal pins — UNAWARE=0 and MINOR=0 pinned explicitly; DEAD/UNCONSCIOUS/SEARCHING/COMBAT ordinals not pinned (low risk; reordering would only fail SAI-001's `current_alert_state: int = 0` UNAWARE assumption, which IS pinned)
+  2. AC-3 traceability split between `events_purity_test.gd` (pre-existing, covers func/var/const) and new `events_sai_signals_test.gd` (covers enum) — Test Evidence section above documents this
+  3. No `AlertCause` ordinal pins beyond `ALERTED_BY_OTHER` — severity rule branches on value identity, so ordinal reordering is safe; flagged for completeness only
+
+**Deviations Logged**:
+- **TR-SAI-005 vs Story AC-1 discrepancy**: TR registry text lists 5 `AlertCause` values (HEARD, SAW_PLAYER, SAW_BODY, ALERTED_BY_OTHER, SCRIPTED). Story AC-1 specifies 7 values (splits HEARD into HEARD_NOISE / HEARD_GUNFIRE; adds CURIOSITY_BAIT). Implementation follows the **story spec (7 values)** as authoritative — story spec is the design artefact closer to the GDD intent. The TR registry text predates the design refinement. Documented in `stealth_ai.gd` header (lines 17-22) for `/architecture-review` reconciliation.
+- **`_compute_severity` underscore-prefix vs GDScript convention**: GDScript reserves `_method_name` for private members, but the story AC-4 explicitly uses `_compute_severity` and the function is consumed publicly (StealthAI.\_compute_severity called from tests; will be called from Story 005 thresholds + Story 008 audio stinger). Implementation follows AC-4 verbatim (underscore prefix retained). Doc-vs-convention drift; flagged for `/architecture-review`.
+- **`events_signal_taxonomy_test.gd` modification**: removed 6 deferred-absence assertions (now-stale) and replaced with comment block. The taxonomy test was a regression fence against premature SAI-signal declaration; SAI-002 is precisely the unlock moment. New positive-presence assertions live in `events_sai_signals_test.gd` (AC-2 coverage). Modification was necessary to keep the suite green and is in-scope for SAI-002 (signals existing now is what AC-2 requires).
+
+**Tech Debt Logged**: None.
+- 3 qa-tester NITs are advisory-only (low-risk, no immediate impact)
+- 2 godot-gdscript-specialist suggestions (class-level doc comment, terminal-state row helper) deferred as code-quality polish — not tracked
+
+**Unlocks**: Story 003 (RaycastProvider DI + perception cache — needs `StealthAI.AlertCause`), Story 004 (F.1 sight fill — needs `AlertState` for state_multiplier table), Story 005 (F.5 thresholds + escalation — needs all enums + `_compute_severity`), Story 008 (Audio stinger subscriber — needs all 6 signal declarations).
+
+**Story 001 follow-up**: SAI-001's `guard.gd:50` currently has `var current_alert_state: int = 0` as a stub. With SAI-002 landed, this can be upgraded to `var current_alert_state: StealthAI.AlertState = StealthAI.AlertState.UNAWARE` in a follow-up commit (NOT part of SAI-002 scope per Out of Scope §1; will be picked up by SAI-005 or earlier as a small refactor).
 
 ---
 

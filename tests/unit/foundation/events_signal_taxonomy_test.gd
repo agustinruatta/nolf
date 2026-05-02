@@ -329,6 +329,10 @@ func test_events_taxonomy_combat_domain_signals_present() -> void:
 	_assert_signal_signature(signal_map, &"player_damaged", [TYPE_FLOAT, TYPE_OBJECT, TYPE_BOOL])
 	_assert_signal_object_arg_class(signal_map, &"player_damaged", 1, "Node")
 
+	# Act + Assert — player_died(cause: int) — added in PC-006 with `int` payload
+	# (cast from CombatSystemNode.DeathCause at emit sites; cross-autoload convention).
+	_assert_signal_signature(signal_map, &"player_died", [TYPE_INT])
+
 
 # ---------------------------------------------------------------------------
 # Tests — AC-3-H: Civilian domain
@@ -412,10 +416,10 @@ func test_events_taxonomy_deferred_signals_not_present() -> void:
 	# (cast from SaveLoadService.FailureReason at emit sites). See the
 	# Persistence domain test above for its signature assertion.
 
-	# Deferred — Combat epic (needs CombatSystemNode.DeathCause)
-	assert_bool(signal_map.has(&"player_died")).override_failure_message(
-			"Deferred signal 'player_died' must not be declared until CombatSystemNode.DeathCause exists"
-	).is_false()
+	# player_died is no longer deferred — re-added in PC-006 with `int` payload
+	# (cast from CombatSystemNode.DeathCause at emit sites). Same precedent as
+	# save_failed (SL-002), ui_context_changed (IN-002), section_entered (LS-002).
+	# Positive presence + signature is asserted in the Combat-domain test below.
 
 	# Deferred — Civilian AI epic (needs CivilianAI.WitnessEventType)
 	assert_bool(signal_map.has(&"civilian_witnessed_event")).override_failure_message(
@@ -431,30 +435,11 @@ func test_events_taxonomy_deferred_signals_not_present() -> void:
 	# (cast from InputContextStack.Context at emit sites). See the UI domain test
 	# below for its signature assertion. Same precedent as save_failed in SL-002.
 
-	# Deferred — AI / Stealth epic (needs StealthAI.* enums)
-	assert_bool(signal_map.has(&"alert_state_changed")).override_failure_message(
-			"Deferred signal 'alert_state_changed' must not be declared until StealthAI.AlertState exists"
-	).is_false()
-
-	assert_bool(signal_map.has(&"actor_became_alerted")).override_failure_message(
-			"Deferred signal 'actor_became_alerted' must not be declared until StealthAI.AlertCause exists"
-	).is_false()
-
-	assert_bool(signal_map.has(&"actor_lost_target")).override_failure_message(
-			"Deferred signal 'actor_lost_target' must not be declared until StealthAI.Severity exists"
-	).is_false()
-
-	assert_bool(signal_map.has(&"takedown_performed")).override_failure_message(
-			"Deferred signal 'takedown_performed' must not be declared until StealthAI.TakedownType exists"
-	).is_false()
-
-	assert_bool(signal_map.has(&"guard_incapacitated")).override_failure_message(
-			"Deferred signal 'guard_incapacitated' belongs to AI/Stealth epic"
-	).is_false()
-
-	assert_bool(signal_map.has(&"guard_woke_up")).override_failure_message(
-			"Deferred signal 'guard_woke_up' belongs to AI/Stealth epic"
-	).is_false()
+	# SAI-domain signals are no longer deferred — re-added in SAI-002 with
+	# StealthAI.* enum payloads now available. See events_sai_signals_test.gd
+	# for full positive presence + signature assertions on:
+	#   alert_state_changed, actor_became_alerted, actor_lost_target,
+	#   takedown_performed, guard_incapacitated, guard_woke_up
 
 
 # ---------------------------------------------------------------------------

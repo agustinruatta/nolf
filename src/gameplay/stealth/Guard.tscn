@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3 uid="uid://b8stealth001guard"]
+
+[ext_resource type="Script" path="res://src/gameplay/stealth/guard.gd" id="1_guard"]
+[ext_resource type="Script" path="res://src/gameplay/stealth/perception.gd" id="2_perception"]
+[ext_resource type="Script" path="res://src/gameplay/stealth/patrol_controller.gd" id="3_patrol"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_vision"]
+radius = 18.0
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_placeholder"]
+radius = 0.4
+height = 1.8
+
+[node name="Guard" type="CharacterBody3D"]
+script = ExtResource("1_guard")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="VisionCone" type="Area3D" parent="."]
+
+[node name="VisionShape" type="CollisionShape3D" parent="VisionCone"]
+shape = SubResource("SphereShape3D_vision")
+
+[node name="HearingPoller" type="Node" parent="."]
+
+[node name="Perception" type="Node" parent="."]
+script = ExtResource("2_perception")
+
+[node name="PatrolController" type="Node" parent="."]
+script = ExtResource("3_patrol")
+
+[node name="DialogueAnchor" type="Node3D" parent="."]
+
+[node name="OutlineTier" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_placeholder")

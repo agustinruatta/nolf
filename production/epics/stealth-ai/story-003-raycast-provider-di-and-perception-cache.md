@@ -1,7 +1,7 @@
 # Story 003: RaycastProvider DI interface + PerceptionCache struct
 
 > **Epic**: Stealth AI
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — 3 new files, DI pattern, cold-start tests)
@@ -130,7 +130,47 @@ Raycast mask for LOS: `PhysicsLayers.MASK_AI_VISION_OCCLUDERS` (composite consta
 - `tests/unit/feature/stealth_ai/stealth_ai_has_los_accessor_test.gd` — AC-SAI-3.9 (5 scenarios)
 - `tests/unit/feature/stealth_ai/raycast_provider_test.gd` — DI interface + CountingRaycastProvider call counting
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 14 new tests across 2 files; suite 484/484 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 7/7 PASSING (all auto-verified via 14 new test functions; ACs 1, 2, 3, 4, 5, 6, 7 covered)
+
+**Test Evidence**:
+- `tests/unit/feature/stealth_ai/raycast_provider_test.gd` — 6 tests (AC-1: @abstract IRaycastProvider; AC-7: RealRaycastProvider null-assert; AC-1: CountingRaycastProvider call_count + scripted_result behaviors)
+- `tests/unit/feature/stealth_ai/stealth_ai_has_los_accessor_test.gd` — 8 tests (AC-2: PerceptionCache field defaults; AC-3: Perception.init storage; AC-4: cold-start safe-false + zero raycast; AC-5: cache-hit pass-through, no raycast; AC-6: stale-by-1-frame contract)
+- Suite: **484/484 PASS** exit 0 (baseline 470 + 14 new SAI-003 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `src/gameplay/stealth/raycast_provider.gd` (NEW, ~30 LOC) — `@abstract class IRaycastProvider extends RefCounted` + `@abstract func cast(query) -> Dictionary`
+- `src/gameplay/stealth/real_raycast_provider.gd` (NEW, ~40 LOC) — `RealRaycastProvider extends IRaycastProvider`; `_init(space_state)` with non-null assert + AC-7 doc on "obtain in _ready, never _init"; `cast()` delegates to `_space_state.intersect_ray`
+- `src/gameplay/stealth/counting_raycast_provider.gd` (NEW, ~32 LOC) — `CountingRaycastProvider extends IRaycastProvider`; TEST-ONLY type with header guardrail; `call_count: int = 0`; `scripted_result: Dictionary = {}`; cast() increments and returns scripted dict
+- `src/gameplay/stealth/perception_cache.gd` (NEW, ~50 LOC) — `PerceptionCache extends RefCounted` with 7 typed fields; uses typed `Dictionary[int, bool]` for `los_to_dead_bodies`; `last_sight_stimulus_cause: StealthAI.AlertCause` defaults to SAW_PLAYER
+- `src/gameplay/stealth/perception.gd` (NEW, ~50 LOC) — `Perception extends Node`; `_raycast_provider: IRaycastProvider`; `_perception_cache: PerceptionCache = PerceptionCache.new()`; `init(provider)` stores reference; `has_los_to_player()` cold-start safe + cache-read only (no raycast)
+- `tests/unit/feature/stealth_ai/raycast_provider_test.gd` (NEW)
+- `tests/unit/feature/stealth_ai/stealth_ai_has_los_accessor_test.gd` (NEW)
+
+**Code Review**: APPROVED WITH SUGGESTIONS (godot-gdscript-specialist invoked; verdict MINOR)
+- 1 ADVISORY: `@abstract func cast(query)` body omission (no `pass`) — suite is green and the form is legal in GDScript 4.5+, but reference doc `current-best-practices.md` only shows the `pass`-bodied form. Doc-vs-code traceability gap; flagged for `/architecture-review` to update reference doc.
+- 1 NIT applied inline: helper `_make_perception_with_counter` return type changed from untyped `Array` to `Array[Object]` (with cast-at-call-site documented in helper doc comment)
+- 1 NIT not applied: test names like `test_iraycast_provider_is_abstract_class` could be re-formed as `test_iraycast_provider_instantiation_is_blocked_by_abstract` — current names are reasonable scenario+expected merges; cosmetic deferral.
+
+**Deviations Logged**:
+- **AC-7 null-assert verification via source inspection** (not direct null-call): `assert(space_state != null, ...)` aborts the GdUnit4 test runner; the test verifies the assert exists in source instead. Documented in test file header. Same pattern was used in SAI-001's `node_payload_validity_grep_test` — established workaround for class-of-engine constraint.
+- **AC-1 abstract verification via source inspection** (not direct `IRaycastProvider.new()` call): `@abstract` aborts the test runner if a direct instantiation is attempted. Test verifies `@abstract` annotation exists in source via line scanning.
+- **AC-6 stale-frame test**: cannot advance `Engine.get_physics_frames()` headlessly; test asserts the contract holds (cache-read regardless of frame stamp value). Marked acceptable by code review; integration test deferred — would be over-engineering at this layer.
+- **`@abstract` body-less form choice**: GDScript 4.5+ supports `@abstract func name(args) -> Type` with no body at all (no `pass`, no `return`). Project's reference doc shows the `pass`-bodied form. Implementation uses body-less form; suite is green; flagged for reference-doc update.
+- **In-story scope ambiguity (`has_los_to_player` location AC-4/AC-5 vs Out of Scope §2)**: implemented the cache-read accessor in this story per the testability requirement of AC-4 + AC-5 (both directly call `has_los_to_player()`). Story 005's "method body" Out-of-Scope reference is interpreted as "the F.5 threshold logic that consumes the accessor", not the accessor itself. Documented in `perception.gd:has_los_to_player` doc comment.
+
+**Tech Debt Logged**: None.
+- 1 advisory + 2 NITs all advisory-only (low priority, not tracked)
+
+**Unlocks**: Story 004 (F.1 sight fill — will inject IRaycastProvider via `Perception.init(provider)` from `Guard._ready()` and write to `_perception_cache`), Story 005 (F.5 thresholds + escalation — will read from `_perception_cache` via `has_los_to_player()` and consume `last_sight_position`)
+
+**Story 001 follow-up still pending**: `guard.gd:50` `current_alert_state: int = 0` stub upgrade to `StealthAI.AlertState.UNAWARE` (carried over from SAI-002 completion notes; will be picked up by SAI-005 or earlier).
 
 ---
 

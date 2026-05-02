@@ -15,10 +15,11 @@
 # earlier line numbers may be referenced from this script's _ready().
 #
 # ─── SKELETON STATUS ──────────────────────────────────────────────────────
-# SB-002 (2026-04-30): Full built-in-type taxonomy declared. Deferred signals
-# (those requiring enum types from StealthAI, CombatSystemNode, LevelStreamingService,
-# CivilianAI, SaveLoad, InputContext) land in paired commits with their
-# consumer epics. See ADR-0002 §Key Interfaces for the full intended 43-signal list.
+# SB-002 (2026-04-30): Full built-in-type taxonomy declared.
+# SAI-002 (2026-05-02): SAI-domain signals added (StealthAI.* enums available).
+# Remaining deferred signals (those requiring enum types from CombatSystemNode
+# and CivilianAI) land in paired commits with their consumer epics. See
+# ADR-0002 §Key Interfaces for the full intended 43-signal list.
 
 class_name SignalBusEvents extends Node
 
@@ -64,12 +65,17 @@ signal gadget_activation_rejected(gadget_id: StringName)
 signal weapon_dry_fire_click(weapon_id: StringName)
 
 # ─── Combat domain ────────────────────────────────────────────────────────
-# player_died(cause: CombatSystemNode.DeathCause) deferred — needs Combat epic enum
+# player_died.cause is typed as `int` (not CombatSystemNode.DeathCause) per
+# the cross-autoload convention (same precedent as save_failed.reason and
+# ui_context_changed.new_ctx). Subscribers cast at the receive site:
+#   var c := cause as CombatSystemNode.DeathCause
+# Wired in PC-006 (TR-PC-010 + TR-PC-015).
 signal player_health_changed(current: float, max_health: float)
 signal enemy_damaged(enemy: Node, amount: float, source: Node)
 signal enemy_killed(enemy: Node, killer: Node)
 signal weapon_fired(weapon: Resource, position: Vector3, direction: Vector3)
 signal player_damaged(amount: float, source: Node, is_critical: bool)
+signal player_died(cause: int)
 
 # ─── Civilian domain ──────────────────────────────────────────────────────
 # civilian_witnessed_event deferred — needs CivilianAI.WitnessEventType
@@ -92,4 +98,13 @@ signal settings_loaded()
 # Events ↔ InputContextStack circular import (same pattern as save_failed).
 signal ui_context_changed(new_ctx: int, old_ctx: int)
 
-# ─── AI / Stealth domain (deferred — all signals reference StealthAI.* enums) ──
+# ─── AI / Stealth domain — 6 SAI signals (TR-SAI-003) ──────────────────────
+# Subscribers wired in SAI-008 (audio stinger). guard_incapacitated.cause is
+# typed as `int` (not CombatSystemNode.DamageType) per the cross-autoload
+# convention — SAI does not import CombatSystemNode (ADR-0007).
+signal alert_state_changed(actor: Node, old_state: StealthAI.AlertState, new_state: StealthAI.AlertState, severity: StealthAI.Severity)
+signal actor_became_alerted(actor: Node, cause: StealthAI.AlertCause, source_position: Vector3, severity: StealthAI.Severity)
+signal actor_lost_target(actor: Node, severity: StealthAI.Severity)
+signal takedown_performed(actor: Node, attacker: Node, takedown_type: StealthAI.TakedownType)
+signal guard_incapacitated(guard: Node, cause: int)
+signal guard_woke_up(guard: Node)

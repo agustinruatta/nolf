@@ -211,6 +211,22 @@ signal state_changed(new_state: PlayerEnums.MovementState)
 ## Physics frames of coyote-time after leaving the floor. GDD default 3.
 @export_range(0, 10) var coyote_time_frames: int = 3
 
+# ── PC-006 Health (TR-PC-010, TR-PC-011, TR-PC-015) ────────────────────────
+
+## Maximum health (HP cap). Designer-tunable per GDD Tuning Knobs.
+@export var max_health: int = 100
+
+## Damage threshold at which an in-flight interact is cancelled (E.6 damage-cancel).
+## When apply_damage() receives amount >= this and _is_hand_busy is true, the
+## interact tween is killed and the cancel is NOT followed by player_interacted.
+@export var interact_damage_cancel_threshold: float = 10.0
+
+## Current health (HP). Mutated only by apply_damage() and apply_heal()
+## (forbidden pattern: health mutation outside these two methods).
+## Initialised in _ready() to max_health.
+var health: int = 100
+
+
 # ── Public state ───────────────────────────────────────────────────────────
 
 ## Current movement state. Transitions owned by PC-003 _update_movement_state().
@@ -314,6 +330,9 @@ var _hands_material: ShaderMaterial = null
 # ── Built-in virtual methods ───────────────────────────────────────────────
 
 func _ready() -> void:
+	# PC-006: initialise health to max_health on spawn.
+	health = max_health
+
 	# Per ADR-0006 IG 1 + IG 6: set OWN layer (LAYER_PLAYER), mask the
 	# layers we COLLIDE AGAINST (WORLD + AI). Use index-based helpers
 	# with LAYER_* constants per IG 3. Zero bare integer literals.
@@ -1025,3 +1044,93 @@ func _play_turn_overshoot(direction: float) -> void:
 	_overshoot_tween.tween_property(
 		_camera, "rotation:y", 0.0, settle_seconds
 	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+# ── PC-006 health system (TR-PC-010, TR-PC-011, TR-PC-015) ──────────────────
+
+## F.6 — apply_damage. Sole damage entry point; only health mutator
+## (alongside apply_heal). Round-half-away-from-zero on the amount; sub-1 HP
+## damage is dropped silently.
+##
+## Signal emission ORDER (load-bearing per AC-5.1):
+##   1. player_damaged(amount, source, is_critical=false)
+##   2. player_health_changed(health, max_health)
+##   3. (if lethal) player_died(cause)
+##
+## DEAD-state guard (AC-5.3): subsequent calls while in DEAD return without
+## emitting any signal — player_died fires at most once per death.
+##
+## E.6 damage-cancel (AC-damage-cancel-interact): if amount >=
+## interact_damage_cancel_threshold AND _is_hand_busy, the interact tween
+## is killed and _is_hand_busy is cleared in the same stack frame.
+## player_interacted is NOT emitted for the cancelled interact.
+##
+## E.13 latch-clear on DEAD (AC-latch-clear): when transitioning to DEAD,
+## _latched_event is cleared so a stale spike from the same frame does not
+## linger as a noise emission.
+func apply_damage(amount: float, source: Node, damage_type: CombatSystemNode.DamageType) -> void:
+	# DEAD-state early return — no further signals after death (AC-5.3).
+	if current_state == PlayerEnums.MovementState.DEAD:
+		return
+
+	if amount <= 0.0:
+		push_warning("apply_damage called with non-positive amount %f — ignored" % amount)
+		return
+
+	var rounded: int = int(round(amount))
+	if rounded <= 0:
+		# Sub-1 HP damage is dropped silently (AC-5.2 boundary).
+		return
+
+	# E.6 damage-cancel — kill interact tween in same stack frame as flag clear.
+	if amount >= interact_damage_cancel_threshold and _is_hand_busy:
+		_is_hand_busy = false
+		if _interact_reach_tween != null and _interact_reach_tween.is_valid():
+			_interact_reach_tween.kill()
+		# player_interacted is NOT emitted for a cancelled interact (E.6).
+
+	health = maxi(0, health - rounded)
+
+	# Signal emission order is load-bearing — AC-5.1.
+	Events.player_damaged.emit(amount, source, false)  # is_critical = false at MVP
+	Events.player_health_changed.emit(float(health), float(max_health))
+
+	if health == 0:
+		current_state = PlayerEnums.MovementState.DEAD
+		_latched_event = null  # E.13 latch-clear
+		_latch_frames_remaining = 0
+		var cause: int = int(CombatSystemNode.damage_type_to_death_cause(damage_type))
+		Events.player_died.emit(cause)
+
+
+## F.7 — apply_heal. Health restoration entry point; capped at max_health.
+## Round-half-away-from-zero. Sub-1 HP heals are dropped silently.
+##
+## DEAD-state guard: heals are blocked while DEAD — death is terminal until
+## reset_for_respawn() (Story PC-007).
+##
+## Emits player_health_changed(health, max_health). No dedicated player_healed
+## signal at MVP; HUD subscribers listen to player_health_changed for both
+## damage and heal paths.
+##
+## apply_damage and apply_heal are kept separate so callers cannot smuggle
+## heals through negative-damage calls.
+func apply_heal(amount: float, _source: Node) -> void:
+	if current_state == PlayerEnums.MovementState.DEAD:
+		return
+
+	if amount <= 0.0:
+		push_warning("apply_heal called with non-positive amount %f — ignored" % amount)
+		return
+
+	var rounded: int = int(round(amount))
+	if rounded <= 0:
+		# Sub-1 HP heals are dropped silently.
+		return
+
+	var prev_health: int = health
+	health = mini(max_health, health + rounded)
+	if health == prev_health:
+		return  # already at max — no signal
+
+	Events.player_health_changed.emit(float(health), float(max_health))

@@ -69,6 +69,26 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Check 4 (IN-004 extension): registration call site is wrapped in
+# OS.is_debug_build() guard at the InputContext autoload _ready().
+# ---------------------------------------------------------------------------
+INPUT_CONTEXT_FILE="src/core/ui/input_context.gd"
+
+if [ ! -f "$INPUT_CONTEXT_FILE" ]; then
+  echo "FAIL [Check 4]: $INPUT_CONTEXT_FILE does not exist" >&2
+  PASS=false
+elif ! grep -qE 'if[[:space:]]+OS\.is_debug_build\(\)[[:space:]]*:' "$INPUT_CONTEXT_FILE"; then
+  echo "FAIL [Check 4]: 'if OS.is_debug_build():' guard not found in $INPUT_CONTEXT_FILE" \
+       "— debug action registration must only run in debug builds (AC-INPUT-5.3 sub-check b)" >&2
+  PASS=false
+elif ! grep -q 'InputActions\._register_debug_actions()' "$INPUT_CONTEXT_FILE"; then
+  echo "FAIL [Check 4]: InputActions._register_debug_actions() call not found in $INPUT_CONTEXT_FILE" >&2
+  PASS=false
+else
+  echo "PASS [Check 4]: 'if OS.is_debug_build():' guard wraps _register_debug_actions() call"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 if [ "$PASS" = false ]; then

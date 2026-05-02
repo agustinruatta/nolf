@@ -189,18 +189,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	# and write it to slot 0 (autosave). The full save schema is much wider
 	# than this — for the VS we only persist player position + section_id
 	# so the round-trip is observable.
-	if event.is_action_pressed("quicksave"):
+	if event.is_action_pressed(InputActions.QUICKSAVE):
 		_quicksave()
 		get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("quickload"):
+	if event.is_action_pressed(InputActions.QUICKLOAD):
 		_quickload()
 		get_viewport().set_input_as_handled()
 		return
 
 	# Esc releases mouse capture so the user can quit cleanly.
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed(InputActions.UI_CANCEL):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		get_viewport().set_input_as_handled()
 		return

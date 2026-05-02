@@ -349,7 +349,7 @@ func _run_swap_sequence(
 	_fade_rect.color.a = 0.0
 
 	# Step 12: pop InputContext.LOADING.
-	InputContext.pop()
+	InputContext.pop()  # dismiss-order-ok: LOADING context pop is state-machine driven, not input-event driven (no consume needed).
 
 	# Step 13: drain queued respawn / quicksave (stub — Story LS-004 / LS-007).
 	# Reset state machine cursor + transitioning flag.
@@ -407,7 +407,7 @@ func _abort_transition() -> void:
 	if _fade_rect != null:
 		_fade_rect.color.a = 0.0
 	if InputContext.is_active(InputContext.Context.LOADING):
-		InputContext.pop()
+		InputContext.pop()  # dismiss-order-ok: abort path; LOADING context cleanup is state-machine driven.
 	_state = State.IDLE
 	_transitioning = false
 

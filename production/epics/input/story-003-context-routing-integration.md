@@ -1,7 +1,7 @@
 # Story 003: Context routing + dual-focus dismiss integration
 
 > **Epic**: Input
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: 3-4 hours (M — 2 integration test files; requires test fixture scenes)
@@ -147,7 +147,43 @@ func _unhandled_input(event: InputEvent) -> void:
 - `tests/integration/core/input/dual_focus_dismiss_test.gd` — must exist and pass, all three sub-cases (AC-INPUT-3.1)
 - `tools/ci/check_dismiss_order.sh` — must exist; CI passes with zero violations against test fixture dismiss handlers (AC-INPUT-3.2)
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 10 new tests across 3 files + 1 CI script; suite 647/647 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 4/4 PASSING (AC-2.2, AC-2.3, AC-3.1 [3 sub-cases], AC-3.2)
+
+**Test Evidence**:
+- `tests/integration/core/input/input_context_routing_test.gd` (NEW, 4 tests) — AC-2.2 + AC-2.3 + corollaries
+- `tests/integration/core/input/dual_focus_dismiss_test.gd` (NEW, 4 tests) — AC-3.1 (3 sub-cases: keyboard / gamepad / mouse-ignore) + dismiss-handler context-gate test
+- `tests/unit/foundation/dismiss_order_lint_test.gd` (NEW, 2 tests) — AC-3.2 CI script invocation
+- `tools/ci/check_dismiss_order.sh` (NEW, executable) — bash CI gate; supports `# dismiss-order-ok:` exemption annotation
+- Suite: **647/647 PASS** exit 0 (baseline 637 + 10 new IN-003 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `tests/integration/core/input/input_context_routing_test.gd` (NEW) — inline PauseHandlerFixture + DismissHandlerFixture (Node + Control inner classes)
+- `tests/integration/core/input/dual_focus_dismiss_test.gd` (NEW) — inline DismissHandlerFixture
+- `tests/unit/foundation/dismiss_order_lint_test.gd` (NEW) — wraps `check_dismiss_order.sh` invocation
+- `tools/ci/check_dismiss_order.sh` (NEW, executable) — recursive grep with comment-skip + exemption annotation support
+- `src/core/level_streaming/level_streaming_service.gd` (modified) — added `# dismiss-order-ok:` annotations to 2 LOADING-context pops (state-machine driven, not modal-dismiss)
+
+**Code Review**: Self-reviewed inline (handler logic verified with direct invocation; CI script tested against real source tree)
+
+**Deviations Logged**:
+- **Direct `_unhandled_input(event)` invocation instead of `Input.parse_input_event()`**. The latter queues to Godot's input pipeline which does not reliably flush through `_unhandled_input` in a single GdUnit4 test frame. Direct invocation tests the handler logic (InputContext gate + is_action_pressed classification + Core Rule 7 consume-before-pop order) — the input pipeline delivery is Godot's responsibility and trusted. Documented in test file headers.
+- **`physical_keycode` (not `keycode`) for InputEventKey events**. project.godot bindings for both `ui_cancel` and `pause` use `physical_keycode = KEY_ESCAPE`. `is_action_pressed("pause")` returns false if the event sets only `keycode`. Fix applied; test events now use `physical_keycode = KEY_ESCAPE`.
+- **`dismiss-order-ok:` exemption annotation**. The CI script's strict 5-line consume-before-pop rule produces false positives on legitimate non-modal pops (LOADING context state-machine cleanup; test cleanup helpers). Added an exemption pattern: any `InputContext.pop()` line containing `dismiss-order-ok:` is skipped. Each exemption requires a documented `why` after the colon. The script's design enforces "every dismiss path follows Core Rule 7" while allowing well-justified exceptions.
+- **Comment-line skip in CI script**. The grep `'InputContext\.pop()'` matches doc-comments mentioning the literal string. Script now skips lines that start with `#` after whitespace strip, preventing false positives from documentation.
+- **`tools/ci/check_dismiss_order.sh` covers `src/` and `tests/integration/`**. Test fixtures in tests/integration are validated by the same gate that protects production code.
+
+**Tech Debt Logged**: None.
+
+**Unlocks**: Story 005 (order-of-operations test reuses the same fixture pattern), Story 004 (CI scripts share the same source tree). Consumer epics (Menu System, Document Overlay UI) — when they ship their own dismiss handlers, the CI gate automatically validates them.
+
+**Discovery during implementation**: Two pre-existing pops in `level_streaming_service.gd` (LOADING context cleanup) needed `dismiss-order-ok:` exemption annotations. They are state-machine-driven, not input-event-driven, so the consume-before-pop rule does not apply. This was the first canary for the exemption mechanism — it works as intended.
 
 ---
 

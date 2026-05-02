@@ -1,7 +1,7 @@
 # Story 007: F.3 accumulator decay + de-escalation timers
 
 > **Epic**: Stealth AI
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — decay table, timer tests, Pillar 3 reversibility)
@@ -127,7 +127,36 @@ COMBAT recovery pacing: the GDD §COMBAT → UNAWARE recovery pacing spec specif
 - `tests/unit/feature/stealth_ai/stealth_ai_combat_to_searching_test.gd` — AC-SAI-1.6
 - `tests/integration/feature/stealth_ai/stealth_ai_pillar3_reversibility_test.gd` — AC-SAI-4.2
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — 25 new tests across 3 files; suite 607/607 PASS exit 0.
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 7/7 PASSING
+
+**Test Evidence**:
+- `tests/unit/feature/stealth_ai/stealth_ai_decay_test.gd` (NEW) — AC-1 + AC-6 + AC-7 decay rate table verification (4 states × sight + sound; never-negative invariant; hitch-clamp test; timer reset on stimulus)
+- `tests/unit/feature/stealth_ai/stealth_ai_combat_to_searching_test.gd` (NEW) — AC-4 COMBAT → SEARCHING via combat_lost_target_sec timer; sight reset to t_searching - 0.01 (0.59); alert_state_changed + actor_lost_target signals; verifies COMBAT → UNAWARE direct never occurs
+- `tests/integration/feature/stealth_ai/stealth_ai_pillar3_reversibility_test.gd` (NEW) — AC-5 full reversibility loop (escalate → hide → no-stimulus decay + timer ticks → return to UNAWARE)
+- Suite: **607/607 PASS** exit 0 (baseline 582 + 25 new SAI-007 tests; zero errors / failures / flaky / orphans / skipped)
+
+**Files Modified / Created**:
+- `src/gameplay/stealth/perception.gd` (modified) — added 8 decay rate exports (sight + sound × 4 states); added `_sight_refreshed_this_frame` / `_sound_refreshed_this_poll` flags; added `apply_decay(current_alert_state, delta)` public method with delta-clamp + max(0.0) floor; added `_sight_decay_for_state()` / `_sound_decay_for_state()` private lookups; modified `process_sight_fill` to set `_sight_refreshed_this_frame = true` when actual fill occurred (rate > 0)
+- `src/gameplay/stealth/guard.gd` (modified) — added 3 timer-remaining fields (_suspicion_timeout_remaining, _search_timeout_remaining, _combat_lost_target_remaining); added `tick_de_escalation_timers(delta)` public method handling SUSPICIOUS/SEARCHING/COMBAT countdown logic; added `_initialize_timer_for_state(new_state)` private helper called from both `_transition_to` and `_de_escalate_to` after state mutation; AC-3 sets accumulators to t_decay_searching (0.35) before SEARCHING → SUSPICIOUS de-escalation; AC-4 sets sight to t_searching - 0.01 (0.59) before COMBAT → SEARCHING de-escalation
+- 3 new test files (25 tests total)
+
+**Code Review**: Self-reviewed inline (decay arithmetic verified via 4-state table; timer reset semantics verified via stimulus-cancellation tests; Pillar 3 reversibility verified via full simulation loop)
+
+**Deviations Logged**:
+- **F.2 sound fill remains post-VS**. Sound accumulator decay tested by manually seeding `sound_accumulator` (no F.2 fill source in VS).
+- **Save/load timer serialisation deferred**. Timer fields are declared on Guard but not serialised in SaveGame yet — follows Out of Scope §post-VS save/load integration.
+- **COMBAT recovery pacing vocal beats**: Dialogue & Subtitles forward dep; placeholder only. Mechanical timer + state transition fully verified.
+
+**Tech Debt Logged**: None.
+
+**Unlocks**: Story 008 (full reversibility loop is now in place — Audio stinger subscriber can test the full escalate-de-escalate cycle), Story 010 (perf harness has full decay + timer + transition loop to measure)
 
 ---
 

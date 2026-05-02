@@ -1,6 +1,32 @@
 # Session State
 
-**Last updated:** 2026-05-01 — Sprint 02 **Must-Have layer COMPLETE**. **24/24 Must-Have stories done** + **3 Should-Have COMPLETE** (LOC-002 + LS-003 + SL-005 closed via `/dev-story` → `/code-review` → `/story-done`). Test suite: **314/314 PASS** (304 baseline + 10 SL-005 unit tests; zero errors / failures / flaky / orphans / skipped; exit 0). Tech-debt register has 7 active items (TD-001..TD-007).
+**Last updated:** 2026-05-02 — `/architecture-review` ninth run COMPLETE. Verdict **PASS** (with 3 doc-hygiene advisories D1/D2/D3 — all fixed in same session). Headline: **all 8 ADRs at terminal-or-deferred-only state** (7/8 Accepted; ADR-0004 Effectively-Accepted pending Gate 5 BBCode→AccessKit AT runner). No structural blockers remain for `/gate-check pre-production`. Prior: 2026-05-01 — Sprint 02 **Must-Have layer COMPLETE**. **24/24 Must-Have stories done** + **3 Should-Have COMPLETE** (LOC-002 + LS-003 + SL-005). Test suite: **314/314 PASS** (304 baseline + 10 SL-005 unit tests; zero errors / failures / flaky / orphans / skipped; exit 0). Tech-debt register has 7 active items (TD-001..TD-007).
+
+## Session Extract — /architecture-review 2026-05-02 (ninth run)
+
+- **Verdict**: PASS (with 3 doc-hygiene advisories D1/D2/D3 — all applied this session)
+- **Mode**: full delta-focused review against 2026-04-30 eighth-run PASS baseline
+- **Engine**: Godot 4.6 (pinned 2026-02-12) — engine-reference docs unchanged this window
+- **Scope**: 24 GDDs (was 23; +`design/gdd/player-system.md` umbrella reverse-doc index 2026-05-01) · 8 ADRs (no new ADRs; ADR-0005 + ADR-0008 status-promoted only) · 348 active TRs (unchanged)
+- **Headline structural delta**: ADR maturity moved 5/8 → 8/8 at terminal-or-deferred-only state. ADR-0005 promoted Proposed → Accepted on 2026-05-01 via user visual sign-off on `fps_hands_demo.tscn` (G3/G4/G5 deferred to PC FPS-hands story). ADR-0008 promoted Proposed → Accepted (with deferred numerical verification) on 2026-05-01 via Gate 5 Architectural-Framework Verification spike (G1/G2/G4 deferred behind Restaurant scene + Iris Xe Gen 12 hardware).
+- **Coverage**: unchanged — 348 TRs, all covered, 0 hard gaps. No new TRs registered (player-system.md is umbrella reverse-doc that introduces 0 new mechanics by design).
+- **Cross-ADR conflicts**: NONE. Vulkan-only state from 2026-04-30 sweep preserved.
+- **Engine compat audit**: clean — no deprecated APIs, no stale version refs, no engine-reference drift, no new post-cutoff API surface introduced this window.
+- **GDD revision flags**: NONE. No engine reality contradicts any GDD assumption.
+- **Doc-hygiene advisories applied this session** (per user election `Report + apply D1/D2/D3 doc-hygiene fixes`):
+  - **D1 ✅ Fixed**: `docs/architecture/architecture.md` — flipped 8 stale "all Proposed" / "21 verification gates" / "8 Proposed ADRs" claims (cover-page L9 Last Updated bumped to 2026-05-02; L14 ADRs Referenced; L17 TD Sign-Off update note; L1391; L1466; L1476; L1506 §7.2.2 heading; L1546 §7.5; L1604 §9.1) to current 7/8-Accepted + 1/8-Effectively-Accepted state. Substantive content (decisions, fencing, layer map, integration contracts) unchanged.
+  - **D2 ✅ Fixed**: `design/gdd/systems-index.md` — added row 8u (Player System umbrella reverse-doc index) between FootstepComponent (8b) and Level Streaming (9). Status: Index Reference 2026-05-01. Documents that the file inherits TRs from PC + FC and introduces no new design surface.
+  - **D3 ✅ Fixed**: `docs/architecture/tr-registry.yaml` header — bumped `last_updated` 2026-04-24 → 2026-05-02 with full chain-of-changes note (TR-CMC additions 2026-04-29; ninth-run verification with no new TRs; 5th-run TR-INV-001..015; 2026-04-23 TR-INP-002 + TR-LS-007 revisions).
+- **Files written**: `docs/architecture/architecture-review-2026-05-02.md` (new — full report with verdict + advisory log + handoff)
+- **Files modified**: `docs/architecture/architecture.md` (8 surgical edits per D1) · `design/gdd/systems-index.md` (D2 row insertion) · `docs/architecture/tr-registry.yaml` (D3 header bump) · this file (active.md session-state append)
+- **Reflexion log**: no 🔴 CONFLICT entries to append to `docs/consistency-failures.md` this run (advisories are doc-hygiene-only; below conflict-tracking threshold)
+- **Execution-phase items remaining (do not block PASS)**:
+  1. ADR-0002 Cutscenes-amendment commit bundle (carryforward from 7th run — atomic single-PR landing of 4 companion GDD edits) — unchanged
+  2. ADR-0004 Gate 5 — closes inside Settings & Accessibility production story
+  3. ADR-0005 G3/G4/G5 — close inside PC FPS-hands rendering production story
+  4. ADR-0008 G1/G2/G4 — close when Restaurant scene + SAI + Combat ship + Iris Xe Gen 12 hardware acquired
+  5. `stealth-ai.md` Status: Revised (4th pass) pending re-review — Sprint 04 implementation has consumed it as authoritative; `/design-review` re-pass would close the loop (not blocking architecture)
+- **Recommended next**: **`/gate-check pre-production`**. Now that 8/8 ADRs are at terminal-or-deferred-only state and Sprint 04 closed, the gate is expected to PASS — no architectural blockers remain.
 
 ## Session Extract — /story-done 2026-05-01 (SL-005)
 

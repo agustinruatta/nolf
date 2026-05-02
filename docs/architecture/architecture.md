@@ -6,15 +6,15 @@
 |---|---|
 | **Version** | 1.0 (initial draft — all 9 sections authored via `/create-architecture`) |
 | **Started** | 2026-04-23 |
-| **Last Updated** | 2026-04-23 (Phase 7 complete — Architecture Principles + Open Questions written; TD sign-off recorded below) |
+| **Last Updated** | 2026-05-02 (D1 doc-hygiene sweep applied per `/architecture-review 2026-05-02` ninth run — flipped stale "all Proposed" claims to current all-Accepted state. Substantive content (decisions, fencing, layer map, integration contracts) unchanged from 2026-04-23 Phase 7 authoring. Prior: 2026-04-30 Vulkan-only sweep applied per eighth-run review. Earliest: 2026-04-23 Phase 7 complete — Architecture Principles + Open Questions written; TD sign-off recorded below.) |
 | **Engine** | Godot 4.6 · GDScript · Forward+ (Vulkan on both Linux and Windows — D3D12 disabled per project Amendment A2) · Jolt 3D default |
 | **Platform** | PC — Linux + Windows (Steam). Single-player, no networking. |
 | **Performance Contract** | 60 fps · 16.6 ms · ≤1500 draw calls · ≤4 GB (technical-preferences.md; allocated by ADR-0008). |
 | **GDDs Covered** | **23 / 23 authored** — all MVP + VS systems designed (last metadata refresh 2026-04-29 post-`/architecture-review` seventh run). Per-system status tracked in `design/gdd/systems-index.md`. |
-| **ADRs Referenced** | ADR-0001 · ADR-0002 · ADR-0003 · ADR-0004 · ADR-0005 · ADR-0006 · ADR-0007 · ADR-0008 (all Proposed; 30+ verification gates outstanding as of 2026-04-29). |
+| **ADRs Referenced** | ADR-0001 · ADR-0002 · ADR-0003 · ADR-0004 · ADR-0005 · ADR-0006 · ADR-0007 · ADR-0008 (status as of 2026-05-02 ninth review: **7/8 Accepted** — 0001 ✅ 0002 ✅ 0003 ✅ 0005 ✅ 0006 ✅ 0007 ✅ 0008 ✅; **1/8 Effectively-Accepted** — 0004 Status field reads Proposed pending Gate 5 BBCode→AccessKit AT runner test, deferred to Settings & Accessibility production story per ADR-0004's own Status text. Production-scope gates remain documented on ADR-0005 G3/G4/G5 (PC FPS-hands story) + ADR-0008 G1/G2/G4 (Restaurant scene + Iris Xe Gen 12 hardware). No structural blockers remain.). |
 | **TR Registry** | `docs/architecture/tr-registry.yaml` (**348 TRs** across 23 system-slugs, ~99% ADR-covered per `requirements-traceability.md`). |
 | **Review Mode** | `solo` (LP-FEASIBILITY step of Phase 7b skipped per skill rules). |
-| **Technical Director Sign-Off** | **APPROVED WITH CONCERNS** — 2026-04-23 (self-review, solo mode). Gate TD-ARCHITECTURE against 4 criteria: TR coverage ✅ PASS (~99%), HIGH-risk engine domains ✅ PASS (all fenced), API boundaries ⚠ PASS WITH CONCERN (ADR-0007 amendment required for Combat autoload inclusion — Path A per godot-specialist 2026-04-23; see §6.3 + §7.2.1), Foundation ADR gaps ✅ PASS (all 8 authored and Proposed; 24 verification gates are normal Tech Setup path, not architectural gaps). |
+| **Technical Director Sign-Off** | **APPROVED WITH CONCERNS** — 2026-04-23 (self-review, solo mode). Gate TD-ARCHITECTURE against 4 criteria: TR coverage ✅ PASS (~99%), HIGH-risk engine domains ✅ PASS (all fenced), API boundaries ⚠ PASS WITH CONCERN (ADR-0007 amendment required for Combat autoload inclusion — Path A per godot-specialist 2026-04-23; see §6.3 + §7.2.1; LANDED 2026-04-23), Foundation ADR gaps ✅ PASS (all 8 authored and Proposed at audit time; 24 verification gates flagged as normal Tech Setup path, not architectural gaps). **Update 2026-05-02**: All concerns closed — ADR-0007 Combat autoload amendment landed 2026-04-23; 7/8 ADRs promoted to Accepted (5/8 by 2026-04-30, +ADR-0005 +ADR-0008 on 2026-05-01); ADR-0004 Effectively-Accepted with single deferred Gate 5. Architecture phase verdict carries forward unchanged. |
 | **Lead Programmer Feasibility** | SKIPPED — Solo mode per `production/review-mode.txt`. LP-FEASIBILITY gate does not run. |
 
 ---
@@ -1388,7 +1388,7 @@ The heavy lifting of traceability is already done by `docs/architecture/requirem
 | 0007 | Autoload Load Order Registry | ✅ | 4.6 | ✅ (autoload syntax stable 4.0+) | ✅ | ⚠ **Combat-autoload omission** (§6.3 below) | ✅ |
 | 0008 | Performance Budget Distribution | ✅ | 4.6 | ✅ Jolt 4.6, Shader Baker 4.5, CompositorEffect 4.6; ~~D3D12 4.6~~ removed by Amendment A2 (Vulkan-only) | ✅ | None | ✅ |
 
-All 8 ADRs satisfy the skill's quality checkboxes. All 8 remain Proposed; 21 verification gates outstanding across the chain. Four A3–A6 amendments and ADR-0008's Gate 1–4 are captured on the ADRs themselves and tracked in `production/session-state/active.md`.
+All 8 ADRs satisfy the skill's quality checkboxes. **Status as of 2026-05-02 ninth review**: 7/8 Accepted; 1/8 (ADR-0004) Effectively-Accepted with single deferred Gate 5 (BBCode→AccessKit AT runner — Settings & Accessibility production-story scope). Four A3–A6 amendments and ADR-0008's Gate 1–4 are captured on the ADRs themselves and tracked in `production/session-state/active.md`. The remaining production-scope gates (ADR-0005 G3/G4/G5 + ADR-0008 G1/G2/G4) close inside their respective production stories per the ADRs' own design — not blockers for the Pre-Production gate.
 
 ### 6.2 Traceability Coverage Check
 
@@ -1463,7 +1463,7 @@ Brief notes verifying that phases 1–4 authoring did not reveal drift from any 
 - **158 TRs, ~99% ADR-covered, 0 hard gaps** — architecture-review 2026-04-23 verdict **PASS** inherits.
 - **1 cross-session conflict** (Combat-autoload in ADR-0007) surfaced during Phase 4 authoring. Resolution: **Path A** (amend ADR-0007 to register Combat at line 7) per godot-specialist consultation 2026-04-23. ✅ LANDED 2026-04-23 — ADR-0007 in-place amendment. Concern closed on `/architecture-review 2026-04-23` fourth-run verdict.
 - **3 GDD-coordination items** are producer-tracked and design-level (not ADR gaps).
-- **21 verification gates** outstanding across the 8 Proposed ADRs — these move ADRs Proposed → Accepted in Technical Setup / Prototype phase, and are not blockers for this architecture document.
+- **Verification gates** (status as of 2026-05-02): 7/8 ADRs Accepted; ADR-0004 Effectively-Accepted with one deferred gate; production-scope gates remain on ADR-0005 (G3/G4/G5 — PC FPS-hands story) and ADR-0008 (G1/G2/G4 — Restaurant scene + Iris Xe Gen 12 prerequisites). None are blockers for this architecture document. Original 2026-04-23 baseline: 21 gates outstanding across all 8 then-Proposed ADRs.
 
 ---
 
@@ -1473,7 +1473,7 @@ Current state per §6 audit + `requirements-traceability.md` third-run 2026-04-2
 
 ### 7.1 Must be in place before coding starts (Foundation + Core decisions)
 
-**All authored and Proposed — none missing.** The 8 ADRs cover every hard architectural decision for MVP scope:
+**All authored — 7 Accepted + 1 Effectively-Accepted as of 2026-05-02.** The 8 ADRs cover every hard architectural decision for MVP scope (status was "all Proposed" at original 2026-04-23 audit):
 
 | ADR | Foundation/Core concern it resolves |
 |---|---|
@@ -1503,9 +1503,9 @@ Current state per §6 audit + `requirements-traceability.md` third-run 2026-04-2
 | **Blocks** | Nothing concrete. Clears editorial debt; eliminates false conflict state. |
 | **Recommendation source** | godot-specialist consultation 2026-04-23 (Path A endorsed). |
 
-#### 7.2.2 Verification gates outstanding on the 8 Proposed ADRs
+#### 7.2.2 Verification gates on the 8 ADRs (status as of 2026-05-02)
 
-Normal Technical Setup / Prototype phase work. These move ADRs from Proposed → Accepted. Summary counts per ADR (full catalogs in each ADR's Validation Criteria):
+Normal Technical Setup / Prototype phase work. By 2026-05-02 the status table below reflects: 7 ADRs Accepted, 1 (ADR-0004) Effectively-Accepted with a single production-story deferred gate. Summary counts per ADR (full catalogs in each ADR's Validation Criteria):
 
 | ADR | Gates | Nature |
 |---|---:|---|
@@ -1543,9 +1543,9 @@ None of these is time-sensitive. They are flags to revisit if the relevant trigg
 
 ### 7.5 Summary — what this architecture needs next
 
-**Before coding starts**: 8 Proposed ADRs exist. No new ADR required for Foundation + Core.
+**Before coding starts**: 8 ADRs exist (originally all Proposed at 2026-04-23 authoring; 7 Accepted + 1 Effectively-Accepted by 2026-05-02). No new ADR required for Foundation + Core.
 
-**Before Pre-Production gate**: 1 ADR-0007 amendment (Combat autoload inclusion, Path A) + 24 verification gates across the 8 existing ADRs to move them Proposed → Accepted. Two separate infrastructure stories (reference scene + CI perf-gate job) feed into the ADR-0008 gates.
+**Before Pre-Production gate** (status update 2026-05-02): ADR-0007 Combat autoload amendment ✅ LANDED 2026-04-23; verification-gate sweep ✅ effectively complete — 7/8 ADRs Accepted; ADR-0004 Effectively-Accepted with G5 deferred to Settings & Accessibility production story; ADR-0005 G3/G4/G5 + ADR-0008 G1/G2/G4 deferred to their respective production stories per the ADRs' own design. The original 24-verification-gate sweep is closed for Pre-Production-gate purposes (production-scope gates do not block the gate).
 
 **Before each VS system is built**: probably nothing new. One provisional ADR-0007 amendment (Failure & Respawn autoload) may be triggered by that GDD.
 
@@ -1601,9 +1601,9 @@ Decisions deferred to later ADRs, Prototype-phase empirical work, or Polish-phas
 
 ### 9.1 Verification-gate sequencing
 
-**Question**: in what order should the 24 outstanding verification gates across the 8 Proposed ADRs be exercised, and by whom?
+**Question** (original 2026-04-23 framing): in what order should the 24 outstanding verification gates across the 8 then-Proposed ADRs be exercised, and by whom?
 
-**Status**: deferred to Technical Setup phase. The gates themselves are fully specified in each ADR's Validation Criteria; the open question is execution ordering.
+**Status**: ✅ **CLOSED 2026-05-02** — the verification-gate sweep ran across Sprints 01–04. Outcome: 7/8 ADRs Accepted; ADR-0004 Effectively-Accepted with single deferred Gate 5 (Settings & Accessibility production story). The recommended ordering below is preserved for historical reference; the actual execution roughly followed it.
 
 **Recommendation** (non-binding, captured for next-session use):
 

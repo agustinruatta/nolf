@@ -29,7 +29,7 @@
 # STATUS VALUES: active | deprecated | superseded-by: TR-[system]-NNN
 
 version: 2
-last_updated: "2026-04-24"  # /architecture-review 2026-04-24 fifth run: 15 new TR-INV-001..015 appended (Inventory & Gadgets GDD landed; all covered by existing ADRs + ADR-0002 2026-04-24 amendment). Prior: 2026-04-23 — TR-INP-002 revised (29 → 30 actions; dedicated `takedown` per Combat CR-3); TR-LS-007 revised (requirement text now points to ADR-0007 §Key Interfaces as authoritative source, per 2026-04-23 amendment)
+last_updated: "2026-05-02"  # /architecture-review 2026-05-02 ninth run: registry verified — no new TRs appended this run (`design/gdd/player-system.md` umbrella reverse-doc index introduces 0 new mechanics by design, inherits TRs from player-character + footstep-component). 348 active TRs unchanged since 2026-04-29. Prior: 2026-04-29 — 15 new TR-CMC-001..015 appended (Cutscenes & Mission Cards GDD landed). Prior: 2026-04-24 fifth run — 15 new TR-INV-001..015 appended (Inventory & Gadgets GDD landed; all covered by existing ADRs + ADR-0002 2026-04-24 amendment). Prior: 2026-04-23 — TR-INP-002 revised (29 → 30 actions; dedicated `takedown` per Combat CR-3); TR-LS-007 revised (requirement text now points to ADR-0007 §Key Interfaces as authoritative source, per 2026-04-23 amendment)
 
 requirements:
   # ─── Signal Bus (SB) ──────────────────────────────────────────────────────

@@ -1259,3 +1259,60 @@ The 3 follow-ups flagged as pending at end of original Sprint 03 closure:
   - TR-SAI-005 5-vs-7 AlertCause registry drift — flagged for /architecture-review
   - `_compute_severity` underscore prefix vs GDScript convention — flagged for /architecture-review
 - **Next: sprint close-out** — `/smoke-check sprint`, `/scope-check`, then advance to next sprint (PC-007 reset_for_respawn, Combat & Damage GDD, Settings & Accessibility epic, etc.)
+
+## Sprint 04 Close-Out — 2026-05-02
+
+**Sprint**: Sprint 04 — Stealth AI Foundation
+**Window**: 2026-05-02 (single-session marathon)
+**Verdict**: COMPLETE ✅ — all 16 Must-Have stories DONE; suite 725 tests / 0 failures; smoke check PASS WITH WARNINGS; scope check PASS (+0% net story change).
+
+### Final stats
+- **16/16 Must-Have stories closed** via /story-done — Stealth AI 10/10, Input 5/5 sprint stories, Player Character 1/1 sprint story
+- **Test suite: 725 / 0 errors / 0 failures / 0 flaky / 0 orphans** (baseline 423 → 725 = +302 new tests this sprint)
+- **78 test suites** across `tests/unit/` + `tests/integration/`
+- **6 new CI shell scripts** in `tools/ci/` (check_action_literals, check_raw_input_constants, check_action_add_event_validation, check_debug_action_gating extension, check_unhandled_input_default, check_dismiss_order)
+- **1 manual evidence file**: `production/qa/evidence/stealth-ai-perf-2026-05-02.md` (advisory; Iris Xe Gen 12 verification deferred per ADR-0008)
+- **2 close-out reports written**: `production/qa/smoke-2026-05-02-sprint-04.md` (PASS WITH WARNINGS), scope-check (PASS — in-conversation)
+- **Tech debt**: NONE introduced this sprint (TD register stays at TD-001..TD-007; all per-story advisories documented in completion notes)
+- **0 commits made** — per CLAUDE.md collaboration protocol, all sprint work is in the working tree, ready for user review/commit
+
+### Deferred to Sprint 05+ (NOT blockers)
+- **Plaza VS scene** (the bottleneck for 3 deferred manual playtests):
+  - SAI-006 real-movement playtest
+  - SAI-008 Plaza-VS audio playtest (`production/qa/evidence/stealth-ai-pillar3-feel-[YYYY-MM-DD].md` per AC-SAI-4.3)
+  - SAI-010 Iris Xe Gen 12 perf verification (re-opens ADR-0008 Gates 1+2)
+- **Save-load guard state round-trip test extension** (DoD AC #132 — SL-001 round-trip test does not yet cover guard `actor_id` + patrol position)
+- **F.2 sound fill** (post-VS, TR-SAI-008)
+- **F.4 alert propagation** (post-VS, TR-SAI-010 — needs second guard)
+- **SAW_BODY mechanic** (post-VS — no dead bodies in VS scope)
+
+### `/architecture-review` follow-ups (queued)
+- **TR-SAI-005 registry drift** — registry text lists 5 AlertCause values; story spec + implementation use 7 (story is authoritative; registry text needs reconciliation)
+- **GDScript `@abstract func` body-less form** — implementation uses body-less form; project reference doc `current-best-practices.md` shows `pass`-bodied form. Suite green. Doc-vs-code traceability gap.
+- **`_compute_severity` underscore prefix** — GDScript convention reserves `_method` for private; story AC + implementation use underscore prefix. Story is authoritative; convention drift documented.
+- **`stealth_alert_audio_subscriber.gd` location** — placed at `src/gameplay/stealth/` instead of `src/audio/audio_manager.gd` extension (workaround for src/audio/ permission constraint). Post-VS Audio rewrite should migrate the SAI-domain logic into AudioManager._on_actor_became_alerted (currently a deferred stub) and remove the standalone subscriber file. Decision needed: canonical location post-VS.
+
+### Story 001 typed-enum stub follow-up
+**CLOSED** in SAI-005 (current_alert_state: int = 0 → StealthAI.AlertState = StealthAI.AlertState.UNAWARE). The 5-story-old gap is now resolved.
+
+### Real anti-pattern violation caught + fixed
+IN-004's `check_action_literals.sh` caught **3 bare-string action references in `src/core/main.gd`** (`"quicksave"`, `"quickload"`, `"ui_cancel"`) — pre-existing tech debt that the new CI gate exposed. Fixed inline by switching to `InputActions.QUICKSAVE` / `InputActions.QUICKLOAD` / `InputActions.UI_CANCEL` constants.
+
+### Sprint 04 unlocks (for Sprint 05+ planning)
+- Full perception → state → behavior → signal → audio pipeline operational
+- Health system + DEAD-state guard provides damage-routing target for SAI guards (post-VS Combat & Damage GDD will produce the actual damage events)
+- All InputContext machinery in place (push/pop, modal dismiss with Core Rule 7, LOADING gate, runtime rebinding)
+- 6 CI grep gates protect against anti-pattern regressions across all consumer epics
+
+### Recommended next steps for next session
+1. `/team-qa sprint` — full QA cycle to get qa-tester sign-off on the automated test-cases portion of the QA plan; produces `production/qa/qa-signoff-sprint-04-2026-05-02.md` (APPROVED / APPROVED WITH CONDITIONS / REJECTED).
+2. After qa-tester sign-off → `/gate-check` to advance Production → Polish phase (currently held by 2 deferred ACs unless resolved or formally accepted).
+3. **OR**: skip qa-tester pass and go straight to `/sprint-plan new` for Sprint 05. The natural Sprint 05 theme is **"Plaza VS playable demo"**: build the Plaza scene + bake nav mesh + close the 2 deferred ACs + add SL-001 guard-state round-trip + run Iris Xe perf verification. This unblocks all deferred manual evidence in one focused sprint.
+4. **OR**: run `/architecture-review` to triage the 4 queued review items before they accumulate.
+
+### Session context recommendation
+**Context at sprint close: 77%.** Recommend `/clear` (new session) over `/compact` for next sprint:
+- File-backed state is complete (`production/session-state/active.md`, `production/sprint-status.yaml`, completion notes in each story file, smoke + scope reports in `production/qa/`)
+- Sprint 05 planning is a fresh task — story-by-story implementation history won't aid it
+- Per `.claude/docs/context-management.md`: "Use /clear between unrelated tasks, or at natural compaction points: after writing a section to file, after committing, after completing a task, before starting a new topic"
+

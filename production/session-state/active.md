@@ -1476,3 +1476,74 @@ The original sprint goal — Plaza VS demo plays the full mission loop "NEW_GAME
 
 ### Session context recommendation
 Sprint marathon completed in single autonomous session. Recommend `/clear` (new session) before next sprint to prevent context overflow.
+
+
+## Sprint 05 — Final Close-Out — 2026-05-02 (post-close pass)
+
+User directive: "Could you finish Sprint 05 (do all pending things) and after that we'll start Sprint 6?"
+
+Worked through the 5-item pending list from the Sprint 05 close-out's Recommended-next-steps. Status by item:
+
+### 1. Flaky-test fix — `player_interact_cap_warning_test` + `level_streaming_swap_test` ❌ BLOCKED ON PERMISSIONS
+- Reproduced full-suite failures: **863 / 9 failure events / 7 unique tests across 2 files** (not 5/3 as smoke check reported — see QA sign-off discrepancy log).
+- Verified root cause for `level_streaming_swap_test.gd`: line-62 pre-condition `InputContext.is_active(LOADING) == false` fails when prior tests leave `LOADING` on the stack. Fix is identical to existing `_reset_input_context()` pattern (drain stack to GAMEPLAY in `before_test()`).
+- **Cannot apply**: both flaky test files are `vdx:agu` rw-r--r--. Parent dir `tests/integration/level_streaming/` also `vdx`-owned. Same pattern as `scenes/sections/plaza.tscn` and `src/audio/`.
+- Fix pre-staged but blocked. User intervention needed: `chmod +w` (or sudo-edit) on those two files.
+- **Architectural impact: zero** (test-isolation issue, not production bug; tests pass in isolation).
+
+### 2. fr_autosaving_on_respawn registry entry ✅ APPLIED
+- Appended to `docs/registry/architecture.yaml` under ADR-0003 anchor.
+- Description + why fields written per Sprint 04 close-out registry conventions (active, with full description + why + adr + added 2026-05-02).
+
+### 3. /architecture-review (10th run) ✅ COMPLETE — PASS
+- Focused-delta review against same-day 9th-run baseline. Verdict: **PASS**.
+- All Sprint 05 production code maps to TRs already registered before sprint began. **Zero new TRs** (FR-001..014, MLS-001..019, SL TRs all pre-existed).
+- Triage of 4 queued advisories from Sprint 04 close-out:
+  - **A1 ✅ Fixed**: TR-SAI-005 registry text revised 5 → 7 enum values to match GDD L69 + impl `stealth_ai.gd:49` (`HEARD_NOISE | SAW_PLAYER | SAW_BODY | HEARD_GUNFIRE | ALERTED_BY_OTHER | SCRIPTED | CURIOSITY_BAIT`). `revised: 2026-05-02` field set.
+  - **A2 — Informational**: `@abstract func` body-less form is valid Godot 4.5+ (more explicit than `pass`-bodied form shown in `current-best-practices.md`). Convention drift only; no fix.
+  - **A3 — Informational**: `_compute_severity` underscore prefix per story-authoritative naming (story SAI-005); GDScript-convention drift documented in story Completion Notes. No fix.
+  - **A4 — Informational**: `stealth_alert_audio_subscriber.gd` location workaround for `src/audio/` permission constraint — same `vdx`-owned-files pattern that re-surfaced this session. Post-VS Audio rewrite migrates the SAI-domain logic into AudioManager. No fix this run.
+- **Cross-ADR conflicts**: NONE.
+- **Engine-compat audit**: clean. No new APIs introduced this window. No deprecated API references.
+- **GDD revision flags**: NONE.
+- Files written: `docs/architecture/architecture-review-2026-05-02-10th.md` (full report).
+- Files modified: `docs/architecture/tr-registry.yaml` (TR-SAI-005 text revision only; ID unchanged).
+
+### 4. /team-qa sprint sign-off ✅ COMPLETE — APPROVED WITH CONDITIONS
+- Sign-off doc: `production/qa/qa-signoff-sprint-05-2026-05-02.md`.
+- Verdict: **APPROVED WITH CONDITIONS** (3 conditions).
+- Discrepancy with the existing smoke-check report surfaced honestly: smoke-2026-05-02-sprint-05.md reported `5 failures` in 3 unique tests (player_interact only); the verification full-suite run during sign-off captured **9 failure events across 7 unique tests** (player_interact 3 + level_streaming_swap 4). Both file patterns are pre-existing test-pollution; neither involves Sprint 05 code.
+- **Condition 1 (blocking-eventually)**: filesystem permissions on the two flaky test files must be lifted before the fix can land.
+- **Condition 2 (informational)**: Plaza scene authoring blocks manual playtest evidence (no architectural blocker).
+- **Condition 3 (informational)**: cross-sprint deferrals — LOAD_FROM_SAVE UI, Iris Xe perf, ADR-0008 G1/G2/G4, ADR-0005 G3/G4/G5, ADR-0004 Gate 5.
+
+### 5. User commit ⏳ PENDING USER ACTION
+- Per CLAUDE.md collaboration protocol, no commits made by this session.
+- Working-tree changes ready for user review:
+  - 14 Sprint 05 stories (~30+ source files + ~30+ test files + completion-note appends)
+  - 1 architecture-review 10th-run report (new file)
+  - 1 TR-registry text revision (TR-SAI-005)
+  - 1 forbidden-pattern registry entry (fr_autosaving_on_respawn)
+  - 1 QA sign-off report (new file)
+  - This active.md final-close-out section
+
+### Files written this final-close-out pass
+- `docs/registry/architecture.yaml` — fr_autosaving_on_respawn entry (Pattern 11+, ADR-0003 anchor)
+- `docs/architecture/tr-registry.yaml` — TR-SAI-005 text revised (5 → 7 AlertCause values; `revised: 2026-05-02`)
+- `docs/architecture/architecture-review-2026-05-02-10th.md` — 10th-run report (PASS)
+- `production/qa/qa-signoff-sprint-05-2026-05-02.md` — Sprint 05 sign-off (APPROVED WITH CONDITIONS)
+- `production/session-state/active.md` — this section
+
+### Surfaced to user (non-blocking but actionable)
+1. **Filesystem permission constraint** is now hitting test files in addition to scene files and src/audio/. Recommend a single maintenance pass to chmod the affected paths (or migrate ownership). The full list is documented in the 10th-run architecture-review report under "Permission constraint (operational note)".
+2. **Suite-pollution flaky tests** (7 unique across 2 files) will continue to surface in every full-suite run until Condition 1 is lifted. They do not gate sprint close, but they will gate any "100% green CI" milestone.
+
+### Sprint 06 readiness
+- Sprint 05 sign-off is APPROVED WITH CONDITIONS — the 3 conditions are documentation-and-permission-only; **no architectural or test-coverage blocker for Sprint 06 to begin**.
+- Sprint 06 theme per `production/sprints/multi-sprint-roadmap-pre-art.md` lines 56-71: **UI Shell (HUD + Settings + LOC)**.
+- Sprint 06 has two HARD stop conditions baked into the roadmap:
+  1. **ADR-0004 closure** for Document-Overlay-UI / Menu-System / 6th Settings story — surface ADR-0004 status at sprint open.
+  2. **Visual sign-off on HUD field opacity** (85% per art bible §7E) — Restaurant + Bomb Chamber contrast unverified; will surface during HUD core work.
+- Recommended next user action: confirm Sprint 06 kickoff (`/sprint-plan new` for Sprint 06) OR address the permission constraint first.
+
+Sprint 05 is now fully closed.

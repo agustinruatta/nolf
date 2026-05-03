@@ -609,6 +609,13 @@ forbidden_patterns:
     adr: docs/architecture/adr-0008-performance-budget-distribution.md
     added: 2026-04-23
 
+  - pattern: fr_autosaving_on_respawn
+    status: active
+    description: "FailureRespawnService._on_ls_restore (the LSS step-9 restore callback for the RESPAWN reason) MUST NOT call SaveLoadService.save_to_slot — the body is a state-restoration beat, not a save trigger. The MLS-owned SaveGame assembler chain runs only on the FORWARD autosave gate (section advance after objective completion), never on RESPAWN. Enforced by tools/ci/lint_fr_autosaving_on_respawn.sh (FR-006 AC-5)."
+    why: "Saving inside the restore callback would (a) capture the half-restored mid-step-9 state as the new autosave, irreversibly corrupting slot 0 if the restore later fails, (b) re-enter the save state machine while LSS still holds the LOADING context, deadlocking the save queue introduced in SL-008, and (c) blur the FORWARD-vs-RESPAWN intent distinction codified in TransitionReason. The MLS assembler chain (FORWARD-only) is the sole authorised autosave producer; FailureRespawn is purely a consumer of the already-persisted slot 0. Per FR-006 AC-5 + CR-12 step ordering."
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-05-02
+
 # Example:
 #
 # forbidden_patterns:

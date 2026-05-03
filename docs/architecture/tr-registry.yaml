@@ -924,9 +924,9 @@ requirements:
   - id: TR-SAI-005
     system: stealth-ai
     gdd: design/gdd/stealth-ai.md
-    requirement: "StealthAI.AlertCause enum: SAW_PLAYER | SAW_BODY | HEARD | ALERTED_BY_OTHER | SCRIPTED; SAW_BODY 2× sight_fill multiplier; SCRIPTED suppresses Audio stinger."
+    requirement: "StealthAI.AlertCause enum: HEARD_NOISE | SAW_PLAYER | SAW_BODY | HEARD_GUNFIRE | ALERTED_BY_OTHER | SCRIPTED | CURIOSITY_BAIT (7 values per stealth-ai.md L69 + Sprint 04 implementation `src/gameplay/stealth/stealth_ai.gd`). SAW_BODY 2× sight_fill multiplier; SCRIPTED suppresses Audio stinger; CURIOSITY_BAIT propagation-suppressed comedy beat (F.4 exclusion)."
     created: 2026-04-22
-    revised: ""
+    revised: "2026-05-02"
     status: active
   - id: TR-SAI-006
     system: stealth-ai

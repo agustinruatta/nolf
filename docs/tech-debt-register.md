@@ -78,17 +78,21 @@ Format: `- [TD-NNN]` (sequential) — debt — origin — owner — trigger.
 - **Re-open trigger**: Next `/architecture-review` pass; or any new LOC story that references the docs.
 - **Owner**: localization-lead / technical-director
 
-### TD-009 — `player_interact_cap_warning.gd` resolution logic bug (5 failing tests)
+### TD-009 — `player_interact_cap_warning.gd` resolution logic bug (5 failing tests; cross-suite flake)
 
-- **Origin**: Pre-Sprint-06 (logic predates HC-006). Sprint 06 close-out smoke flagged 3 failing tests in `player_interact_cap_warning_test.gd`; Sprint 07 close-out smoke confirmed 5 failing assertions across the same file (cap-exceeded path returns null instead of within-cap target; cap=1 path returns null instead of stub; priority resolver picks Door(3)/Pickup(2) over Document(0)).
-- **Failing tests**:
+- **Status**: **ACTIVE** (downgraded MEDIUM → LOW after Sprint 08 PIC-FIX verification).
+- **Origin**: Pre-Sprint-06 (logic predates HC-006). Sprint 06 close-out smoke flagged 3 failing tests in `player_interact_cap_warning_test.gd`; Sprint 07 close-out smoke confirmed 5 failing assertions across the same file.
+- **Sprint 08 PIC-FIX verification (2026-05-03)**: confirmed Sprint 06's hypothesis — bug is test isolation, NOT resolver logic.
+  - `tests/unit/core/player_character` run **alone**: 141/141 PASS (no resolver bug)
+  - `tests/unit/level_streaming + tests/unit/core/player_character` run together: 5 player_interact_cap_warning failures + 9 player_noise_by_state failures + 4 player_noise_latch_expiry failures appear (cross-suite physics-space pollution from level_streaming tests that leave auto_free'd ShapeCast3D/StaticBody3D bodies queued)
+  - Production resolver code in `src/gameplay/player/player_character.gd::_resolve_interact_target()` is correct — verified by inspection + isolated test pass
+- **Failing tests (cross-suite only)**:
   - `test_resolve_cap_exceeded_returns_within_cap` (2 assertion failures)
   - `test_resolve_cap_one_returns_a_stub` (2 assertion failures)
   - `test_resolve_within_cap_returns_priority_winner`
-- **Originally suspected root cause** (Sprint 06 sign-off): PhysicsServer3D space pollution from prior test files' auto_free'd `CollisionShape3D` bodies. Sprint 07 re-investigation suggests the issue is in the resolver itself (priority ordering + cap-edge null-return), not test isolation — verify which is dominant before fixing.
-- **Risk level**: MEDIUM — the resolver is on the player interact hot path. Behavior in production may diverge from test expectations.
-- **Re-open trigger**: Sprint 08 buffer slot (recommended). Promote to a focused bug-fix story under `production/epics/player-character/`.
-- **Owner**: gameplay-programmer / qa-lead
+- **Risk level**: LOW — production resolver is correct; failures are test-runner-environment pollution. No player-facing behavior bug.
+- **Re-open trigger**: when isolated-suite test runner is feasible (per-suite sandbox or Godot --headless --restart between suites). Most pragmatic fix: split level_streaming integration tests into a separate gdunit4 session (CI matrix job) so they don't share a PhysicsServer3D space with player_character tests.
+- **Owner**: qa-lead (test infrastructure scope); gameplay-programmer (verification consult)
 
 ### TD-010 — HC-006 debug F-keys use raw `KEY_*` input constants in `main.gd`
 

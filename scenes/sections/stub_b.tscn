@@ -1,7 +1,172 @@
-[gd_scene format=3 uid="uid://stub_b_mvp"]
+[gd_scene load_steps=13 format=3 uid="uid://stub_b_mvp"]
+
+; Stub B Section — minimal walkable section used by level-streaming integration tests.
+;
+; LS-008: Augmented to satisfy the CR-9 Section Authoring Contract.
+;   section_id = &"stub_b"
+;   player_entry_point → EntryPoint (Marker3D at 0,1.5,0)
+;   player_respawn_point → RespawnPoint (Marker3D at 1,1.5,0) — DISTINCT node
+;   environment = null (uses default_environment.tres fallback via LSS)
+;   SectionBoundsHint (MeshInstance3D, BoxMesh 30×10×30, visible:false)
+;   Floor (StaticBody3D, BoxShape3D 30×1×30, surface_tag meta = &"default")
+;
+; Node count target: ~30 (CR-3 spec). Minimal aesthetic additions provide enough
+; geometry so the player capsule has something to stand on during integration tests.
+;
+; Collision layer = 1 (LAYER_WORLD per ADR-0006 / PhysicsLayers).
+
+[ext_resource type="Script" path="res://src/gameplay/sections/section_root.gd" id="1_section_root"]
+
+[sub_resource type="StandardMaterial3D" id="mat_floor_b"]
+albedo_color = Color(0.45, 0.48, 0.55, 1.0)
+roughness = 0.90
+
+[sub_resource type="StandardMaterial3D" id="mat_wall_b"]
+albedo_color = Color(0.60, 0.55, 0.48, 1.0)
+roughness = 0.80
+
+[sub_resource type="StandardMaterial3D" id="mat_prop_b"]
+albedo_color = Color(0.35, 0.28, 0.22, 1.0)
+roughness = 0.70
+
+; SectionBoundsHint mesh (BoxMesh 30×10×30)
+[sub_resource type="BoxMesh" id="bounds_mesh_b"]
+size = Vector3(30, 10, 30)
+
+; Floor StaticBody3D collision shape (BoxShape3D 30×1×30)
+[sub_resource type="BoxShape3D" id="floor_shape_b"]
+size = Vector3(30, 1, 30)
+
+; Walls and props collision shapes (BoxShape3D)
+[sub_resource type="BoxShape3D" id="wall_shape_b"]
+size = Vector3(20, 4, 0.5)
+
+[sub_resource type="BoxShape3D" id="wall_side_shape_b"]
+size = Vector3(0.5, 4, 20)
+
+[sub_resource type="BoxShape3D" id="crate_shape_b"]
+size = Vector3(1.0, 1.0, 1.0)
+
+; ProceduralSky for WorldEnvironment (stub_b has its own sky for visual variety)
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat_b"]
+sky_top_color = Color(0.28, 0.32, 0.42, 1.0)
+sky_horizon_color = Color(0.65, 0.58, 0.44, 1.0)
+ground_horizon_color = Color(0.44, 0.40, 0.34, 1.0)
+ground_bottom_color = Color(0.18, 0.16, 0.14, 1.0)
+
+[sub_resource type="Sky" id="sky_b"]
+sky_material = SubResource("sky_mat_b")
+
+[sub_resource type="Environment" id="env_b"]
+background_mode = 2
+sky = SubResource("sky_b")
+ambient_light_source = 3
+ambient_light_sky_contribution = 0.35
+ambient_light_energy = 0.60
+tonemap_mode = 2
+glow_enabled = false
+fog_enabled = false
 
 [node name="StubBSection" type="Node3D"]
+script = ExtResource("1_section_root")
+section_id = &"stub_b"
+player_entry_point = NodePath("EntryPoint")
+player_respawn_point = NodePath("RespawnPoint")
+environment = null
 
-[node name="Label" type="Label3D" parent="."]
-text = "Stub B section"
+; ── CR-9 entry and respawn markers ───────────────────────────────────────────
+[node name="EntryPoint" type="Marker3D" parent="."]
 position = Vector3(0, 1.5, 0)
+
+[node name="RespawnPoint" type="Marker3D" parent="."]
+position = Vector3(1, 1.5, 0)
+
+; ── SectionBoundsHint ─────────────────────────────────────────────────────────
+[node name="SectionBoundsHint" type="MeshInstance3D" parent="."]
+position = Vector3(0, 5, 0)
+mesh = SubResource("bounds_mesh_b")
+visible = false
+
+; ── Floor StaticBody3D (CR-10 surface_tag meta = &"default") ─────────────────
+[node name="Floor" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+metadata/surface_tag = &"default"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+position = Vector3(0, -0.5, 0)
+shape = SubResource("floor_shape_b")
+
+; ── MeshInstance3D floor visual ───────────────────────────────────────────────
+[node name="FloorMesh" type="MeshInstance3D" parent="Floor"]
+position = Vector3(0, 0.5, 0)
+mesh = SubResource("bounds_mesh_b")
+material_override = SubResource("mat_floor_b")
+
+; ── Environment ───────────────────────────────────────────────────────────────
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env_b")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 8, 0)
+light_color = Color(0.95, 0.90, 0.80, 1.0)
+light_energy = 1.0
+shadow_enabled = true
+
+; ── Walls ─────────────────────────────────────────────────────────────────────
+[node name="WallNorth" type="StaticBody3D" parent="."]
+position = Vector3(0, 2, -10)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallNorth"]
+shape = SubResource("wall_shape_b")
+
+[node name="WallSouth" type="StaticBody3D" parent="."]
+position = Vector3(0, 2, 10)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallSouth"]
+shape = SubResource("wall_shape_b")
+
+[node name="WallEast" type="StaticBody3D" parent="."]
+position = Vector3(10, 2, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallEast"]
+shape = SubResource("wall_side_shape_b")
+
+[node name="WallWest" type="StaticBody3D" parent="."]
+position = Vector3(-10, 2, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WallWest"]
+shape = SubResource("wall_side_shape_b")
+
+; ── Props ─────────────────────────────────────────────────────────────────────
+[node name="CrateA" type="StaticBody3D" parent="."]
+position = Vector3(2, 0.5, -3)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CrateA"]
+shape = SubResource("crate_shape_b")
+
+[node name="CrateB" type="StaticBody3D" parent="."]
+position = Vector3(-3, 0.5, 2)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CrateB"]
+shape = SubResource("crate_shape_b")
+
+; ── Reference label ────────────────────────────────────────────────────────────
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 2.0, -5)
+text = "STUB B — Integration Test Section"
+font_size = 32
+outline_size = 4
+billboard = 1

@@ -118,6 +118,38 @@ func before_test() -> void:
 	await _wait_for_idle(3.0)
 
 
+## Test helper — ensure the next `transition_to_section(target, ...)` call from
+## the test body is NOT a same-section call (which LS-006's guard would silently
+## drop). If `_current_section_id == target`, transition to the OTHER known
+## section first, then clear the test's per-iteration buffers so only the
+## test's own probe firings + signal events are recorded.
+##
+## Call this BEFORE the test's `transition_to_section(target, ...)` line.
+func _ensure_can_transition_to(target: StringName) -> void:
+	if not LevelStreamingService.has_valid_registry():
+		return
+	if LevelStreamingService.get_current_section_id() != target:
+		return
+	var other: StringName = &"stub_b" if target == &"plaza" else &"plaza"
+	# Disarm probe so the normalization transition doesn't pollute logs.
+	var saved_active: bool = _probe_active
+	_probe_active = false
+	LevelStreamingService.transition_to_section(
+		other, null, LevelStreamingService.TransitionReason.FORWARD
+	)
+	await _wait_for_idle(3.0)
+	# Re-arm and clear per-test buffers.
+	_probe_active = saved_active
+	_probe_args_log.clear()
+	_entered_args.clear()
+	_exited_args.clear()
+	_probe_frame = -1
+	_entered_frame = -1
+	_exited_frame = -1
+	_subscriber_saw_marker_set = false
+	_test_marker = ""
+
+
 func after_test() -> void:
 	# Disarm probe — it is still registered but will be a no-op.
 	_probe_active = false
@@ -218,6 +250,10 @@ func test_step9_invokes_callbacks_synchronously_between_step8_and_step10() -> vo
 
 	_probe_active = true
 
+	# Avoid LS-006 same-section drop: if a prior test left current at plaza,
+	# transition to stub_b first.
+	await _ensure_can_transition_to(&"plaza")
+
 	LevelStreamingService.transition_to_section(
 		&"plaza", null, LevelStreamingService.TransitionReason.NEW_GAME
 	)
@@ -256,6 +292,9 @@ func test_callback_receives_three_positional_args_with_save_game() -> void:
 	_probe_active = true
 	var the_save: SaveGame = SaveGame.new()
 
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"plaza")
+
 	LevelStreamingService.transition_to_section(
 		&"plaza", the_save, LevelStreamingService.TransitionReason.LOAD_FROM_SAVE
 	)
@@ -289,6 +328,9 @@ func test_callback_receives_null_save_game_on_new_game() -> void:
 	await _wait_for_idle(2.0)
 
 	_probe_active = true
+
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"stub_b")
 
 	LevelStreamingService.transition_to_section(
 		&"stub_b", null, LevelStreamingService.TransitionReason.NEW_GAME
@@ -329,6 +371,9 @@ func test_multiple_callbacks_all_fire_in_registration_order() -> void:
 	LevelStreamingService.register_restore_callback(probe_b)
 	LevelStreamingService.register_restore_callback(probe_c)
 
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"plaza")
+
 	LevelStreamingService.transition_to_section(
 		&"plaza", null, LevelStreamingService.TransitionReason.NEW_GAME
 	)
@@ -365,6 +410,9 @@ func test_step9_with_empty_callback_array_is_no_op_and_transition_completes() ->
 
 	# Reset signal-spy state so this test's assertions are isolated.
 	_entered_args.clear()
+
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"plaza")
 
 	LevelStreamingService.transition_to_section(
 		&"plaza", null, LevelStreamingService.TransitionReason.NEW_GAME
@@ -410,6 +458,9 @@ func test_callback_chain_continues_when_one_callback_logs_an_error() -> void:
 	LevelStreamingService.register_restore_callback(probe_first)
 	LevelStreamingService.register_restore_callback(probe_middle)
 	LevelStreamingService.register_restore_callback(probe_last)
+
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"stub_b")
 
 	LevelStreamingService.transition_to_section(
 		&"stub_b", null, LevelStreamingService.TransitionReason.NEW_GAME
@@ -462,6 +513,9 @@ func test_no_await_contract_violation_does_not_deadlock() -> void:
 
 	LevelStreamingService.register_restore_callback(awaiting_probe)
 
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"plaza")
+
 	LevelStreamingService.transition_to_section(
 		&"plaza", null, LevelStreamingService.TransitionReason.NEW_GAME
 	)
@@ -494,6 +548,9 @@ func test_callback_fires_at_step9_not_at_step3() -> void:
 	await _wait_for_idle(2.0)
 
 	_probe_active = true
+
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"stub_b")
 
 	LevelStreamingService.transition_to_section(
 		&"stub_b", null, LevelStreamingService.TransitionReason.NEW_GAME
@@ -528,6 +585,9 @@ func test_probe_state_visible_to_section_entered_subscriber() -> void:
 	await _wait_for_idle(2.0)
 
 	_probe_active = true
+
+	# Avoid LS-006 same-section drop.
+	await _ensure_can_transition_to(&"plaza")
 
 	LevelStreamingService.transition_to_section(
 		&"plaza", null, LevelStreamingService.TransitionReason.NEW_GAME

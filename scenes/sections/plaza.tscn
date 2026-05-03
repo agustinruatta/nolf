@@ -1,10 +1,11 @@
-[gd_scene load_steps=18 format=3 uid="uid://plaza_vs_2026_05_01"]
+[gd_scene load_steps=25 format=3 uid="uid://plaza_vs_2026_05_01"]
 
-[ext_resource type="Script" path="res://src/gameplay/documents/document_collection.gd" id="1_dc_script"]
-[ext_resource type="PackedScene" path="res://src/gameplay/documents/document_body.tscn" id="2_doc_body_tscn"]
-[ext_resource type="Resource" path="res://assets/data/documents/plaza_security_logbook_001.tres" id="3_logbook"]
-[ext_resource type="Resource" path="res://assets/data/documents/plaza_tourist_register_001.tres" id="4_tourist"]
-[ext_resource type="Resource" path="res://assets/data/documents/plaza_maintenance_clipboard_001.tres" id="5_maintenance"]
+[ext_resource type="Script" path="res://src/gameplay/sections/section_root.gd" id="1_section_root"]
+[ext_resource type="Script" path="res://src/gameplay/documents/document_collection.gd" id="2_dc_script"]
+[ext_resource type="PackedScene" path="res://src/gameplay/documents/document_body.tscn" id="3_doc_body_tscn"]
+[ext_resource type="Resource" path="res://assets/data/documents/plaza_security_logbook_001.tres" id="4_logbook"]
+[ext_resource type="Resource" path="res://assets/data/documents/plaza_tourist_register_001.tres" id="5_tourist"]
+[ext_resource type="Resource" path="res://assets/data/documents/plaza_maintenance_clipboard_001.tres" id="6_maintenance"]
 
 ; Plaza Section — first vertical-slice walkable scene.
 ;
@@ -13,6 +14,17 @@
 ; (CSG nodes) — production assets land in a later content pass. The shape is
 ; a small enclosed 20m x 20m room with a few crates and a pillar so the
 ; player has something to walk around for the camera/movement demo.
+;
+; LS-008: Root node now attaches SectionRoot script and declares CR-9 exports:
+;   section_id = &"plaza"
+;   player_entry_point → EntryPoint (Marker3D at 0,1.5,0)
+;   player_respawn_point → RespawnPoint (Marker3D at 1,1.5,0) — DISTINCT node
+;   environment = null (uses default_environment.tres fallback via LSS)
+; New children added:
+;   EntryPoint (Marker3D)
+;   RespawnPoint (Marker3D)
+;   SectionBoundsHint (MeshInstance3D, BoxMesh 30×10×30, visible:false)
+;   Floor (StaticBody3D, BoxShape3D 30×1×30, surface_tag meta = &"default")
 ;
 ; Conventions:
 ;   - Floor at world y=0; PlayerSpawn marker at y=1.0 so the capsule
@@ -58,7 +70,47 @@ ambient_light_energy = 0.7
 tonemap_mode = 2
 glow_enabled = false
 
+; ── LS-008: SectionBoundsHint mesh (BoxMesh 30×10×30, visible:false) ──────────
+[sub_resource type="BoxMesh" id="bounds_mesh"]
+size = Vector3(30, 10, 30)
+
+; ── LS-008: Floor StaticBody3D collision shape (BoxShape3D 30×1×30) ───────────
+[sub_resource type="BoxShape3D" id="floor_shape"]
+size = Vector3(30, 1, 30)
+
 [node name="Plaza" type="Node3D"]
+script = ExtResource("1_section_root")
+section_id = &"plaza"
+player_entry_point = NodePath("EntryPoint")
+player_respawn_point = NodePath("RespawnPoint")
+environment = null
+
+; ── LS-008: CR-9 entry and respawn markers ────────────────────────────────────
+; EntryPoint: first-time spawn position when transitioning into this section.
+[node name="EntryPoint" type="Marker3D" parent="."]
+position = Vector3(0, 1.5, 0)
+
+; RespawnPoint: distinct node from EntryPoint (CR-9 identity check).
+[node name="RespawnPoint" type="Marker3D" parent="."]
+position = Vector3(1, 1.5, 0)
+
+; ── LS-008: SectionBoundsHint — defines the section's AABB (visible:false) ───
+[node name="SectionBoundsHint" type="MeshInstance3D" parent="."]
+position = Vector3(0, 5, 0)
+mesh = SubResource("bounds_mesh")
+visible = false
+
+; ── LS-008: Floor StaticBody3D (CR-10 surface_tag meta = &"default") ─────────
+; This Floor is the contract-required physics floor with surface metadata.
+; The CSGBox3D "Floor" below also provides collision for the existing VS geometry.
+[node name="Floor" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+metadata/surface_tag = &"default"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+position = Vector3(0, -0.5, 0)
+shape = SubResource("floor_shape")
 
 ; ── Environment ──────────────────────────────────────────────────────────
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -71,7 +123,7 @@ light_energy = 1.15
 shadow_enabled = true
 
 ; ── Floor (20m x 20m, 0.5m thick) ─────────────────────────────────────────
-[node name="Floor" type="CSGBox3D" parent="."]
+[node name="CsgFloor" type="CSGBox3D" parent="."]
 size = Vector3(20, 0.5, 20)
 position = Vector3(0, -0.25, 0)
 material = SubResource("mat_floor")
@@ -167,7 +219,7 @@ billboard = 1
 [node name="Systems" type="Node3D" parent="."]
 
 [node name="DocumentCollection" type="Node" parent="Systems"]
-script = ExtResource("1_dc_script")
+script = ExtResource("2_dc_script")
 
 ; ── Documents — DocumentBody instances for Plaza tutorial set ────────────
 ; Three DocumentBody scenes placed in the 20m x 20m Plaza room.
@@ -179,16 +231,16 @@ script = ExtResource("1_dc_script")
 [node name="Documents" type="Node3D" parent="."]
 
 ; SecurityLogbook — on-path anchor, security post table surface (~0.75 m).
-[node name="SecurityLogbook" parent="Documents" instance=ExtResource("2_doc_body_tscn")]
+[node name="SecurityLogbook" parent="Documents" instance=ExtResource("3_doc_body_tscn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.75, 0.0)
-document = ExtResource("3_logbook")
+document = ExtResource("4_logbook")
 
 ; TouristRegister — off-path detour (≥10 m), recessed counter surface (~1.05 m).
-[node name="TouristRegister" parent="Documents" instance=ExtResource("2_doc_body_tscn")]
+[node name="TouristRegister" parent="Documents" instance=ExtResource("3_doc_body_tscn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.0, 1.05, 8.0)
-document = ExtResource("4_tourist")
+document = ExtResource("5_tourist")
 
 ; MaintenanceClipboard — off-path service alcove (≥10 m), crate surface (~0.85 m).
-[node name="MaintenanceClipboard" parent="Documents" instance=ExtResource("2_doc_body_tscn")]
+[node name="MaintenanceClipboard" parent="Documents" instance=ExtResource("3_doc_body_tscn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0, 0.85, -8.0)
-document = ExtResource("5_maintenance")
+document = ExtResource("6_maintenance")

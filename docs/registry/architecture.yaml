@@ -660,6 +660,51 @@ forbidden_patterns:
     adr: docs/architecture/adr-0003-save-format-contract.md
     added: 2026-05-02
 
+  # ── Level Streaming anti-pattern fences (LS-009) ──────────────────────────
+  # Five patterns registered per GDD CR-4, CR-9, CR-13 and epic Definition of
+  # Done. Lint test: tests/unit/level_streaming/level_streaming_lint_test.gd
+  # Runtime test: tests/unit/level_streaming/level_streaming_sync_subscriber_test.gd
+
+  - pattern: unauthorized_reload_current_section_caller
+    status: active
+    severity: HIGH
+    description: "Only Mission & Level Scripting (src/gameplay/mission_level_scripting/), Failure & Respawn (src/gameplay/failure_respawn/), and Menu System (src/core/ui/menu/) may call LevelStreamingService.transition_to_section or LevelStreamingService.reload_current_section. Any other call site bypasses the section-state coordination contract (SaveGame assembly, restore-callback registration, InputContext stack discipline) and will silently desynchronise the autosave, respawn, and load flows — this is a silent-corruption class of bug, not a runtime crash."
+    why: "An unauthorised caller bypasses the SaveGame coordination: they call LSS without setting up the registered restore callbacks first, so the new section enters at default state, the player loses progress silently, and reloading the prior section after F&R kicks in does not restore correctly. Only the three authorised systems have the full three-phase contract (assemble SaveGame → call transition_to_section → register restore callback) required to drive a safe section transition. Per GDD CR-4 + epic DoD."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    added: 2026-05-03
+
+  - pattern: cross_section_nodepath_reference
+    status: active
+    severity: HIGH
+    description: "Saved Resources (SaveGame schema, per ADR-0003) and scene scripts must not contain NodePaths that resolve into a sibling section's scene tree (e.g., a plaza scene script referencing stub_b/SomeNode). Cross-section NodePaths break on section reload because the referenced section's tree is queue_freed during every LSS step-4 outgoing-scene teardown. The only permitted non-local NodePath targets are absolute autoload paths (/root/Events, /root/SaveLoad, etc.) or paths within the current section root."
+    why: "Per ADR-0003 IG 6 (actor_id discipline): saved Resources must use stable StringName actor_id values, not NodePaths or Node references. NodePaths cannot survive a scene reload. Cross-section NodePaths extend this class of bug to runtime: the section referenced by the path may not be in the tree, producing silent null-dereferences. Static detection via scene-load smoke check (post-MVP runtime enforcement; registry entry establishes the rule now). Per GDD CR-9 + ADR-0003 IG 6."
+    adr: docs/architecture/adr-0003-save-format-contract.md
+    added: 2026-05-03
+
+  - pattern: missing_register_restore_callback
+    status: active
+    severity: MEDIUM
+    description: "Mission & Level Scripting, Failure & Respawn, and Menu System each MUST register a step-9 restore callback at autoload boot via LevelStreamingService.register_restore_callback. Missing registrations cause silent state-restore failures on section load: the section enters at default state instead of the persisted saved state. Runtime detection: if _restore_callbacks.is_empty() at the first transition_to_section call (debug builds), push_warning is emitted. Static enforcement defers to consumer epics (each registers in its own autoload _ready)."
+    why: "LSS step 9 iterates the registered callbacks synchronously before emitting section_entered. Without registration the consumer system never learns the target section or the save data, so it initialises from scratch (default values) instead of the player's persisted state. This is a silent progression loss — no crash, no error, just wrong state. Per GDD CR-2 + TR-LS-013 + ADR-0007 §Key Interfaces (step-9 restore chain)."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    added: 2026-05-03
+
+  - pattern: bypass_thirteen_step_protocol
+    status: active
+    severity: HIGH
+    description: "Code must not call get_tree().change_scene_to_file() or change_scene_to_packed() for section transitions anywhere in src/ except: (a) LevelStreamingService itself (src/core/level_streaming/level_streaming_service.gd) and (b) the application entry point that boots MainMenu.tscn (src/core/main.gd). ErrorFallback recovery (scenes/error_fallback.gd) is also explicitly allow-listed. All other callers must use LevelStreamingService.transition_to_section — bypassing it skips the 13-step protocol entirely (no fade, no SaveGame assembly, no restore-callback chain, no InputContext discipline, no ErrorFallback recovery)."
+    why: "The 13-step protocol is the project's single authorised section-transition path. Bypassing it produces a game that loads new scenes without fading, without assembling a SaveGame, without invoking restore callbacks, without pushing LOADING to the InputContext stack, and without the ErrorFallback safety net. The resulting state is undefined for every system that depends on section lifecycle signals. Lint-enforced: project-wide grep for change_scene_to_(file|packed) outside the three allow-listed files is a CI gate (LS-009 AC-6). Per GDD CR-5 + ADR-0007."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    added: 2026-05-03
+
+  - pattern: section_exited_subscriber_awaits
+    status: active
+    severity: MEDIUM
+    description: "Subscribers to Events.section_exited must NOT await inside their handler. The signal fires at LSS step 3 while the outgoing scene is still in the tree; LSS then immediately proceeds to step 4 (queue_free the outgoing scene). A subscriber that awaits returns control to LSS, which queue_frees the scene; the subscriber then resumes against a freed tree, producing use-after-free crashes or silent null-dereferences. Runtime detection (debug builds): LSS wraps the step-3 emit with Engine.get_process_frames() pre/post comparison — if post > pre a subscriber awaited and push_error is emitted with marker '[LSS] CR-13 violation'. Per GDD CR-13 + AC-LS-2.4."
+    why: "await in a signal subscriber returns control to the caller (LSS) on the next engine frame. LSS does not wait for subscribers to complete — it proceeds synchronously through the remaining 13 steps. The outgoing scene is freed at step 4, so any subscriber that awaits and then dereferences a node from the outgoing scene will crash or produce silent nulls. The check cannot be made blocking without redesigning the entire signal architecture; instead debug-build detection provides early warning. Per GDD CR-13."
+    adr: docs/architecture/adr-0007-autoload-load-order-registry.md
+    added: 2026-05-03
+
 # Example:
 #
 # forbidden_patterns:

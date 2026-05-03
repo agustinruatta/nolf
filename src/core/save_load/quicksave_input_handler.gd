@@ -102,10 +102,15 @@ func _unhandled_input(event: InputEvent) -> void:
 ##   1. InputContext gate — save-eligible contexts: GAMEPLAY, MENU, PAUSE.
 ##      Any other context results in a silent no-op (GDD CR-6, 2026-04-28).
 ##   2. Debounce — suppress if within QUICKSAVE_DEBOUNCE_MS of last SUCCESS.
-##   3. Assemble SaveGame via injected assembler.
-##   4. Call SaveLoad.save_to_slot(0, sg). On success, update debounce clock
-##      and emit hud_toast_requested(&"quicksave_success", {"slot": 0}).
-##      SaveLoad itself emits Events.game_saved(0, section_id) on success.
+##   3. Delegate to LevelStreamingService.queue_quicksave_or_fire() (Story LS-007).
+##      If a transition is in flight, LSS queues the save for step-13 drain.
+##      If IDLE, LSS fires SaveLoad.save_to_slot(0, ...) immediately via its
+##      own _assemble_quicksave_payload() stub (Mission Scripting epic provides
+##      the production assembler). SaveLoad emits Events.game_saved on success.
+##
+## Note: the injected `_assembler` field is retained for test backward-compat
+## but is no longer called from this path — LSS owns the assembly. Tests that
+## exercise the direct-save path should call queue_quicksave_or_fire() via LSS.
 func _try_quicksave() -> void:
 	# Gate 1 — InputContext (line 4 autoload — safe at _unhandled_input time).
 	var ctx: InputContextStack.Context = InputContext.current()
@@ -118,18 +123,12 @@ func _try_quicksave() -> void:
 	if now_msec - _last_quicksave_msec < QUICKSAVE_DEBOUNCE_MS:
 		return  # Silent no-op per AC-8.
 
-	# Step 3 — Assemble SaveGame (injected; null means assembler not ready).
-	var sg: SaveGame = _assembler.call()
-	if sg == null:
-		return  # No HUD toast — assembler signals any error it needs to.
-
-	# Step 4 — Persist. save_to_slot emits game_saved on success (AC-1, AC-7).
-	# AC-10: we call and return — Story 008 state machine owns queueing if a
-	# concurrent save is in flight. This handler is fire-and-forget.
-	var ok: bool = SaveLoad.save_to_slot(0, sg)
-	if ok:
-		_last_quicksave_msec = now_msec
-		Events.hud_toast_requested.emit(&"quicksave_success", {"slot": 0})
+	# Step 3 — Delegate to LSS (Story LS-007 AC-9). LSS handles both the IDLE
+	# (fire-now) and in-transition (queue) paths transparently. The debounce
+	# clock is updated here regardless of whether LSS fires immediately or
+	# queues — accepting the intent is sufficient to reset the window.
+	_last_quicksave_msec = now_msec
+	LevelStreamingService.queue_quicksave_or_fire()
 
 
 # ---------------------------------------------------------------------------

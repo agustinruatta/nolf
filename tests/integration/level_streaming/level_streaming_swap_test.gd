@@ -33,6 +33,20 @@ func before_test() -> void:
 	# clean even when a prior suite left LOADING on the stack.
 	_reset_input_context()
 
+	# Sprint 08 fix (LS-006 same-section guard): if a prior test/suite left
+	# LSS at &"plaza", transition to stub_b first so this suite's
+	# transition_to_section(&"plaza", ...) is not silently dropped.
+	if LevelStreamingService.has_valid_registry():
+		var current: StringName = LevelStreamingService.get_current_section_id()
+		if current == &"plaza":
+			LevelStreamingService.transition_to_section(
+				&"stub_b", null, LevelStreamingService.TransitionReason.FORWARD
+			)
+			var elapsed_n: float = 0.0
+			while LevelStreamingService.is_transitioning() and elapsed_n < 3.0:
+				await get_tree().process_frame
+				elapsed_n += get_process_delta_time()
+
 	_exited_args = []
 	_entered_args = []
 	if not Events.section_exited.is_connected(_on_section_exited):

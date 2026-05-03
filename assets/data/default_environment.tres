@@ -1,0 +1,25 @@
+[gd_resource type="Environment" load_steps=3 format=3 uid="uid://default_env_ls008"]
+
+; Default fallback Environment for LevelStreamingService (Story LS-008, AC-5).
+; Used when a section's SectionRoot.environment export is null.
+; Minimal setup: ProceduralSky enabled, no fog, glow disabled.
+; Background mode 2 = SKY.
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_default"]
+sky_top_color = Color(0.3, 0.34, 0.43, 1.0)
+sky_horizon_color = Color(0.76, 0.70, 0.53, 1.0)
+ground_horizon_color = Color(0.53, 0.48, 0.40, 1.0)
+ground_bottom_color = Color(0.20, 0.18, 0.16, 1.0)
+
+[sub_resource type="Sky" id="Sky_default"]
+sky_material = SubResource("ProceduralSkyMaterial_default")
+
+[resource]
+background_mode = 2
+sky = SubResource("Sky_default")
+ambient_light_source = 3
+ambient_light_sky_contribution = 0.4
+ambient_light_energy = 0.65
+tonemap_mode = 2
+glow_enabled = false
+fog_enabled = false

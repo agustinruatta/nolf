@@ -1,7 +1,7 @@
 # Story 007: F5/F9 quicksave/quickload queue during transition
 
 > **Epic**: Level Streaming
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: 2 hours (M — F5/F9 hooks + queue + drain at FADING_IN→IDLE)
@@ -217,7 +217,7 @@ This means Save/Load Story 007 needs an update once this story lands; the change
 - `production/qa/evidence/level_streaming_f5_during_transition.md` — manual walkthrough evidence for AC-8 (post-transition chime + save card visible)
 - Naming follows Foundation-layer convention
 
-**Status**: [ ] Not yet created
+**Status**: [x] Complete — `tests/integration/level_streaming/level_streaming_quicksave_queue_test.gd` (12 tests AC-1..AC-7, AC-9) + `production/qa/evidence/level_streaming_f5_during_transition.md` (AC-8 manual evidence stub)
 
 ---
 
@@ -225,3 +225,34 @@ This means Save/Load Story 007 needs an update once this story lands; the change
 
 - Depends on: Story 002 (state machine), Story 004 (`_abort_transition` clears pending fields), Save/Load Story 007 (F5/F9 input handler — update required to delegate to LSS); Save/Load Story 002 (`save_to_slot`); Save/Load Story 003 (`load_from_slot`); Save/Load Story 006 (`slot_exists`)
 - Unlocks: Mission Scripting epic (provides production `_assemble_quicksave_payload`); HUD State Signaling epic (renders `hud_toast_requested` toast for quicksave_unavailable)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 9/9 — 8 PASS auto-verified (AC-1..AC-7, AC-9 via 12 integration tests); 1 DEFERRED (AC-8 manual walkthrough — needs MVP build with audio integration; evidence stub written).
+**Test Evidence**:
+- `tests/integration/level_streaming/level_streaming_quicksave_queue_test.gd` (768 lines, 12 tests covering AC-1..AC-7, AC-9, AC-8-stubbed)
+- `production/qa/evidence/level_streaming_f5_during_transition.md` (AC-8 manual evidence stub with verification protocol)
+**Suite**: `tests/unit/level_streaming + tests/integration/level_streaming` — **75/75 PASS** (boot 12 + restore_callback 11 + concurrency 11 + guard_cache 9 + failure_recovery 11 + swap 4 + focus_memory 5 + quicksave_queue 12; 0 errors, 0 failures, 0 flaky, 0 orphans, exit 0).
+**Files modified**:
+- `src/core/level_streaming/level_streaming_service.gd` (732 → 873 lines; +141 LOC: `_pending_quickload_slot: int = -1` field, `queue_quicksave_or_fire()` + `queue_quickload_or_fire()` public API, `_assemble_quicksave_payload()` MVP stub, step-13 drain extended with quicksave-first-then-quickload-then-respawn ordering, `_abort_transition` extended to clear `_pending_quicksave` and `_pending_quickload_slot`)
+- `src/core/save_load/quicksave_input_handler.gd` — `_try_quicksave()` body changed from `SaveLoad.save_to_slot(0, ...)` direct call to `LevelStreamingService.queue_quicksave_or_fire()` delegation (Save/Load Story 007 pair-update)
+- `tests/integration/level_streaming/level_streaming_failure_recovery_test.gd` — added LS-006 same-section guard normalization in `before_test()` so this suite's plaza transitions aren't blocked when prior suites left LSS at plaza. 11/11 LS-005 tests still green after LS-007 land.
+**Files created**:
+- `tests/integration/level_streaming/level_streaming_quicksave_queue_test.gd` (12 tests: AC-1 state-vars init, AC-2 IDLE-fire, AC-2b empty-section no-fire, AC-3 quickload IDLE-fire, AC-3b unavailable-toast, AC-4 FADING_IN queue-then-drain, AC-5 dual-queue ordering, AC-6 idempotent F5/F9 re-queue, AC-7 abort clears pending, AC-9 handler-delegation code-review, AC-8-stub manual deferral)
+- `production/qa/evidence/level_streaming_f5_during_transition.md` (manual evidence stub for AC-8 audio + UI feel verification — to be filled when MVP build is producible)
+**Code review**: APPROVED (solo-mode inline review). 0 architectural violations. Drain ordering (quicksave → quickload → respawn at step 13) follows ADR-0007 §CR-16 rationale. Clear-then-call pattern preserved (LS-004 lesson). `_assemble_quicksave_payload()` correctly returns null on `_current_section_id == &""` (boot state), causing `queue_quicksave_or_fire()` to early-return without calling SaveLoad.
+**Deviations**:
+- ADVISORY: AC-8 (audio + UI feel) deferred to MVP-build manual evidence per ADVISORY gate. Automated drain-ordering + signal-spy assertions cover the LSS-side correctness.
+- ADVISORY: `_assemble_quicksave_payload()` is a documented stub (TODO in code) — Mission Scripting epic owns the production assembler. Tests verify the early-return path on null payload, the IDLE-fire path on non-null payload, and the queue-then-drain semantics. Story explicitly notes Mission Scripting will replace the stub without changing the LSS public API.
+- ADVISORY: `Events.game_saved` signal signature is `(slot: int, section_id: StringName)` (2-arg) — discovered during test authoring; the test `_on_game_saved` handler was initially written as 1-arg (slot only) and was corrected during the test loop. No production code change needed.
+**Tech debt logged**: None.
+**Critical proof points**:
+- Step-13 drain order: quicksave fires BEFORE quickload BEFORE respawn (per ADR-0007 §CR-16). Verified by `test_quicksave_and_quickload_both_queued_drain_in_correct_order`.
+- Idempotent re-queue: second F5 within transition sets `_pending_quicksave = true` again (already true) — no double-fire on drain. Verified.
+- Clear-then-call drain: `_pending_quicksave = false` BEFORE re-entrant `queue_quicksave_or_fire()` call from drain (avoids re-queue loop).
+- `_abort_transition` clears all 3 pending fields atomically (`_pending_respawn_save_game = null`, `_pending_quicksave = false`, `_pending_quickload_slot = -1`) — verified by `test_abort_transition_clears_pending_quicksave_and_quickload`.
+- Save/Load handler delegates to LSS (no direct `SaveLoad.save_to_slot(0, ...)` in `_try_quicksave` body) — verified by source-code-inspection test with comment-stripping.
+**Unblocks**: Mission Scripting epic (provides production `_assemble_quicksave_payload`); HUD State Signaling epic (renders `hud_toast_requested(&"quicksave_unavailable", {})` toast).

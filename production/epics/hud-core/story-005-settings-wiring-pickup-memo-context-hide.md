@@ -1,7 +1,7 @@
 # Story 005: Settings live-update wiring, pickup memo subscription, context-hide full implementation
 
 > **Epic**: HUD Core
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: Logic
 > **Estimate**: 3–4 hours (M — three interacting systems: settings dispatch, document_collected memo, full context-change handler)

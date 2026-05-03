@@ -74,12 +74,48 @@ var is_sepia_active: bool = false
 
 # ── Lifecycle ──────────────────────────────────────────────────────────────
 
+## SA-003 photosensitivity → glow handshake. True iff the player has
+## damage_flash_enabled = true; mirrors the value the glow shader is
+## configured to render. SettingsService's burst (slot 10) reaches us synchronously
+## because we're at slot 6 — by the time settings_loaded fires, this state matches
+## the persisted user preference.
+var _glow_intensity: float = 1.0
+
+
 func _ready() -> void:
 	# Position 6 — only Events/EventLogger/SaveLoad/InputContext/
 	# LevelStreamingService are constructed at this point. No subscriptions
 	# at this story; PPS-006 will subscribe to Events.setting_changed for
 	# resolution_scale once the Settings epic exposes the key.
-	pass
+	#
+	# SA-003 handshake: subscribe to setting_changed for the
+	# accessibility.damage_flash_enabled toggle. Slot 6 < slot 10 means the
+	# burst from SettingsService arrives synchronously after our subscriber
+	# is connected.
+	Events.setting_changed.connect(_on_setting_changed)
+
+
+## SA-003 / TR-SET-008 handshake: SettingsService publishes the persisted
+## photosensitivity preference; PostProcessStack honors it by routing to
+## set_glow_intensity. Forward-compat per FP-6: no `else:` in match name.
+func _on_setting_changed(category: StringName, name: StringName, value: Variant) -> void:
+	if category != &"accessibility": return
+	match name:
+		&"damage_flash_enabled":
+			if value is bool:
+				set_glow_intensity(1.0 if value else 0.0)
+
+
+## SA-003 public API stub — accepts the photosensitivity-driven intensity value
+## (1.0 = on, 0.0 = off). Body that wires this to the actual WorldEnvironment
+## glow uniform / Compositor pass lives in the Post-Process Stack epic
+## (PPS-007+). At Sprint 06 we verify the handshake fires; the visual glow
+## body lands later. Range expected: [0.0, 1.0].
+func set_glow_intensity(value: float) -> void:
+	_glow_intensity = clampf(value, 0.0, 1.0)
+	# TODO PPS-007: wire to WorldEnvironment.environment.glow_intensity or
+	# Compositor uniform. SA-003 acceptance only requires the call to land
+	# with the correct value.
 
 
 # ── Public API — sepia dim ─────────────────────────────────────────────────

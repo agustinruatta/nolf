@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="29" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="localization_runtime_test" package="tests/unit/foundation" timestamp="2026-05-03T03:07:45" hostname="localhost" tests="12" failures="0" errors="0" skipped="0" flaky="0" time="0.400">
+		<testcase name="test_project_godot_lists_all_10_translation_artifacts" classname="localization_runtime_test" time="0.014">
+		</testcase>
+		<testcase name="test_project_godot_locale_fallback_is_en" classname="localization_runtime_test" time="0.020">
+		</testcase>
+		<testcase name="test_translation_server_loaded_locales_contains_en" classname="localization_runtime_test" time="0.014">
+		</testcase>
+		<testcase name="test_all_10_domain_csv_files_exist" classname="localization_runtime_test" time="0.013">
+		</testcase>
+		<testcase name="test_every_csv_has_valid_header_row" classname="localization_runtime_test" time="0.014">
+		</testcase>
+		<testcase name="test_every_csv_has_at_least_one_data_row" classname="localization_runtime_test" time="0.020">
+		</testcase>
+		<testcase name="test_tr_resolves_known_menu_key_to_english" classname="localization_runtime_test" time="0.021">
+		</testcase>
+		<testcase name="test_tr_missing_key_returns_key_verbatim" classname="localization_runtime_test" time="0.021">
+		</testcase>
+		<testcase name="test_tr_falls_back_to_en_when_locale_is_not_loaded" classname="localization_runtime_test" time="0.021">
+		</testcase>
+		<testcase name="test_every_csv_row_has_nonempty_context" classname="localization_runtime_test" time="0.021">
+		</testcase>
+		<testcase name="test_every_key_matches_three_segment_regex" classname="localization_runtime_test" time="0.020">
+		</testcase>
+		<testcase name="test_existing_overlay_dismiss_hint_still_resolves" classname="localization_runtime_test" time="0.021">
+		</testcase>
+	</testsuite>
+	<testsuite id="1" name="localization_pseudolocale_test" package="tests/unit/foundation" timestamp="2026-05-03T03:07:46" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.304">
+		<testcase name="test_pseudo_csv_exists" classname="localization_pseudolocale_test" time="0.021">
+		</testcase>
+		<testcase name="test_pseudo_csv_header_is_valid" classname="localization_pseudolocale_test" time="0.021">
+		</testcase>
+		<testcase name="test_every_production_key_has_pseudo_entry" classname="localization_pseudolocale_test" time="0.020">
+		</testcase>
+		<testcase name="test_pseudo_strings_have_brackets_and_uppercase" classname="localization_pseudolocale_test" time="0.021">
+		</testcase>
+		<testcase name="test_pseudo_length_factor_within_safe_range" classname="localization_pseudolocale_test" time="0.014">
+		</testcase>
+		<testcase name="test_pseudo_contains_uppercase_english_source" classname="localization_pseudolocale_test" time="0.014">
+		</testcase>
+		<testcase name="test_pseudo_locale_is_loaded_in_editor_or_debug" classname="localization_pseudolocale_test" time="0.013">
+		</testcase>
+		<testcase name="test_set_locale_pseudo_activates_pseudo_translation" classname="localization_pseudolocale_test" time="0.021">
+		</testcase>
+		<testcase name="test_pseudo_smoke_for_start_mission" classname="localization_pseudolocale_test" time="0.021">
+		</testcase>
+	</testsuite>
+	<testsuite id="2" name="localization_plural_forms_test" package="tests/unit/foundation" timestamp="2026-05-03T03:07:46" hostname="localhost" tests="8" failures="0" errors="0" skipped="0" flaky="0" time="0.270">
+		<testcase name="test_plural_csv_row_has_required_columns_and_directive" classname="localization_plural_forms_test" time="0.021">
+		</testcase>
+		<testcase name="test_tr_n_count_zero_returns_no_documents_form" classname="localization_plural_forms_test" time="0.021">
+		</testcase>
+		<testcase name="test_tr_n_count_one_returns_singular_form" classname="localization_plural_forms_test" time="0.013">
+		</testcase>
+		<testcase name="test_tr_n_count_seven_format_returns_other_form_with_substitution" classname="localization_plural_forms_test" time="0.014">
+		</testcase>
+		<testcase name="test_tr_format_named_placeholder_substitution_substitutes_section_name" classname="localization_plural_forms_test" time="0.013">
+		</testcase>
+		<testcase name="test_tr_format_missing_placeholder_key_leaves_placeholder_intact" classname="localization_plural_forms_test" time="0.021">
+		</testcase>
+		<testcase name="test_no_positional_format_substitution_in_src_production_code" classname="localization_plural_forms_test" time="0.020">
+		</testcase>
+		<testcase name="test_godot_4_6_plural_api_smoke_distinct_strings_for_counts" classname="localization_plural_forms_test" time="0.014">
+		</testcase>
+	</testsuite>
+</testsuites>

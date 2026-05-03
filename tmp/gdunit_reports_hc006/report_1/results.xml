@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="7" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="hud_core_vs_smoke_test" package="tests/integration/feature/hud_core" timestamp="2026-05-03T03:55:08" hostname="localhost" tests="7" failures="0" errors="0" skipped="0" flaky="0" time="0.413">
+		<testcase name="test_hud_and_hss_coexist_in_scene_without_errors" classname="hud_core_vs_smoke_test" time="0.076">
+		</testcase>
+		<testcase name="test_hud_scene_tree_has_no_excluded_widget_names" classname="hud_core_vs_smoke_test" time="0.051">
+		</testcase>
+		<testcase name="test_damage_event_triggers_health_widget_flash" classname="hud_core_vs_smoke_test" time="0.051">
+		</testcase>
+		<testcase name="test_alert_followed_by_doc_collected_promotes_memo_after_alert_dismiss" classname="hud_core_vs_smoke_test" time="0.056">
+		</testcase>
+		<testcase name="test_ui_context_change_to_menu_hides_hud_and_clears_hss_state" classname="hud_core_vs_smoke_test" time="0.050">
+		</testcase>
+		<testcase name="test_hud_core_is_not_listed_as_autoload" classname="hud_core_vs_smoke_test" time="0.014">
+		</testcase>
+		<testcase name="test_hss_emits_zero_signals_after_all_three_stories" classname="hud_core_vs_smoke_test" time="0.013">
+		</testcase>
+	</testsuite>
+</testsuites>

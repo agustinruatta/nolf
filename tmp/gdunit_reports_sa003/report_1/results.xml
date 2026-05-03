@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="11" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="photosensitivity_floor_test" package="tests/unit/feature/settings" timestamp="2026-05-03T03:30:17" hostname="localhost" tests="6" failures="0" errors="0" skipped="0" flaky="0" time="0.256">
+		<testcase name="test_sub_floor_cooldown_is_clamped_to_333_ms" classname="photosensitivity_floor_test" time="0.036">
+		</testcase>
+		<testcase name="test_at_floor_cooldown_is_not_clamped" classname="photosensitivity_floor_test" time="0.021">
+		</testcase>
+		<testcase name="test_above_floor_cooldown_is_not_clamped" classname="photosensitivity_floor_test" time="0.020">
+		</testcase>
+		<testcase name="test_wrong_type_cooldown_defaults_to_floor" classname="photosensitivity_floor_test" time="0.035">
+		</testcase>
+		<testcase name="test_float_sub_floor_cooldown_is_clamped" classname="photosensitivity_floor_test" time="0.021">
+		</testcase>
+		<testcase name="test_self_heal_persists_across_save_and_reload" classname="photosensitivity_floor_test" time="0.035">
+		</testcase>
+	</testsuite>
+	<testsuite id="1" name="photosensitivity_kill_switch_test" package="tests/integration/feature/settings" timestamp="2026-05-03T03:30:18" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.174">
+		<testcase name="test_post_process_stack_glow_responds_to_damage_flash_enabled_emit" classname="photosensitivity_kill_switch_test" time="0.022">
+		</testcase>
+		<testcase name="test_non_accessibility_category_does_not_change_glow" classname="photosensitivity_kill_switch_test" time="0.020">
+		</testcase>
+		<testcase name="test_non_bool_damage_flash_value_does_not_change_glow" classname="photosensitivity_kill_switch_test" time="0.021">
+		</testcase>
+		<testcase name="test_irrelevant_accessibility_key_does_not_change_glow" classname="photosensitivity_kill_switch_test" time="0.013">
+		</testcase>
+		<testcase name="test_post_process_stack_handler_has_category_guard_first" classname="photosensitivity_kill_switch_test" time="0.014">
+		</testcase>
+	</testsuite>
+</testsuites>

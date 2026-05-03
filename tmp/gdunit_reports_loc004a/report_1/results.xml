@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="8" failures="2" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="localization_locale_switch_test" package="tests/unit/foundation" timestamp="2026-05-03T03:10:39" hostname="localhost" tests="8" failures="2" errors="2" skipped="0" flaky="0" time="0.387">
+		<testcase name="test_pattern_a_auto_translate_always_resolves_tr_key_at_default_locale" classname="localization_locale_switch_test" time="0.043">
+			<error message="ERROR: res://tests/unit/foundation/localization_locale_switch_test.gd:54" type="ABORT">
+<![CDATA[
+Godot Runtime Error !
+	'at: LocalizationLocaleSwitchTest.test_pattern_a_auto_translate_always_resolves_tr_key_at_default_locale (res://tests/unit/foundation/localization_locale_switch_test.gd:54)'
+Error: 'Invalid call. Nonexistent function 'get_translated_text' in base 'Label'.'
+]]>
+			</error>
+		</testcase>
+		<testcase name="test_pattern_a_re_renders_automatically_on_locale_switch_to_pseudo" classname="localization_locale_switch_test" time="0.042">
+			<error message="ERROR: res://tests/unit/foundation/localization_locale_switch_test.gd:76" type="ABORT">
+<![CDATA[
+Godot Runtime Error !
+	'at: LocalizationLocaleSwitchTest.test_pattern_a_re_renders_automatically_on_locale_switch_to_pseudo (res://tests/unit/foundation/localization_locale_switch_test.gd:76)'
+Error: 'Invalid call. Nonexistent function 'get_translated_text' in base 'Label'.'
+]]>
+			</error>
+		</testcase>
+		<testcase name="test_pattern_b_composed_label_renders_correctly_at_default_locale" classname="localization_locale_switch_test" time="0.035">
+		</testcase>
+		<testcase name="test_pattern_b_empty_value_composes_label_with_trailing_colon" classname="localization_locale_switch_test" time="0.034">
+		</testcase>
+		<testcase name="test_pattern_b_re_resolves_on_locale_switch_via_notification" classname="localization_locale_switch_test" time="0.048">
+			<failure message="FAILED: res://tests/unit/foundation/localization_locale_switch_test.gd:156" type="FAILURE">
+<![CDATA[
+Pattern B: composed text must change after set_locale('_pseudo'). en_text='Objective: Reach Plaza'  pseudo_text='Objective: Reach Plaza'. DIAGNOSTIC: verify the script overrides _notification(what) to handle NOTIFICATION_TRANSLATION_CHANGED.
+]]>
+			</failure>
+			<failure message="FAILED: res://tests/unit/foundation/localization_locale_switch_test.gd:164" type="FAILURE">
+<![CDATA[
+Pattern B: pseudo label segment must appear in composed string. Got: 'Objective: Reach Plaza'
+]]>
+			</failure>
+		</testcase>
+		<testcase name="test_translatable_composed_label_documents_both_patterns" classname="localization_locale_switch_test" time="0.021">
+		</testcase>
+		<testcase name="test_no_cached_translation_at_ready_in_src" classname="localization_locale_switch_test" time="0.014">
+		</testcase>
+		<testcase name="test_auto_translate_mode_always_enum_value_is_one" classname="localization_locale_switch_test" time="0.014">
+		</testcase>
+	</testsuite>
+</testsuites>

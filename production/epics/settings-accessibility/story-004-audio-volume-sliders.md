@@ -1,7 +1,7 @@
 # Story 004: Audio volume sliders — dB formula + bus apply integration
 
 > **Epic**: Settings & Accessibility
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Polish (Day-1 HARD MVP DEP: Master volume; VS-expansion: Music / SFX / Voice remaining buses)
 > **Type**: Logic
 > **Estimate**: 3-4 hours (M — F.1 formula + 6-bus apply + clock-tick toggle + unit + integration tests)

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="7" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="hss_structural_scaffold_test" package="tests/unit/feature/hud_state_signaling" timestamp="2026-05-03T03:49:26" hostname="localhost" tests="7" failures="0" errors="0" skipped="0" flaky="0" time="0.488">
+		<testcase name="test_alert_state_changed_signal_connected_once_after_ready" classname="hss_structural_scaffold_test" time="0.079">
+		</testcase>
+		<testcase name="test_hss_holds_label_and_registers_resolver_extension" classname="hss_structural_scaffold_test" time="0.071">
+		</testcase>
+		<testcase name="test_exit_tree_unregisters_resolver_and_clears_rate_gates" classname="hss_structural_scaffold_test" time="0.065">
+		</testcase>
+		<testcase name="test_hss_disabled_when_hud_core_absent" classname="hss_structural_scaffold_test" time="0.029">
+		</testcase>
+		<testcase name="test_hss_emits_zero_events_signals" classname="hss_structural_scaffold_test" time="0.014">
+		</testcase>
+		<testcase name="test_resolve_hss_state_returns_hidden_sentinel_when_inactive" classname="hss_structural_scaffold_test" time="0.054">
+		</testcase>
+		<testcase name="test_context_leave_clears_hss_state" classname="hss_structural_scaffold_test" time="0.054">
+		</testcase>
+	</testsuite>
+</testsuites>

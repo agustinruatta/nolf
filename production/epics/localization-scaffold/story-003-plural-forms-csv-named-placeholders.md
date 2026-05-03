@@ -1,7 +1,7 @@
 # Story 003: Plural forms (CSV plural columns) + named-placeholder discipline
 
 > **Epic**: Localization Scaffold
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 1-2 hours (S — one pluralized example end-to-end + named-placeholder pattern doc)
@@ -164,3 +164,47 @@ At MVP only `en` plural columns are populated. Translators add language-specific
 
 - Depends on: Story 001 (base CSV registration; `hud.csv` must exist before adding plural rows to it)
 - Unlocks: future consumer epics that need pluralized strings (e.g., HUD State Signaling for collection counts, Inventory for remaining-ammo strings); confirms Godot 4.6 plural API works for the project (closes ADR-0004 §Engine Compatibility plural verification at production scope)
+
+---
+
+## Completion Notes — 2026-05-03
+
+**Status**: Complete. 8/8 plural-forms tests PASS; full LOC suite 29/29 PASS; zero regressions.
+
+### Engine API Discovery (corrects GDD + ADR-0004)
+The original story spec called for locale-suffixed plural columns (`en_0`, `en_1`, `en_other`). **This is incorrect** — the LLM hallucinated the format from search-snippet noise. The actual Godot 4.6 CSV plural-form convention (verified in `editor/import/resource_importer_csv_translation.cpp` + `docs.godotengine.org/en/4.6/tutorials/i18n/localization_using_spreadsheets.html`) uses:
+
+1. A **`?plural` marker column** in the CSV header — holds the gettext-style msgid_plural value per key.
+2. A special **`?pluralrule` directive row** (column-0 == `?pluralrule`) that declares the gettext plural function per locale (e.g. `nplurals=3; plural=(n==0 ? 0 : n==1 ? 1 : 2);` for English zero/one/other).
+3. **Row repetition**: subsequent rows with empty msgid carry additional plural-form values in the locale column, indexed by the plural rule.
+
+The importer recognizes only three special tokens in column headers/rows: `?context`, `?plural`, `?pluralrule`. Locale-suffixed columns like `en_0` / `en_zero` are silently treated as separate locales and the values are never reachable via `tr_n()`.
+
+### Implementation
+- **`translations/hud.csv`** restructured to header `keys,?plural,en,# context` with a `?pluralrule` directive row + 3 rows for `hud.collection.count` (key row + 2 continuation rows). Non-plural keys keep an empty `?plural` cell. The `# context` column is preserved for the project's existing comment convention; Godot 4.6 silently treats `# context` as a non-resolving locale (already true pre-Sprint 06).
+- **`tests/unit/foundation/localization_plural_forms_test.gd`** rewritten to verify the `?plural` + `?pluralrule` + row-repetition format. Calls `tr_n("hud.collection.count", "1 document", N)` (msgid_plural is the value of the `?plural` cell, not the key).
+- **`tests/unit/foundation/localization_runtime_test.gd`** — header check generalized to allow optional `?plural` column; existing nonempty-context + 3-segment-regex tests now skip `?`-prefixed directive rows and empty-key continuation rows.
+- **`tests/unit/foundation/localization_pseudolocale_test.gd`** — `_collect_keys_from_csvs` skips `?`-prefixed directive rows + continuation rows.
+- **`translations/_dev_pseudo.csv`** — added `hud.collection.count` and `hud.section.entered_label` rows (pseudo just uses the form-2 "other" template, per story spec).
+
+### AC verification
+- AC-1 ✅ `?plural` column + `?pluralrule` directive + populated cells + `# plural_rule` annotation
+- AC-2 ✅ `tr_n(key, "1 document", 0)` → `"no documents"`
+- AC-3 ✅ `tr_n(key, "1 document", 1)` → `"1 document"`
+- AC-4 ✅ `tr_n(key, "1 document", 7).format({"count": 7})` → `"7 documents collected"`
+- AC-5 ✅ `tr("hud.section.entered_label").format({"section_name": "Plaza"})` → `"Entering: Plaza"` + missing-key edge case
+- AC-6 ✅ zero `tr(...) % [...]` matches in `src/`
+- AC-7 ✅ smoke test verifies counts 0/1/2/7 all return correct distinct forms; closes ADR-0004 §Engine Compatibility plural verification gate
+
+### Tech-debt logged (TD-008)
+**TD-008 — GDD + ADR-0004 amendment for actual Godot 4.6 plural CSV format.**
+- `design/gdd/localization-scaffold.md` §Detailed Design Rule 5 currently mis-documents the format as `en_0`/`en_1`/`en_other` columns. Should be amended to describe `?plural` marker + `?pluralrule` directive + row-repetition.
+- `docs/architecture/adr-0004-ui-framework.md` §Engine Compatibility plural verification gate should be marked RESOLVED with a reference back to this Completion Notes section.
+- Defer to next `/architecture-review` cycle (not blocking Sprint 06 progression).
+
+### Files modified
+- `translations/hud.csv` (restructured to Godot 4.6 plural format)
+- `translations/_dev_pseudo.csv` (added 2 mirror rows)
+- `tests/unit/foundation/localization_plural_forms_test.gd` (NEW — 8 tests)
+- `tests/unit/foundation/localization_runtime_test.gd` (header check + `?`-row skip)
+- `tests/unit/foundation/localization_pseudolocale_test.gd` (`?`-row skip in helper)

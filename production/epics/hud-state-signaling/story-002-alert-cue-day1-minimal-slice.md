@@ -1,7 +1,7 @@
 # Story 002: ALERT_CUE — Day-1 HoH/deaf minimal slice
 
 > **Epic**: HUD State Signaling
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: Logic
 > **Estimate**: 3-4 hours (M — rate-gate logic + AccessKit + tuning knob read + 9-AC test suite)

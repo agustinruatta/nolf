@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="20" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="audio_formula_test" package="tests/unit/feature/settings" timestamp="2026-05-03T03:33:13" hostname="localhost" tests="15" failures="0" errors="0" skipped="0" flaky="0" time="0.518">
+		<testcase name="test_round_trip_pct_to_db_to_pct_within_half_point_for_sample_set" classname="audio_formula_test" time="0.014">
+		</testcase>
+		<testcase name="test_pct_to_db_zero_returns_silence_floor" classname="audio_formula_test" time="0.014">
+		</testcase>
+		<testcase name="test_is_silence_returns_true_for_zero_position" classname="audio_formula_test" time="0.020">
+		</testcase>
+		<testcase name="test_pct_to_db_clamps_above_100_to_zero_db" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_pct_to_db_clamps_below_zero_to_silence_floor" classname="audio_formula_test" time="0.020">
+		</testcase>
+		<testcase name="test_db_to_pct_clamps_above_zero_to_100" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_db_to_pct_clamps_below_floor_to_zero" classname="audio_formula_test" time="0.020">
+		</testcase>
+		<testcase name="test_pct_to_db_nan_returns_silence_floor" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_pct_to_db_inf_returns_silence_floor" classname="audio_formula_test" time="0.020">
+		</testcase>
+		<testcase name="test_db_to_pct_nan_returns_zero_position" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_db_to_pct_inf_returns_zero_position" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_db_to_pct_below_segment_a_floor_returns_one_not_zero" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_pct_to_db_at_knee_returns_minus_12_db" classname="audio_formula_test" time="0.021">
+		</testcase>
+		<testcase name="test_pct_to_db_at_max_returns_zero_db" classname="audio_formula_test" time="0.014">
+		</testcase>
+		<testcase name="test_pct_to_db_at_one_returns_segment_a_base" classname="audio_formula_test" time="0.014">
+		</testcase>
+	</testsuite>
+	<testsuite id="1" name="audio_bus_apply_test" package="tests/integration/feature/settings" timestamp="2026-05-03T03:33:13" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.266">
+		<testcase name="test_master_volume_db_emit_applies_to_audio_server_master_bus" classname="audio_bus_apply_test" time="0.039">
+		</testcase>
+		<testcase name="test_silence_floor_db_value_mutes_bus" classname="audio_bus_apply_test" time="0.034">
+		</testcase>
+		<testcase name="test_above_zero_db_value_is_clamped_to_zero" classname="audio_bus_apply_test" time="0.034">
+		</testcase>
+		<testcase name="test_clock_tick_enabled_false_emit_sets_state_flag_to_false" classname="audio_bus_apply_test" time="0.048">
+		</testcase>
+		<testcase name="test_non_audio_non_accessibility_category_does_not_apply" classname="audio_bus_apply_test" time="0.034">
+		</testcase>
+	</testsuite>
+</testsuites>

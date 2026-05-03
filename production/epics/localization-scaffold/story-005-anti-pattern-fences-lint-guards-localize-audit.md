@@ -1,7 +1,7 @@
 # Story 005: Anti-pattern fences + lint guards + /localize audit hook
 
 > **Epic**: Localization Scaffold
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Estimate**: 1-2 hours (S — registry edits + 5 lint test cases + audit invocation doc)

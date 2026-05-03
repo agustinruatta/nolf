@@ -1,7 +1,7 @@
 # Story 002: Signal subscription lifecycle + forbidden-pattern fences
 
 > **Epic**: HUD Core
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: Logic
 > **Estimate**: 2–3 hours (S — 14 connect/disconnect blocks + test file)

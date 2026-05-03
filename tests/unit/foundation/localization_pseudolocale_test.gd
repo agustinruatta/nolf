@@ -234,8 +234,11 @@ func _collect_keys_from_csvs(domains: Array[String]) -> Array[String]:
 			if line.strip_edges() == "":
 				continue
 			var key: String = _extract_first_cell(line).strip_edges()
-			if key != "":
-				keys.append(key)
+			# Skip Godot 4.6 plural-format meta rows (?pluralrule directive +
+			# row-repetition continuation rows). Pseudo only mirrors real keys.
+			if key == "" or key.begins_with("?"):
+				continue
+			keys.append(key)
 	return keys
 
 

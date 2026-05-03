@@ -1,7 +1,7 @@
 # Story 003: Photosensitivity kill-switch + PostProcessStack glow handshake
 
 > **Epic**: Settings & Accessibility
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Polish (Day-1 HARD MVP DEP — WCAG SC 2.3.1 safety-critical)
 > **Type**: Integration
 > **Estimate**: 3-4 hours (M — PostProcessStack hook + HUD + Combat subscriber stubs + integration tests)

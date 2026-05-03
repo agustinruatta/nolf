@@ -91,13 +91,33 @@ func test_all_10_domain_csv_files_exist() -> void:
 
 
 ## AC-2: Every CSV has a valid header row.
+## Header must: start with `keys,`, end with `,# context`, and contain an `en`
+## locale column. Plural-enabled CSVs (e.g. hud.csv) MAY also include the
+## `?plural` marker column (Godot 4.6 plural CSV format) between `keys` and `en`;
+## plural forms are expressed via row-repetition + a `?pluralrule` directive row,
+## not extra locale columns. See LOC-003 Completion Notes for engine-API rationale.
 func test_every_csv_has_valid_header_row() -> void:
 	for domain: String in _DOMAINS:
 		var path: String = "%s/%s.csv" % [_TRANSLATIONS_DIR, domain]
 		var first_line: String = _read_first_line(path)
-		assert_str(first_line).override_failure_message(
-			"%s.csv first line must be 'keys,en,# context'. Got: '%s'" % [domain, first_line]
-		).is_equal("keys,en,# context")
+		var columns: PackedStringArray = first_line.split(",")
+		assert_bool(columns.size() >= 3).override_failure_message(
+			"%s.csv header must have at least 3 columns. Got: '%s'" % [domain, first_line]
+		).is_true()
+		assert_str(columns[0].strip_edges()).override_failure_message(
+			"%s.csv header first column must be 'keys'. Got: '%s'" % [domain, first_line]
+		).is_equal("keys")
+		assert_str(columns[columns.size() - 1].strip_edges()).override_failure_message(
+			"%s.csv header last column must be '# context'. Got: '%s'" % [domain, first_line]
+		).is_equal("# context")
+		var has_en_column: bool = false
+		for col: String in columns:
+			if col.strip_edges() == "en":
+				has_en_column = true
+				break
+		assert_bool(has_en_column).override_failure_message(
+			"%s.csv header must contain an 'en' locale column. Got: '%s'" % [domain, first_line]
+		).is_true()
 
 
 ## AC-2: Every CSV has at least one data row beyond the header.
@@ -148,15 +168,34 @@ func test_tr_falls_back_to_en_when_locale_is_not_loaded() -> void:
 
 ## AC-6: Every data row in every CSV has non-empty `# context` cell.
 ## Whitespace-only does NOT count as filled. Tests parse each CSV and inspect.
+## Uses the header row to locate the `# context` column by name — handles both
+## the standard 3-column layout and plural-extended layouts (5+ columns).
 func test_every_csv_row_has_nonempty_context() -> void:
 	for domain: String in _DOMAINS:
 		var path: String = "%s/%s.csv" % [_TRANSLATIONS_DIR, domain]
 		var lines: PackedStringArray = _read_all_lines(path)
+		if lines.size() < 1:
+			continue
+		var header_cols: Array[String] = _split_csv_cells(lines[0])
+		var context_col_index: int = -1
+		for ci: int in range(header_cols.size()):
+			if header_cols[ci].strip_edges() == "# context":
+				context_col_index = ci
+				break
+		assert_bool(context_col_index >= 0).override_failure_message(
+			"%s.csv header must contain a '# context' column. Header: '%s'" % [domain, lines[0]]
+		).is_true()
 		for i: int in range(1, lines.size()):
 			var line: String = lines[i]
 			if line.strip_edges() == "":
 				continue  # skip blank trailing lines
-			var context_cell: String = _extract_third_cell(line)
+			var cells: Array[String] = _split_csv_cells(line)
+			# Skip Godot 4.6 plural-format meta rows: directive rows (?pluralrule etc.)
+			# and continuation rows (empty key = additional plural form for previous key).
+			var first_cell: String = cells[0].strip_edges() if cells.size() > 0 else ""
+			if first_cell == "" or first_cell.begins_with("?"):
+				continue
+			var context_cell: String = cells[context_col_index] if context_col_index < cells.size() else ""
 			assert_bool(context_cell.strip_edges() != "").override_failure_message(
 				"%s.csv line %d must have non-empty # context cell. Line: '%s'" % [domain, i + 1, line]
 			).is_true()
@@ -182,6 +221,11 @@ func test_every_key_matches_three_segment_regex() -> void:
 			if line.strip_edges() == "":
 				continue
 			var key: String = _extract_first_cell(line).strip_edges()
+			# Skip Godot 4.6 plural-format meta rows: ?pluralrule directive rows and
+			# row-repetition continuation rows (empty key carries an additional plural
+			# form for the previous key per ?pluralrule index).
+			if key == "" or key.begins_with("?"):
+				continue
 			all_keys.append(key)
 			if key_regex.search(key) == null:
 				failures.append("%s.csv:%d → '%s'" % [domain, i + 1, key])
@@ -257,22 +301,31 @@ func _extract_first_cell(line: String) -> String:
 
 
 ## Extract the third cell (skipping cells 1 + 2). Quote-aware.
+## Kept for backward compatibility; prefer _split_csv_cells() for new code.
 func _extract_third_cell(line: String) -> String:
-	var commas_seen: int = 0
-	var i: int = 0
+	var cells: Array[String] = _split_csv_cells(line)
+	if cells.size() >= 3:
+		return cells[2]
+	return ""
+
+
+## Split a CSV line into all its cells, respecting double-quoted fields.
+## Strips outer quotes from quoted cells. Handles the full CSV spec for our
+## use case: fields may be quoted, and commas inside quotes are not separators.
+func _split_csv_cells(line: String) -> Array[String]:
+	var cells: Array[String] = []
+	var current: String = ""
 	var in_quote: bool = false
-	var out: String = ""
+	var i: int = 0
 	while i < line.length():
 		var c: String = line[i]
 		if c == "\"":
 			in_quote = not in_quote
 		elif c == "," and not in_quote:
-			commas_seen += 1
-		elif commas_seen >= 2:
-			out += c
+			cells.append(current)
+			current = ""
+		else:
+			current += c
 		i += 1
-	# Strip wrapping quotes if present.
-	out = out.strip_edges()
-	if out.begins_with("\"") and out.ends_with("\""):
-		out = out.substr(1, out.length() - 2)
-	return out
+	cells.append(current)
+	return cells

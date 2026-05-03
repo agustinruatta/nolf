@@ -1,7 +1,7 @@
 # Story 006: Plaza VS integration smoke — end-to-end visual sign-off + Slot 7 0.3 ms perf measurement
 
 > **Epic**: HUD Core
-> **Status**: Ready
+> **Status**: Complete (architectural smoke automated; visual sign-off + Slot 7 perf deferred to user-driven Plaza VS playtest) — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: UI
 > **Estimate**: 2–3 hours (S — integration walkthrough, perf measurement, screenshot evidence; no new code unless a blocking defect is found)

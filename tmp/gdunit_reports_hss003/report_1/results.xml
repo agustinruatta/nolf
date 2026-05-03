@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="9" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="hss_memo_notification_test" package="tests/unit/feature/hud_state_signaling" timestamp="2026-05-03T03:53:16" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.606">
+		<testcase name="test_document_collected_activates_memo_state_when_idle" classname="hss_memo_notification_test" time="0.068">
+		</testcase>
+		<testcase name="test_document_collected_queues_memo_when_alert_active" classname="hss_memo_notification_test" time="0.053">
+		</testcase>
+		<testcase name="test_queued_memo_activates_when_alert_cue_dismisses_within_freshness" classname="hss_memo_notification_test" time="0.052">
+		</testcase>
+		<testcase name="test_stale_queued_memo_is_discarded_on_alert_cue_dismiss" classname="hss_memo_notification_test" time="0.051">
+		</testcase>
+		<testcase name="test_empty_document_id_is_rejected" classname="hss_memo_notification_test" time="0.055">
+		</testcase>
+		<testcase name="test_ui_context_leave_kills_memo_and_clears_queue" classname="hss_memo_notification_test" time="0.040">
+		</testcase>
+		<testcase name="test_hss_emits_zero_signals_after_memo_notification_added" classname="hss_memo_notification_test" time="0.021">
+		</testcase>
+		<testcase name="test_document_collected_subscribed_in_ready_and_disconnected_in_exit" classname="hss_memo_notification_test" time="0.069">
+		</testcase>
+		<testcase name="test_memo_timer_wait_time_is_3_seconds" classname="hss_memo_notification_test" time="0.061">
+		</testcase>
+	</testsuite>
+</testsuites>

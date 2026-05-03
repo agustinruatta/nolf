@@ -1,7 +1,7 @@
 # Story 004: auto_translate_mode + NOTIFICATION_TRANSLATION_CHANGED re-resolution discipline
 
 > **Epic**: Localization Scaffold
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2 hours (M — pattern documentation + custom Control example + locale-switch smoke test)

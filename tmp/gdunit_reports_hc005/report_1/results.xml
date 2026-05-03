@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="10" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="hud_core_settings_memo_context_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T03:47:33" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.677">
+		<testcase name="test_crosshair_toggle_responds_to_crosshair_enabled_setting" classname="hud_core_settings_memo_context_test" time="0.058">
+		</testcase>
+		<testcase name="test_locale_change_invalidates_tr_caches" classname="hud_core_settings_memo_context_test" time="0.051">
+		</testcase>
+		<testcase name="test_unknown_category_setting_change_is_silently_ignored" classname="hud_core_settings_memo_context_test" time="0.058">
+		</testcase>
+		<testcase name="test_document_collected_renders_memo_and_starts_timer" classname="hud_core_settings_memo_context_test" time="0.048">
+		</testcase>
+		<testcase name="test_memo_timer_timeout_hides_prompt_label" classname="hud_core_settings_memo_context_test" time="0.054">
+		</testcase>
+		<testcase name="test_empty_document_id_payload_is_ignored_by_memo_handler" classname="hud_core_settings_memo_context_test" time="0.050">
+		</testcase>
+		<testcase name="test_context_change_to_menu_stops_process_and_all_timers" classname="hud_core_settings_memo_context_test" time="0.056">
+		</testcase>
+		<testcase name="test_context_restore_re_enables_process_and_visibility" classname="hud_core_settings_memo_context_test" time="0.052">
+		</testcase>
+		<testcase name="test_document_collected_signal_is_15th_connection" classname="hud_core_settings_memo_context_test" time="0.052">
+		</testcase>
+		<testcase name="test_document_collected_disconnects_on_exit_tree" classname="hud_core_settings_memo_context_test" time="0.051">
+		</testcase>
+	</testsuite>
+</testsuites>

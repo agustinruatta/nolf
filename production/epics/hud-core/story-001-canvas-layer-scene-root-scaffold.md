@@ -1,7 +1,7 @@
 # Story 001: CanvasLayer scene root scaffold + Theme resource + FontRegistry wiring
 
 > **Epic**: HUD Core
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06; programmatic build, .tscn deferred to HC-006 visual sign-off)
 > **Layer**: Presentation
 > **Type**: UI
 > **Estimate**: 2–3 hours (S — scene scaffold, .tres file, static-class calls, no logic)

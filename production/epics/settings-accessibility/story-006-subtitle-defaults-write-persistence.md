@@ -1,7 +1,7 @@
 # Story 006: Subtitle defaults write + subtitle settings persistence
 
 > **Epic**: Settings & Accessibility
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Polish (Day-1 HARD MVP DEP — captions-default-on per WCAG SC 1.2.2 / CR-23; subtitle cluster keys written at MVP, consumed by D&S at VS)
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S-M — `settings_defaults.gd` const additions + SettingsService load-time validation + CI gate + unit tests)

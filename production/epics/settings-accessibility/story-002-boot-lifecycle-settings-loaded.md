@@ -1,7 +1,7 @@
 # Story 002: Boot lifecycle — burst emit, settings_loaded signal, photosensitivity warning flag
 
 > **Epic**: Settings & Accessibility
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Polish (Day-1 HARD MVP DEP — promoted per HUD Core REV-2026-04-26 D2)
 > **Type**: Logic
 > **Estimate**: 3-4 hours (M — burst loop + one-shot signal + warning flag + unit tests)

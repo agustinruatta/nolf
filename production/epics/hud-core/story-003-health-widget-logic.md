@@ -1,7 +1,7 @@
 # Story 003: Health widget logic (damage flash, critical-state edge trigger, Tween.kill on context-leave)
 
 > **Epic**: HUD Core
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: Logic
 > **Estimate**: 3–4 hours (M — three interacting state machines: flash gate, critical-edge, Tween kill)

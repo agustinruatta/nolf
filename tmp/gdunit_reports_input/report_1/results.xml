@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="6" failures="1" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="input_ci_lints_test" package="tests/unit/foundation" timestamp="2026-05-03T03:59:03" hostname="localhost" tests="6" failures="1" errors="0" skipped="0" flaky="0" time="0.387">
+		<testcase name="test_check_action_literals_passes" classname="input_ci_lints_test" time="0.103">
+			<failure message="FAILED: res://tests/unit/foundation/input_ci_lints_test.gd:33" type="FAILURE">
+<![CDATA[
+AC-INPUT-1.2: check_action_literals.sh must exit 0. Got 1.
+Output:
+FAIL: 4 double-quoted action-literal violation(s):
+/home/agu/Projects/Claude-Code-Game-Studios/src/ui/hud_state_signaling.gd:79:	if hud_core.has_method("get_prompt_label"):
+/home/agu/Projects/Claude-Code-Game-Studios/src/ui/hud_state_signaling.gd:106:	if hud_core.has_method("register_resolver_extension"):
+/home/agu/Projects/Claude-Code-Game-Studios/src/ui/hud_state_signaling.gd:141:	if hud_core != null and is_instance_valid(hud_core) and hud_core.has_method("unregister_resolver_extension"):
+/home/agu/Projects/Claude-Code-Game-Studios/src/ui/hud_core/hud_core.gd:192:		key = target.get("interact_label_key")
+
+]]>
+			</failure>
+		</testcase>
+		<testcase name="test_check_debug_action_gating_passes" classname="input_ci_lints_test" time="0.033">
+		</testcase>
+		<testcase name="test_check_raw_input_constants_passes" classname="input_ci_lints_test" time="0.086">
+		</testcase>
+		<testcase name="test_check_action_add_event_validation_passes" classname="input_ci_lints_test" time="0.031">
+		</testcase>
+		<testcase name="test_check_unhandled_input_default_runs" classname="input_ci_lints_test" time="0.023">
+		</testcase>
+		<testcase name="test_all_ci_scripts_exist" classname="input_ci_lints_test" time="0.014">
+		</testcase>
+	</testsuite>
+</testsuites>

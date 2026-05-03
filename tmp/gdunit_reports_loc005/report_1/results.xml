@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="12" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="localization_lint_test" package="tests/unit/foundation" timestamp="2026-05-03T03:15:38" hostname="localhost" tests="12" failures="0" errors="0" skipped="0" flaky="0" time="0.404">
+		<testcase name="test_hardcoded_visible_string_registered_in_yaml_with_high_severity" classname="localization_lint_test" time="0.013">
+		</testcase>
+		<testcase name="test_key_in_code_as_english_registered_in_yaml_with_medium_severity" classname="localization_lint_test" time="0.021">
+		</testcase>
+		<testcase name="test_positional_format_substitution_registered_in_yaml_with_medium_severity" classname="localization_lint_test" time="0.014">
+		</testcase>
+		<testcase name="test_context_column_omitted_registered_in_yaml_with_high_severity" classname="localization_lint_test" time="0.013">
+		</testcase>
+		<testcase name="test_cached_translation_at_ready_registered_in_yaml_with_medium_severity" classname="localization_lint_test" time="0.014">
+		</testcase>
+		<testcase name="test_lint_no_hardcoded_visible_string_in_src" classname="localization_lint_test" time="0.013">
+		</testcase>
+		<testcase name="test_lint_no_key_in_code_as_english_in_src" classname="localization_lint_test" time="0.016">
+		</testcase>
+		<testcase name="test_lint_no_positional_format_substitution_in_src" classname="localization_lint_test" time="0.013">
+		</testcase>
+		<testcase name="test_lint_no_context_column_omitted_in_production_csvs" classname="localization_lint_test" time="0.014">
+		</testcase>
+		<testcase name="test_lint_no_cached_translation_at_ready_in_src" classname="localization_lint_test" time="0.014">
+		</testcase>
+		<testcase name="test_lint_no_cross_domain_key_collisions_in_production_csvs" classname="localization_lint_test" time="0.021">
+		</testcase>
+		<testcase name="test_lint_all_production_keys_match_3_segment_regex" classname="localization_lint_test" time="0.020">
+		</testcase>
+	</testsuite>
+</testsuites>

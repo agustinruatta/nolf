@@ -1,7 +1,7 @@
 # Story 004: Interact prompt strip — PC query resolver, _process state machine, get_prompt_label() extension hook
 
 > **Epic**: HUD Core
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: Logic
 > **Estimate**: 3–4 hours (M — _process resolver, PC injection contract, cache guards, extension hook)

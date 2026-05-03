@@ -1,4 +1,11 @@
-keys,en,# context
-hud.health.label,Health,"HUD health bar label; max 12 chars; legible at 1080p with comic-book outline post-process active per period-authenticity pillar"
-hud.objective.label,Objective,"HUD active-objective banner label; max 14 chars; period-authentic plain register (no exclamation marks, no UI noise)"
-hud.compass.directions.north,N,"HUD compass cardinal abbreviation; single character; never translated to non-Latin script (compass tokens are Latin-locked)"
+keys,?plural,en,# context
+?pluralrule,,nplurals=3; plural=(n==0 ? 0 : n==1 ? 1 : 2);,
+hud.health.label,,Health,"HUD health bar label; max 12 chars; legible at 1080p with comic-book outline post-process active per period-authenticity pillar"
+hud.objective.label,,Objective,"HUD active-objective banner label; max 14 chars; period-authentic plain register (no exclamation marks, no UI noise)"
+hud.compass.directions.north,,N,"HUD compass cardinal abbreviation; single character; never translated to non-Latin script (compass tokens are Latin-locked)"
+hud.collection.count,1 document,no documents,"# plural_rule: en zero/one/other (custom 3-form via ?pluralrule row); HUD collection counter; max 35 chars; count = int (variable substituted via String.format on tr_n result); BQA neutral tone"
+,,1 document,
+,,{count} documents collected,
+hud.section.entered_label,,Entering: {section_name},"HUD section-entered banner; named placeholder section_name = String (substituted at call site); max 32 chars total after substitution; period-authentic plain register"
+hud.interact.prompt,,Press,"HUD interact-prompt static prefix; max 8 chars total; followed by a key glyph + ' ' + tr(target.interact_label_key); period-authentic plain register"
+hud.alert.guard_alerted,,Guard alerted,"HSS ALERT_CUE state text; max 24 chars; visible during the 2.0s cue window after a guard transitions out of UNAWARE; period-authentic plain register"

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="9" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="hud_core_health_widget_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T03:42:41" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.593">
+		<testcase name="test_health_below_25_percent_triggers_alarm_orange_override" classname="hud_core_health_widget_test" time="0.055">
+		</testcase>
+		<testcase name="test_health_repeated_critical_emits_does_not_re_apply_override" classname="hud_core_health_widget_test" time="0.048">
+		</testcase>
+		<testcase name="test_health_recovery_above_25_percent_reverts_to_parchment" classname="hud_core_health_widget_test" time="0.044">
+		</testcase>
+		<testcase name="test_first_damage_event_fires_immediately_when_gate_open" classname="hud_core_health_widget_test" time="0.054">
+		</testcase>
+		<testcase name="test_second_damage_event_within_window_latches_pending_flash" classname="hud_core_health_widget_test" time="0.051">
+		</testcase>
+		<testcase name="test_photosensitivity_opt_out_suppresses_damage_flash" classname="hud_core_health_widget_test" time="0.053">
+		</testcase>
+		<testcase name="test_photosensitivity_opt_in_unsuppresses_flash" classname="hud_core_health_widget_test" time="0.051">
+		</testcase>
+		<testcase name="test_context_change_to_menu_hides_hud_and_safely_kills_tweens_when_null" classname="hud_core_health_widget_test" time="0.044">
+		</testcase>
+		<testcase name="test_context_change_back_to_gameplay_shows_hud" classname="hud_core_health_widget_test" time="0.054">
+		</testcase>
+	</testsuite>
+</testsuites>

@@ -1,7 +1,7 @@
 # Story 001: HUD State Signaling — structural scaffold + HUD Core handshake
 
 > **Epic**: HUD State Signaling
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: Integration
 > **Estimate**: 2-3 hours (M — new scene file + script skeleton + handshake test)

@@ -562,10 +562,54 @@ forbidden_patterns:
 
   - pattern: hardcoded_visible_string
     status: active
+    severity: HIGH
     description: "Every visible string in the UI MUST go through tr() (or equivalent localization-aware function) from day one. Hardcoded strings in Label.text, Button.text, RichTextLabel.text, or any user-facing display field are forbidden — even if the project ships English-only at MVP."
     why: "Retrofitting tr() across the entire UI codebase later is a project-wide refactor. The scaffold cost is one tr() call per string at authoring time; the retrofit cost is unbounded. Localization Scaffold (system 7) provides the string-table mechanism; this fence enforces its use."
+    detection_strategy: "Grep src/**/*.gd for `\\.text\\s*=\\s*\"[^\"]+\"` (and equivalent .bbcode_text/.dialog_text); exclude tr()-wrapped and empty-string forms. Per LOC-005 lint test."
+    test_file: tests/unit/foundation/localization_lint_test.gd
     adr: docs/architecture/adr-0004-ui-framework.md
     added: 2026-04-19
+    severity_added: 2026-05-03
+
+  - pattern: key_in_code_as_english
+    status: active
+    severity: MEDIUM
+    description: "Translation keys must follow domain.context.identifier dot-notation, not English sentences. tr(\"Start Mission\") treats the English string as the key, fragmenting the translation table and breaking fallback semantics."
+    why: "If the canonical key is the English text, every locale must repeat the English string verbatim as a key, and any English copy edit becomes a key-rename + retranslate sweep. Dot-notation keys decouple the canonical identifier from the source string."
+    detection_strategy: "Grep src/**/*.gd for tr(\"...\") arguments containing a space or capital letter (excluding pure lowercase snake_case dot-separated keys). Per LOC-005 lint test."
+    test_file: tests/unit/foundation/localization_lint_test.gd
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-05-03
+
+  - pattern: positional_format_substitution
+    status: active
+    severity: MEDIUM
+    description: "Parameterized strings must use named placeholders ({count}, {section_name}) via String.format(), not positional %s with %-array substitution applied to a tr() result."
+    why: "Word order differs between languages. Positional substitution forces translators to keep English's argument order; named placeholders let each language put the variable wherever its grammar requires. Per TR-LOC-004."
+    detection_strategy: "Grep src/**/*.gd for the regex `tr\\([^)]+\\)\\s*%\\s*\\[` (tr() result followed by % and an array literal). Per LOC-005 + LOC-003 lint tests."
+    test_file: tests/unit/foundation/localization_lint_test.gd
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-05-03
+
+  - pattern: context_column_omitted
+    status: active
+    severity: HIGH
+    description: "Every CSV row in res://translations/ (excluding _dev_pseudo.csv and Godot 4.6 plural meta rows like ?pluralrule + empty-key continuation rows) must have a non-empty `# context` cell."
+    why: "Empty context strands translators without tonal, length, or placement information — translation quality drops or context-mismatched English-to-target slip in. Per GDD AC-4 + Rule 3."
+    detection_strategy: "Parse every CSV in res://translations/ and assert every data row's `# context` column is non-empty (whitespace-only does NOT satisfy). Skip ?-prefixed directive rows and empty-key continuation rows (Godot 4.6 plural format). Per LOC-005 lint test (also enforced in localization_runtime_test)."
+    test_file: tests/unit/foundation/localization_lint_test.gd
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-05-03
+
+  - pattern: cached_translation_at_ready
+    status: active
+    severity: MEDIUM
+    description: "Storing tr() result in a `var` at _ready() (e.g. `var _label_text = tr(\"key\")`) without a _notification(NOTIFICATION_TRANSLATION_CHANGED) handler in the same script. The cached value freezes at first locale and never updates on locale switch."
+    why: "Locale switch via TranslationServer.set_locale() fires NOTIFICATION_TRANSLATION_CHANGED on every Node, but a cached String var is no longer subscribed to the source. Either use auto_translate_mode = ALWAYS (Pattern A) or override _notification to re-resolve (Pattern B). Per TR-LOC-007."
+    detection_strategy: "Grep src/**/*.gd for `var\\s+\\w+\\s*[:=]\\s*tr\\(` inside _ready() function bodies AND the same script does NOT contain NOTIFICATION_TRANSLATION_CHANGED. Per LOC-005 + LOC-004 lint tests."
+    test_file: tests/unit/foundation/localization_lint_test.gd
+    adr: docs/architecture/adr-0004-ui-framework.md
+    added: 2026-05-03
 
   - pattern: modal_dismiss_via_focused_button
     status: active

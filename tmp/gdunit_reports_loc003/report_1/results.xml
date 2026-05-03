@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="8" failures="6" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="localization_plural_forms_test" package="tests/unit/foundation" timestamp="2026-05-03T03:00:19" hostname="localhost" tests="8" failures="6" errors="0" skipped="0" flaky="0" time="0.272">
+		<testcase name="test_plural_csv_row_has_required_columns" classname="localization_plural_forms_test" time="0.014">
+		</testcase>
+		<testcase name="test_tr_n_count_zero_returns_no_documents_form" classname="localization_plural_forms_test" time="0.021">
+			<failure message="FAILED: res://tests/unit/foundation/localization_plural_forms_test.gd:120" type="FAILURE">
+<![CDATA[
+tr_n('hud.collection.count', 'hud.collection.count', 0) must return 'no documents' (en_0 form). Got: '{count} documents collected'. DIAGNOSTIC: If this returns the key verbatim or a wrong form, the Godot 4.6 CSV plural API may not be loading plural translation resources correctly. Verify hud.csv is imported (hud.en_0.translation exists) and project.godot lists the plural translation artifacts. This closes ADR-0004 §Engine Compatibility plural verification gate.
+]]>
+			</failure>
+		</testcase>
+		<testcase name="test_tr_n_count_one_returns_singular_form" classname="localization_plural_forms_test" time="0.021">
+			<failure message="FAILED: res://tests/unit/foundation/localization_plural_forms_test.gd:143" type="FAILURE">
+<![CDATA[
+tr_n('hud.collection.count', 'hud.collection.count', 1) must return '1 document' (en_1 form). Got: '{count} documents collected'. DIAGNOSTIC: If count=1 returns the _other form or the key verbatim, the CSV plural column naming convention may differ from the story spec (en_0/en_1/en_other). See ADR-0004 §Engine Compatibility verification gate.
+]]>
+			</failure>
+		</testcase>
+		<testcase name="test_tr_n_count_seven_format_returns_other_form_with_substitution" classname="localization_plural_forms_test" time="0.020">
+		</testcase>
+		<testcase name="test_tr_format_named_placeholder_substitution_substitutes_section_name" classname="localization_plural_forms_test" time="0.021">
+		</testcase>
+		<testcase name="test_tr_format_missing_placeholder_key_leaves_placeholder_intact" classname="localization_plural_forms_test" time="0.021">
+		</testcase>
+		<testcase name="test_no_positional_format_substitution_in_src_production_code" classname="localization_plural_forms_test" time="0.024">
+		</testcase>
+		<testcase name="test_godot_4_6_plural_api_smoke_distinct_strings_for_counts" classname="localization_plural_forms_test" time="0.013">
+			<failure message="FAILED: res://tests/unit/foundation/localization_plural_forms_test.gd:292" type="FAILURE">
+<![CDATA[
+Godot 4.6 plural API mismatch — see ADR-0004 §Engine Compatibility verification gate.
+If this story is BLOCKED, document the actual column format Godot uses and amend the GDD.
+Mismatches:
+  count=0 → en_0 (zero form): expected 'no documents', got '0 documents collected' (raw from tr_n: '{count} documents collected')
+  count=1 → en_1 (one form): expected '1 document', got '1 documents collected' (raw from tr_n: '{count} documents collected')
+DIAGNOSTIC: Check that hud.csv was re-imported (plural .translation files regenerated).
+Expected artifacts: hud.en_0.translation, hud.en_1.translation, hud.en_other.translation
+or hud.en.translation with plural form data (Godot's actual artifact naming TBD on import).
+]]>
+			</failure>
+			<failure message="FAILED: res://tests/unit/foundation/localization_plural_forms_test.gd:309" type="FAILURE">
+<![CDATA[
+count=0 and count=1 must return DISTINCT raw strings. Both returned: '{count} documents collected'
+]]>
+			</failure>
+			<failure message="FAILED: res://tests/unit/foundation/localization_plural_forms_test.gd:312" type="FAILURE">
+<![CDATA[
+count=0 and count=7 must return DISTINCT raw strings. Both returned: '{count} documents collected'
+]]>
+			</failure>
+			<failure message="FAILED: res://tests/unit/foundation/localization_plural_forms_test.gd:315" type="FAILURE">
+<![CDATA[
+count=1 and count=7 must return DISTINCT raw strings. Both returned: '{count} documents collected'
+]]>
+			</failure>
+		</testcase>
+	</testsuite>
+</testsuites>

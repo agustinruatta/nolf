@@ -1,0 +1,75 @@
+[gd_resource type="Theme" load_steps=5 format=3]
+
+[ext_resource type="Theme" path="res://src/core/ui_framework/project_theme.tres" id="1_proj"]
+
+[sub_resource type="StyleBoxFlat" id="health_bg"]
+bg_color = Color(0.106, 0.227, 0.420, 0.85)
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+shadow_size = 0
+
+[sub_resource type="StyleBoxFlat" id="weapon_ammo_bg"]
+bg_color = Color(0.106, 0.227, 0.420, 0.85)
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+shadow_size = 0
+
+[sub_resource type="StyleBoxFlat" id="prompt_bg"]
+bg_color = Color(0.106, 0.227, 0.420, 0.85)
+content_margin_left = 8.0
+content_margin_top = 3.0
+content_margin_right = 8.0
+content_margin_bottom = 3.0
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+shadow_size = 0
+
+[sub_resource type="StyleBoxFlat" id="key_rect"]
+bg_color = Color(0, 0, 0, 0)
+content_margin_left = 3.0
+content_margin_top = 1.0
+content_margin_right = 3.0
+content_margin_bottom = 1.0
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_left = 0
+corner_radius_bottom_right = 0
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.949, 0.910, 0.784, 1)
+shadow_size = 0
+
+[resource]
+fallback_theme = ExtResource("1_proj")
+PanelContainer/styles/health_bg = SubResource("health_bg")
+PanelContainer/styles/weapon_ammo_bg = SubResource("weapon_ammo_bg")
+PanelContainer/styles/prompt_bg = SubResource("prompt_bg")
+PanelContainer/styles/key_rect = SubResource("key_rect")

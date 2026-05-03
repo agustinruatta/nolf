@@ -1,7 +1,7 @@
 # Story 001: SettingsService autoload scaffold + ConfigFile persistence layer
 
 > **Epic**: Settings & Accessibility
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Polish (Day-1 HARD MVP DEP — promoted per HUD Core REV-2026-04-26 D2)
 > **Type**: Logic
 > **Estimate**: 3-4 hours (M — new autoload + ConfigFile round-trip + unit tests)

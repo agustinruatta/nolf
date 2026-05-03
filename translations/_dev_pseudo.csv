@@ -33,3 +33,7 @@ credits.section.audio,Audio,[• AUDIO AUDIO AUD •],"Pseudo-loc dev-only; ~140
 credits.section.thanks,Special Thanks,[• SPECIAL THANKS SPECIAL THANKS ST •],"Pseudo-loc dev-only; ~140% length; mirrors credits.csv"
 doc.example.title,Example Document,[• EXAMPLE DOCUMENT EXAMPLE DOC •],"Pseudo-loc dev-only; ~140% length; mirrors doc.csv"
 doc.example.body,This is an example document body for localization scaffold verification.,[• THIS IS AN EXAMPLE DOCUMENT BODY FOR LOCALIZATION SCAFFOLD VERIFICATION. THIS BODY •],"Pseudo-loc dev-only; ~140% length; mirrors doc.csv"
+hud.collection.count,{count} documents collected,[• {COUNT} DOCUMENTS COLLECTED {COUNT} DOCS •],"Pseudo-loc dev-only; plural key — pseudo uses _other form for layout stress-test; bracket-wrapped ~140%; count placeholder preserved as-is"
+hud.section.entered_label,Entering: {section_name},[• ENTERING: {SECTION_NAME} ENTERING: {SECTION_NAME} •],"Pseudo-loc dev-only; ~140% length; named placeholder preserved uppercase; mirrors hud.csv"
+hud.interact.prompt,Press,[• PRESS PRESS •],"Pseudo-loc dev-only; ~140% length; mirrors hud.csv interact prefix"
+hud.alert.guard_alerted,Guard alerted,[• GUARD ALERTED GUARD •],"Pseudo-loc dev-only; ~140% length; mirrors hud.csv HSS ALERT_CUE state text"

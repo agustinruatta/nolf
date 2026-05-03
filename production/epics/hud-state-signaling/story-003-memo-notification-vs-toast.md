@@ -1,7 +1,7 @@
 # Story 003: MEMO_NOTIFICATION — document pickup toast (VS scope)
 
 > **Epic**: HUD State Signaling
-> **Status**: Ready
+> **Status**: Complete — 2026-05-03 (Sprint 06)
 > **Layer**: Presentation
 > **Type**: UI
 > **Estimate**: 2-3 hours (S — new subscription + state-entry + resolver extension + VS-flag test skip scaffold)

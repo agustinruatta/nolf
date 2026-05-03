@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Document" load_steps=2 format=3]
+
+; plaza_tourist_register_001.tres — Plaza tutorial document #2
+; Off-path detour (≥10m from critical path) at plaza_tourist_register_desk surface
+; (recessed counter, ~1.05m height, 12–15m lateral detour).
+; Implements: design/gdd/document-collection.md §C.5.3, CR-1, CR-8, TR-DC-010 (partial)
+; ADR refs: ADR-0004 (tr() discipline — no content baked in), ADR-0003 (persistence)
+; Story: DC-005 (Plaza tutorial document set)
+;
+; INVARIANTS (AC-DC-1.1 + CR-8):
+;   - All text fields are Localization keys ONLY. No resolved strings.
+;   - interact_label_key = "ui.interact.pocket_document" (MVP fallback per ADR-0004)
+;   - tier_override = -1  → uses ADR-0001 Tier 1 stencil (heaviest, 4 px @ 1080p).
+
+[ext_resource type="Script" path="res://src/gameplay/documents/document.gd" id="1_doc_script"]
+
+[resource]
+script = ExtResource("1_doc_script")
+id = &"plaza_tourist_register_001"
+title_key = &"doc.plaza_tourist_register_001.title"
+body_key = &"doc.plaza_tourist_register_001.body"
+section_id = &"plaza"
+interact_label_key = &"ui.interact.pocket_document"
+tier_override = -1

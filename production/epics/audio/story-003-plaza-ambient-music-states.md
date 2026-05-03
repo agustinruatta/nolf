@@ -1,7 +1,7 @@
 # Story 003: Plaza ambient layer + UNAWARE/COMBAT music states + section reverb
 
 > **Epic**: Audio
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Integration
 > **Estimate**: 3-4 hours (L — music player setup, crossfade Tween logic, reverb swap, integration test)
@@ -238,3 +238,17 @@ func _apply_reverb_preset(section_id: StringName) -> void:
 
 - Depends on: Story 001 DONE (bus structure), Story 002 DONE (subscription wiring)
 - Unlocks: Story 004 (ducking handlers require music players to tween against), Story 005 (stinger scheduling requires MusicSting player)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 6/6 passing (AC-3 alert_state_changed signal IS available with 4-param signature; ADR-0002 amendment dependency resolved)
+**Deviations**: None blocking. Two notes:
+- AC-3 was originally documented as potentially blocked on ADR-0002 amendment; verification showed `Events.alert_state_changed` exists with the 4-param signature `(guard_node, old_state, new_state, severity)` — handler implemented and connected in _ready().
+- VS placeholder for ambient stream loading per TR-AUD-008 deferral (real asset loading deferred to content production); `_start_ambient_for_section()` skips `play()` if no stream loaded, defensive against headless tests.
+
+**Test Evidence**: `tests/integration/foundation/audio/audio_plaza_ambient_music_test.gd` (7 test functions covering AC-1..AC-6 + dominant-state helper test)
+
+**Code Review**: Static structural verification PASS — `create_tween().set_parallel(true)` modern Godot 4.x pattern verified, in-place reverb mutation verified (no remove/re-add), is_connected guards on disconnect, no Tween.new() or scene-node $Tween (forbidden patterns absent). LP-CODE-REVIEW + QL-TEST-COVERAGE gates skipped (Lean review mode).

@@ -1,7 +1,7 @@
 # Story 006: Resolution scale subscription + Viewport.scaling_3d_scale wiring
 
 > **Epic**: Post-Process Stack
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — signal subscription + Viewport property wiring + unit tests)

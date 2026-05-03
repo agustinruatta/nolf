@@ -60,17 +60,17 @@ func test_post_process_stack_is_sepia_active_default_false() -> void:
 	).is_false()
 
 
-## enable_sepia_dim() is a callable method that returns void without crashing
-## on the stub body (Story PPS-003 fills it in).
+## enable_sepia_dim() is callable and transitions is_sepia_active to true
+## from IDLE state (PPS-003 state machine is now live).
 func test_post_process_stack_enable_sepia_dim_is_callable_stub() -> void:
 	# Arrange
 	var instance: PostProcessStackService = auto_free(PostProcessStackService.new())
 	# Act + Assert — should not crash
 	instance.enable_sepia_dim()
-	# Stub body is `pass` so is_sepia_active remains false (state machine in PPS-003).
+	# PPS-003 state machine live: enable from IDLE sets is_sepia_active = true (AC-1).
 	assert_bool(instance.is_sepia_active).override_failure_message(
-		"AC-1: enable_sepia_dim() stub must not flip state (state machine in PPS-003)."
-	).is_false()
+		"AC-1: enable_sepia_dim() from IDLE must set is_sepia_active = true (PPS-003 live)."
+	).is_true()
 
 
 ## disable_sepia_dim() is a callable method that returns void without crashing.

@@ -1,4 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://plaza_vs_2026_05_01"]
+[gd_scene load_steps=18 format=3 uid="uid://plaza_vs_2026_05_01"]
+
+[ext_resource type="Script" path="res://src/gameplay/documents/document_collection.gd" id="1_dc_script"]
+[ext_resource type="PackedScene" path="res://src/gameplay/documents/document_body.tscn" id="2_doc_body_tscn"]
+[ext_resource type="Resource" path="res://assets/data/documents/plaza_security_logbook_001.tres" id="3_logbook"]
+[ext_resource type="Resource" path="res://assets/data/documents/plaza_tourist_register_001.tres" id="4_tourist"]
+[ext_resource type="Resource" path="res://assets/data/documents/plaza_maintenance_clipboard_001.tres" id="5_maintenance"]
 
 ; Plaza Section — first vertical-slice walkable scene.
 ;
@@ -154,3 +160,35 @@ font_size = 32
 outline_size = 4
 modulate = Color(1, 1, 1, 1)
 billboard = 1
+
+; ── Systems — gameplay logic nodes (DocumentCollection) ─────────────────
+; DocumentCollection subscribes to "section_documents" group and handles
+; pickup events, save/restore contract. Implements DC-003 / DC-005.
+[node name="Systems" type="Node3D" parent="."]
+
+[node name="DocumentCollection" type="Node" parent="Systems"]
+script = ExtResource("1_dc_script")
+
+; ── Documents — DocumentBody instances for Plaza tutorial set ────────────
+; Three DocumentBody scenes placed in the 20m x 20m Plaza room.
+; Heights are within [0.4, 1.5] m lint bounds (DC-004 lint #6).
+; Min body separation: ≈11.3 m (Logbook↔Tourist, Logbook↔Maintenance) ≥ 0.15 m ✓
+; DC-005 Story: placeholder MVP positions. Critical-path spline placement
+; deferred to Tools-Programmer ticket (DC-005 Out-of-Scope, lint F.2).
+; Implements: design/gdd/document-collection.md §C.5.3, DC-005.
+[node name="Documents" type="Node3D" parent="."]
+
+; SecurityLogbook — on-path anchor, security post table surface (~0.75 m).
+[node name="SecurityLogbook" parent="Documents" instance=ExtResource("2_doc_body_tscn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.75, 0.0)
+document = ExtResource("3_logbook")
+
+; TouristRegister — off-path detour (≥10 m), recessed counter surface (~1.05 m).
+[node name="TouristRegister" parent="Documents" instance=ExtResource("2_doc_body_tscn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.0, 1.05, 8.0)
+document = ExtResource("4_tourist")
+
+; MaintenanceClipboard — off-path service alcove (≥10 m), crate surface (~0.85 m).
+[node name="MaintenanceClipboard" parent="Documents" instance=ExtResource("2_doc_body_tscn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0, 0.85, -8.0)
+document = ExtResource("5_maintenance")

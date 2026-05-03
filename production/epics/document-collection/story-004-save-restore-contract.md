@@ -1,7 +1,7 @@
 # Story 004: Save/restore contract — capture(), restore(), spawn-gate
 
 > **Epic**: Document Collection
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: 3 hours (M — 2 methods + integration tests; save/load round-trip + spawn-gate)
@@ -186,3 +186,23 @@ func capture() -> DocumentCollectionState:
 
 - Depends on: Story 003 (DocumentCollection node with `_collected` state and `SECTION_DOCUMENTS_GROUP` constant must exist)
 - Unlocks: Story 005 (end-to-end Plaza integration test requires capture/restore to exist for the round-trip)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 9/9 passing (all 9 acceptance criteria covered: 5 unit tests for save_contract, 2 unit tests for performance_formula, 3 integration tests for spawn_gate)
+**Deviations**: One BLOCKING test logic defect found in code-review and corrected:
+- AC-7 test (`test_open_document_id_not_persisted_in_save`) had inverted postcondition — was asserting `_open_document_id == ""` after setting it to a value and calling restore(). Fixed: now uses sentinel value approach to prove restore() leaves `_open_document_id` untouched (neither auto-restored from state nor reset to default).
+
+Two advisory non-blocking items (F-2, F-3 from code-review) deferred to future hardening pass:
+- spawn_gate_test.gd: comment clarification on "synchronous queue_free + await process_frame" (advisory)
+- performance_formula_test.gd: tautological const-vs-const assertion in N=6 test (advisory; arithmetic is correct, just a structural style note)
+
+**Test Evidence**: 
+- `tests/unit/feature/document_collection/save_contract_test.gd` (5 test functions: capture aliasing, restore aliasing, null-state, _open_document_id non-persistence, capture-with-open-state)
+- `tests/unit/feature/document_collection/performance_formula_test.gd` (2 test functions: F.1 at N=4 within budget = 0.046ms ≤ 0.05ms with 8% headroom; F.1 at N=6 breach = 0.062ms > 0.05ms triggers ADR-0008 review)
+- `tests/integration/feature/document_collection/spawn_gate_test.gd` (3 test functions: collected bodies absent after restore; stale id benign; null document export does not crash)
+
+**Code Review**: Complete — godot-gdscript-specialist verdict CHANGES REQUIRED resolved (F-1 BLOCKING fixed); ADR-0003 IG 3 + CR-6 duplicate-discipline verified at both Array boundaries; ADR-0002 CR-5 honored (DC does NOT register LSS callback); spawn-gate synchronous queue_free verified (NOT call_deferred); E.15 null-guard order verified before .id access. LP-CODE-REVIEW + QL-TEST-COVERAGE gates skipped (Lean review mode).

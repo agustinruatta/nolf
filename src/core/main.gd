@@ -259,7 +259,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			KEY_F4:
 				# AC-4: pickup memo (3.0s display via HSS-003).
-				Events.document_collected.emit(&"plaza_dossier")
+				# DC-003: DocumentCollection is the sole publisher of
+				# document_collected (CR-7). Debug emit removed; wire a
+				# DocumentBody pickup in the Plaza scene to trigger this signal.
 				get_viewport().set_input_as_handled()
 				return
 			KEY_F6:

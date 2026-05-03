@@ -1,7 +1,7 @@
 # Story 003: Sepia dim tween state machine (IDLE/FADING_IN/ACTIVE/FADING_OUT)
 
 > **Epic**: Post-Process Stack
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 3-4 hours (M — state machine + tween logic + 5 unit-testable acceptance criteria covering transitions + edge cases)

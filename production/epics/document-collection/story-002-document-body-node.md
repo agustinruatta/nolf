@@ -1,7 +1,7 @@
 # Story 002: DocumentBody node — collision layer, stencil tier, interact priority
 
 > **Epic**: Document Collection
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2 hours (S — 1 script + 1 .tscn template + unit tests)
@@ -152,3 +152,13 @@ The `MeshInstance3D` mesh is left null in the template; the level designer assig
 
 - Depends on: Story 001 (Document class must be registered for `@export var document: Document` to resolve)
 - Unlocks: Story 003 (DocumentCollection handler does `target is DocumentBody` type-check), Story 005 (Plaza placement instantiates this template)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 5/5 passing
+**Deviations**: None blocking. Three advisory notes (test naming style, untested null-document edge case, stencil-test load-failure attribution) — non-blocking, documented in code-review.
+**Test Evidence**: `tests/unit/feature/document_collection/document_body_node_test.gd` (6 test functions covering AC-1..AC-5 + CR-15 bonus)
+**Code Review**: Complete — godot-gdscript-specialist CLEAN, godot-specialist CLEAN, qa-tester TESTABLE; LP-CODE-REVIEW + QL-TEST-COVERAGE gates skipped (Solo review mode)

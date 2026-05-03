@@ -1,7 +1,7 @@
 # Story 005: WorldEnvironment glow ban + forbidden post-process enforcement
 
 > **Epic**: Post-Process Stack
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — validation logic + scene-load hook + unit test + lint check)

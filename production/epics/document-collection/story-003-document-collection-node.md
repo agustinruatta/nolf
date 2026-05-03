@@ -1,7 +1,7 @@
 # Story 003: DocumentCollection node — subscribe/publish lifecycle + pickup handler
 
 > **Epic**: Document Collection
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 3 hours (M — 1 system script + 5 unit test files; signal lifecycle + 3-guard handler)
@@ -163,3 +163,21 @@ The `_collected: Array[StringName]` and `_open_document_id: StringName` state va
 
 - Depends on: Story 001 (Document class registered), Story 002 (DocumentBody class registered for `target is DocumentBody` check)
 - Unlocks: Story 004 (capture/restore methods on the same node), Story 005 (integration test requires the full node to be present in the Plaza scene)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 8/8 passing (all 8 acceptance criteria covered by automated tests + CI grep verification)
+**Deviations**: One advisory item resolved during code-review:
+- VS API stub return types corrected from `-> void` to `-> bool` per GDD CR-11/CR-12 contract (godot-gdscript-specialist code-review finding). `open_document(id) -> bool` returns `true`; `close_document() -> bool` returns `false` when no doc open, `true` otherwise. CR-12 single-open-invariant guard remains a stub for full Document Overlay UI implementation.
+- Pre-existing CR-7 sole-publisher violation in `src/core/main.gd` KEY_F4 debug hotkey (left over from prior sprint HUD scaffolding) was removed during this story to satisfy AC-7 sole-publisher CI lint.
+
+**Test Evidence**: 
+- `tests/unit/feature/document_collection/subscriber_lifecycle_test.gd` (3 test functions covering AC-1 + double-disconnect edge case)
+- `tests/unit/feature/document_collection/idempotency_test.gd` (3 test functions covering AC-2 + AC-3)
+- `tests/unit/feature/document_collection/signal_handler_guards_test.gd` (5 test functions covering AC-4 + CR-15 source-scan)
+- CI grep verifications: AC-5 (0 matches), AC-6 (0 matches), AC-7 (0 matches), AC-8 (0 matches)
+
+**Code Review**: Complete — godot-gdscript-specialist CLEAN (APPROVED WITH SUGGESTIONS); ADR-0002 IG 3/4 compliance verified, ADR-0007 not-autoload + canonical scene path documented. Two advisory suggestions (test-naming pattern, source-scan comment exclusion) deferred to future hardening pass — non-blocking. LP-CODE-REVIEW + QL-TEST-COVERAGE gates skipped (Lean review mode).

@@ -1,7 +1,7 @@
 # Story 005: Footstep variant routing (marble) + COMBAT stinger on actor_became_alerted
 
 > **Epic**: Audio
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — variant selection logic + stinger debounce + unit tests)
@@ -257,3 +257,28 @@ func _play_stinger() -> void:
 
 - Depends on: Story 001 DONE (SFX pool), Story 002 DONE (subscription wiring), Story 003 DONE (MusicNonDiegetic + MusicSting players for stinger scheduling)
 - Unlocks: VS Epic Definition of Done — all VS acceptance criteria implemented and testable
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 9/9 passing (27 test functions exceed minimum, including parametrized AC-9 quantization variants)
+**Deviations**: None blocking. Two VS stubs documented:
+- `_load_footstep_stream(variant_key)` returns null per TR-AUD-007 deferral (audio asset content production post-VS); footstep handler returns silently on null stream
+- `_get_player_position()` returns Vector3.ZERO (PlayerCharacter reference wiring is post-VS)
+
+**Test Evidence**: `tests/unit/foundation/audio/audio_footstep_stinger_test.gd` (27 test functions covering AC-1..AC-9; pure-function `get_next_beat_offset_s` parametrized for 6 input/output pairs)
+
+**Implementation Highlights**:
+- 16-slot SFX pool created in `_setup_sfx_pool()` called from `_ready()` (per GDD Rule 9 — pre-allocated, never `AudioStreamPlayer.new()` at runtime)
+- `_get_or_steal_sfx_slot()` two-pass algorithm: first idle, then oldest non-Voice/UI exempt
+- `get_next_beat_offset_s()` is pure `static func` — testable independently of scene tree
+- 4-bucket variant selection: SOFT (≤3.5m), NORMAL (>3.5–6.5m), LOUD (>6.5–10m), EXTREME (>10m)
+- Stinger debounce via `_stinger_queued_for_beat_time` per-beat-window check
+- SCRIPTED-cause + non-MAJOR severity early-returns implemented per AC-7/AC-8
+- Subscriber-only invariant maintained — zero `Events.*.emit(` calls in audio_manager.gd
+
+**Code Review**: Static structural verification PASS. LP-CODE-REVIEW + QL-TEST-COVERAGE gates skipped (Lean review mode).
+
+**Audio Epic Status**: All 5 must-have stories Complete (AUD-001+002 from Sprint 02, AUD-003+004+005 this sprint). VS Epic Definition of Done reached.

@@ -8,4 +8,6 @@ hud.collection.count,1 document,no documents,"# plural_rule: en zero/one/other (
 ,,{count} documents collected,
 hud.section.entered_label,,Entering: {section_name},"HUD section-entered banner; named placeholder section_name = String (substituted at call site); max 32 chars total after substitution; period-authentic plain register"
 hud.interact.prompt,,Press,"HUD interact-prompt static prefix; max 8 chars total; followed by a key glyph + ' ' + tr(target.interact_label_key); period-authentic plain register"
+ui.interact.pocket_document,,Pocket Document,"MVP fallback interact-label for DocumentBody before Document Overlay UI ships. Displayed in HUD prompt strip as tr(interact_label_key). Period dossier register; verb-noun phrasing. Max 18 chars on HUD prompt strip. ADR-0004 §F.5 coord item #3. Owner: design/gdd/document-collection.md."
+ui.interact.read_document,,Read Document,"VS interact-label for DocumentBody once Document Overlay UI (#20) is online. Period dossier register; verb-noun phrasing. Max 18 chars. ADR-0004 §F.5 coord item #3. Owner: design/gdd/document-collection.md."
 hud.alert.guard_alerted,,Guard alerted,"HSS ALERT_CUE state text; max 24 chars; visible during the 2.0s cue window after a guard transitions out of UNAWARE; period-authentic plain register"

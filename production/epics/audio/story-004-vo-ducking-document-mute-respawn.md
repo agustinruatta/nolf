@@ -1,7 +1,7 @@
 # Story 004: VO ducking (Formula 1) + document world-bus mute + respawn cut-to-silence
 
 > **Epic**: Audio
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — Formula 1 implementation + 3 handler bodies + unit tests)
@@ -268,3 +268,23 @@ func _on_document_opened(_document_id: StringName) -> void:
 
 - Depends on: Story 001 DONE (bus structure), Story 002 DONE (subscription wiring), Story 003 DONE (music players exist for volume targeting)
 - Unlocks: Story 005 (all core audio behaviors in place; footstep/stinger are additive)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-03
+**Criteria**: 8/8 passing (AC-1..AC-8 all covered by automated tests)
+**Deviations**: None blocking. One signal-signature note:
+- `dialogue_line_finished` signal takes single `speaker_id: StringName` parameter (not 2-param as story spec suggested). Implementation matches `events.gd` exactly; tests use single-param signature.
+
+**Test Evidence**: `tests/unit/foundation/audio/audio_vo_duck_document_respawn_test.gd` (8 test functions covering AC-1..AC-8; +`before_test`/`after_test` setup; 480 lines total)
+
+**Implementation Highlights**:
+- Formula 1 (`max(setting_db + duck_db, -80.0)`) clamping verified at AC-4 (Music setting at -80 dB → target stays at -80, not -94)
+- AC-3 attack-kill-on-release verified: release tween starts from LIVE volume, not from attack target (Tween.kill() called before reading live `volume_db`)
+- Respawn instant-cut: direct `volume_db = -80.0` assignment (no Tween), then `get_tree().create_timer(respawn_silence_s).timeout.connect(..., CONNECT_ONE_SHOT)` for the 200ms gap before 2.0s ease-in
+- Subscriber-only invariant: zero `Events.*.emit(` calls in audio_manager.gd verified by grep
+- All tweens use `create_tween().set_parallel(true)` (Godot 4.x modern pattern)
+
+**Code Review**: Static structural verification PASS. LP-CODE-REVIEW + QL-TEST-COVERAGE gates skipped (Lean review mode).

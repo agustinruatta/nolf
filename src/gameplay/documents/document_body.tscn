@@ -1,0 +1,47 @@
+[gd_scene load_steps=4 format=3 uid="uid://docbodydc002tpl"]
+
+[ext_resource type="Script" path="res://src/gameplay/documents/document_body.gd" id="1_script"]
+
+; CollisionShape3D box collider — document footprint per GDD §C.5.8.
+; size: 0.30 m wide × 0.05 m tall × 0.20 m deep (thin flat document shape).
+[sub_resource type="BoxShape3D" id="1_box"]
+size = Vector3(0.3, 0.05, 0.2)
+
+; Stencil Tier 1 override material — scene-baked per ADR-0001 IG 2.
+; stencil_mode = 3  (STENCIL_MODE_CUSTOM — verified Sprint 01 finding F4;
+;                    NOT STENCIL_MODE_OUTLINE which is world-space, forbidden)
+; stencil_flags = 2  (Write)
+; stencil_compare = 0  (Always)
+; stencil_reference = 1  (Tier 1 HEAVIEST — 4 px @ 1080p, per ADR-0001 §Decision)
+; Applied to surface_material_override/0 on MeshInstance3D so stencil writes
+; fire even when mesh = null (override slot is independent of mesh surface materials).
+; Mesh is null in this template — LD assigns per-category mesh in derived instances.
+[sub_resource type="StandardMaterial3D" id="2_stencil_mat"]
+stencil_mode = 3
+stencil_flags = 2
+stencil_compare = 0
+stencil_reference = 1
+
+; DocumentBody — StaticBody3D root with document_body.gd script.
+; collision_layer = 8 = PhysicsLayers.MASK_INTERACTABLES (bitmask for Layer 4).
+; collision_mask  = 0 — participates in raycasts, does NOT block movement
+;   ("documents don't push Eve" — ADR-0006 IG 8).
+; .tscn format serialises the computed bitmask integer; PhysicsLayers.* constants
+;   are the source of truth at code level (ADR-0006 IG 5).
+; group "section_documents" — enables bulk queries by DocumentCollection (DC-003).
+[node name="DocumentBody" type="StaticBody3D"]
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("1_script")
+groups = ["section_documents"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("1_box")
+
+; MeshInstance3D — mesh left null; LD assigns per-category mesh in derived scene
+; (one of 7 category meshes per GDD §V.1 — art pipeline, not this story).
+; surface_material_override/0 = Tier 1 stencil material (ADR-0001 IG 2).
+; DO NOT call OutlineTier.set_tier() at runtime for template instances — this
+; override material provides Tier 1 to all instances without runtime cost.
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+surface_material_override/0 = SubResource("2_stencil_mat")

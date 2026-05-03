@@ -977,8 +977,12 @@ func _run_stencil_pass(pipeline_index: int, tier: int, is_first_pass: bool) -> v
 	# Depth attachment action: 0 = load existing depth-stencil (we must not clear
 	# the scene's stencil buffer — that would erase the tier markers we're reading).
 	var color_action: int = RenderingDevice.DRAW_CLEAR_COLOR_0 if is_first_pass else 0
-	var clear_color_values: Array[Color] = \
-		[Color(0.0, 0.0, 0.0, 0.0)] if is_first_pass else []
+	# GDScript 4.6 typed-array inference: a ternary expression mixing
+	# `[Color(...)]` and `[]` resolves to untyped `Array`, which cannot be
+	# assigned to `Array[Color]`. Initialize empty + conditionally append.
+	var clear_color_values: Array[Color] = []
+	if is_first_pass:
+		clear_color_values.append(Color(0.0, 0.0, 0.0, 0.0))
 
 	var draw_list: int = _rd.draw_list_begin(
 		_framebuffer,

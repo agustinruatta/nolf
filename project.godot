@@ -13,8 +13,8 @@ config_version=5
 config/name="The Paris Affair"
 config/description="A 1960s spy thriller — pre-production verification spike build."
 run/main_scene="res://scenes/Main.tscn"
-run/pause_on_focus_lost=true
 config/features=PackedStringArray("4.6", "Forward Plus")
+run/pause_on_focus_lost=true
 
 [autoload]
 
@@ -238,7 +238,6 @@ quickload={
 
 [internationalization]
 
-locale/fallback="en"
 locale/translations=PackedStringArray("res://translations/overlay.en.translation", "res://translations/hud.en.translation", "res://translations/menu.en.translation", "res://translations/settings.en.translation", "res://translations/meta.en.translation", "res://translations/dialogue.en.translation", "res://translations/cutscenes.en.translation", "res://translations/mission.en.translation", "res://translations/credits.en.translation", "res://translations/doc.en.translation", "res://translations/_dev_pseudo.en.translation", "res://translations/_dev_pseudo.pseudo.translation")
 
 [layer_names]

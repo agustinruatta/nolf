@@ -164,6 +164,10 @@ var _step_timings: Dictionary = {}
 ## autoloads at lines 1–4 per ADR-0007 IG 4. Currently references none —
 ## the registry path is a literal `res://` URL, not an autoload accessor.
 func _ready() -> void:
+	# Autoload must keep processing while the SceneTree is paused so
+	# NOTIFICATION_APPLICATION_FOCUS_IN can resume it (otherwise the
+	# notification fires but the resume call sits behind a paused tree).
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_fade_overlay()
 	_setup_error_fallback_layer()
 	_load_registry()
@@ -190,7 +194,24 @@ func _ready() -> void:
 ##
 ## AC-8. TR-LS-014. Story LS-006.
 func _notification(what: int) -> void:
+	# FOCUS_OUT: pause the SceneTree. Godot 4.6 has no built-in
+	# `application/run/pause_on_focus_lost` ProjectSetting (the line in
+	# project.godot is a no-op marker — Godot ignores unknown settings).
+	# Manual pause is required.
+	#
+	# `process_mode = PROCESS_MODE_ALWAYS` is set on this autoload so the
+	# notification handler still fires even after `get_tree().paused = true`.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		var tree: SceneTree = get_tree()
+		if tree != null and not tree.paused:
+			tree.paused = true
+		return
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		# Resume the tree first so the coroutine can advance.
+		var tree: SceneTree = get_tree()
+		if tree != null and tree.paused:
+			tree.paused = false
+		# CR-15 fade-overlay snap: only act when a transition is in flight.
 		if not _transitioning:
 			return
 		if _fade_rect == null:

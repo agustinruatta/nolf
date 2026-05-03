@@ -1007,7 +1007,14 @@ func _run_stencil_pass(pipeline_index: int, tier: int, is_first_pass: bool) -> v
 
 	# Draw 3 vertices — no vertex buffer. The vertex shader reconstructs the
 	# fullscreen triangle from gl_VertexIndex (0, 1, 2).
-	_rd.draw_list_draw(draw_list, false, 3)
+	#
+	# Godot 4.6 signature: draw_list_draw(draw_list, use_indices, instances,
+	#                                     procedural_vertex_count = 0)
+	# The 3rd param is `instances` (1), the 4th is `procedural_vertex_count` (3).
+	# Earlier code passed 3 as `instances` with implicit 0 procedural verts,
+	# producing "No vertex array was bound, and render pipeline expects vertices"
+	# because the pipeline was waiting on a vertex buffer that never existed.
+	_rd.draw_list_draw(draw_list, false, 1, 3)
 	_rd.draw_list_end()
 
 

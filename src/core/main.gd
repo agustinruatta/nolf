@@ -230,6 +230,70 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# HC-006 visual sign-off debug keys — Sprint 06 only. Remove when Combat
+	# (damage emit) + Document Collection (collected emit) ship in Sprint 7+.
+	# These exist so the developer can trigger HUD visual checks without the
+	# full gameplay loop wired up.
+	if event is InputEventKey and event.pressed and not event.echo:
+		var key_event: InputEventKey = event
+		match key_event.keycode:
+			KEY_F1:
+				# AC-2 visual sign-off: damage flash. Production code uses a
+				# 1-frame flash per CR-7 spec (16ms at 60fps — too fast to see),
+				# so for the HC-006 playtest we call the debug-only 200ms
+				# variant on HUDCore directly. Tests verify the 1-frame spec.
+				var hud_node: Node = get_node_or_null("HUDCore")
+				if hud_node != null and hud_node.has_method(&"debug_visible_damage_flash"):
+					hud_node.debug_visible_damage_flash()
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F2:
+				# AC-2: critical health → Alarm Orange numeral.
+				Events.player_health_changed.emit(20.0, 100.0)
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F3:
+				# AC-2 recovery: full health → Parchment numeral.
+				Events.player_health_changed.emit(100.0, 100.0)
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F4:
+				# AC-4: pickup memo (3.0s display via HSS-003).
+				Events.document_collected.emit(&"plaza_dossier")
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F6:
+				# HSS-002: ALERT_CUE (2.0s display).
+				# Use the player as a stand-in actor (tests use any Node).
+				if _player != null:
+					Events.alert_state_changed.emit(
+						_player,
+						StealthAI.AlertState.UNAWARE,
+						StealthAI.AlertState.SUSPICIOUS,
+						StealthAI.Severity.MINOR
+					)
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F7:
+				# AC-7 context-hide: open menu (HUD hides + set_process(false)).
+				InputContext.push(InputContext.Context.MENU)
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F8:
+				# AC-7 context-restore: close menu (HUD shows + set_process(true)).
+				if InputContext.current() != InputContext.Context.GAMEPLAY:
+					InputContext.pop() # dismiss-order-ok: debug key, not gameplay input
+				get_viewport().set_input_as_handled()
+				return
+			KEY_F10:
+				# AC-5: print HUDCore._process perf stats to console.
+				# Pass criterion: worst-case ≤ 300 us (ADR-0008 Slot 7 cap).
+				var hud: Node = get_node_or_null("HUDCore")
+				if hud != null and hud.has_method(&"print_perf_stats"):
+					hud.print_perf_stats()
+				get_viewport().set_input_as_handled()
+				return
+
 
 func _quicksave() -> void:
 	if _player == null:

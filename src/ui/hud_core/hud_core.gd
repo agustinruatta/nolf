@@ -93,6 +93,12 @@ var _cached_static_prompt_prefix: String = ""
 ## CR-21 placeholder until Input GDD ships Input.get_glyph_for_action("interact").
 var _current_interact_glyph: String = "[E]"
 
+## HC-006 AC-5 console-printable perf tracker. Records every frame's
+## _process Self time in microseconds; print stats via print_perf_stats().
+## Sprint 06 only — Sprint 7+ uses the Godot editor profiler.
+var _perf_samples_us: PackedInt64Array = PackedInt64Array()
+const _PERF_SAMPLE_LIMIT: int = 600  # ~10 seconds at 60 fps
+
 ## HC-005 settings mirrors. Initialised to defaults; updated by burst.
 var _crosshair_enabled_mirror: bool = SettingsDefaults.CROSSHAIR_ENABLED
 
@@ -154,8 +160,10 @@ func _ready() -> void:
 ## change-guard ensures Label.text is written only when state OR composed
 ## text differs from the previous frame.
 func _process(_delta: float) -> void:
+	var perf_start_us: int = Time.get_ticks_usec()
 	if pc == null:
 		_set_prompt_state(PromptState.HIDDEN, "")
+		_record_perf_sample(Time.get_ticks_usec() - perf_start_us)
 		return
 	var target: Node3D = pc.get_current_interact_target()
 	var new_state: PromptState
@@ -166,6 +174,36 @@ func _process(_delta: float) -> void:
 	var new_text: String = _compose_prompt_text(new_state, target)
 	if new_state != _last_prompt_state or new_text != _last_prompt_text:
 		_set_prompt_state(new_state, new_text)
+	_record_perf_sample(Time.get_ticks_usec() - perf_start_us)
+
+
+## HC-006 AC-5 — record one frame's _process Self time. Drops the oldest
+## sample when the rolling buffer fills (FIFO, ~10 s window at 60 fps).
+func _record_perf_sample(elapsed_us: int) -> void:
+	if _perf_samples_us.size() >= _PERF_SAMPLE_LIMIT:
+		# Drop oldest by shifting (rare; called only after 10s of frames).
+		_perf_samples_us = _perf_samples_us.slice(1)
+	_perf_samples_us.append(elapsed_us)
+
+
+## HC-006 AC-5 — print Slot 7 perf stats to console. Triggered by F10 in
+## main.gd's debug key handler. Reports worst-case + mean + sample count.
+## Pass criterion: worst-case ≤ 300 us (0.300 ms) per ADR-0008 Slot 7.
+func print_perf_stats() -> void:
+	if _perf_samples_us.size() == 0:
+		print("[HUDCore perf] no samples yet — wait a few frames after _ready.")
+		return
+	var worst_us: int = 0
+	var total_us: int = 0
+	for s in _perf_samples_us:
+		if s > worst_us: worst_us = s
+		total_us += s
+	var mean_us: float = float(total_us) / float(_perf_samples_us.size())
+	var pass_label: String = "PASS" if worst_us <= 300 else "FAIL"
+	print("[HUDCore perf] samples=%d  worst=%d us (%.3f ms)  mean=%.1f us (%.4f ms)  cap=300us  %s"
+		% [_perf_samples_us.size(), worst_us, float(worst_us) / 1000.0, mean_us, mean_us / 1000.0, pass_label])
+	# Reset rolling window so next print covers a fresh observation period.
+	_perf_samples_us.clear()
 
 
 ## HC-004 — apply state to the Label widget.
@@ -315,6 +353,20 @@ func _fire_damage_flash() -> void:
 	if _health_label_numeral == null: return
 	_health_label_numeral.add_theme_color_override(&"font_color", pre_flash_color)
 
+
+## HC-006 visual sign-off helper — like _fire_damage_flash but holds the
+## white override for ~200ms (12 frames at 60fps) so the human eye can
+## actually see it. NOT used by the production damage path; called from
+## main.gd's F1 debug key only. Production flash is the 1-frame spec.
+func debug_visible_damage_flash() -> void:
+	if _health_label_numeral == null: return
+	var pre_flash_color: Color = _current_health_color
+	_health_label_numeral.add_theme_color_override(&"font_color", Color.WHITE)
+	await get_tree().create_timer(0.2).timeout
+	if not is_instance_valid(self): return
+	if _health_label_numeral == null: return
+	_health_label_numeral.add_theme_color_override(&"font_color", pre_flash_color)
+
 ## HC-003 — death overlay handoff.
 func _on_player_died(_cause: int) -> void:
 	pass
@@ -451,65 +503,82 @@ func _build_widget_tree() -> void:
 	add_child(_root_control)
 
 	# ── BL Health field ──────────────────────────────────────────────────────
-	var bl_margin: MarginContainer = MarginContainer.new()
-	bl_margin.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	bl_margin.add_theme_constant_override(&"margin_left", 16)
-	bl_margin.add_theme_constant_override(&"margin_bottom", 16)
-	_root_control.add_child(bl_margin)
+	# PRESET_BOTTOM_LEFT collapses the rect to (0, parent.size.y) — we need
+	# grow_horizontal=END + grow_vertical=BEGIN so children push the size out
+	# from the anchored corner. Fixes the "zero-sized container" bug where
+	# widgets are invisible because their rect collapsed to 0×0.
+	var bl_panel: PanelContainer = PanelContainer.new()
+	bl_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	bl_panel.grow_horizontal = Control.GROW_DIRECTION_END
+	bl_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bl_panel.position = Vector2(16, -16)  # offset from corner (16 px margin)
+	_root_control.add_child(bl_panel)
 
 	var hp_box: HBoxContainer = HBoxContainer.new()
 	hp_box.add_theme_constant_override(&"separation", 6)
-	bl_margin.add_child(hp_box)
+	bl_panel.add_child(hp_box)
 
 	_health_label_hp = Label.new()
 	_health_label_hp.text = tr("hud.health.label")
+	_health_label_hp.add_theme_color_override(&"font_color", _HEALTH_PARCHMENT)
+	_health_label_hp.add_theme_font_size_override(&"font_size", 22)
 	hp_box.add_child(_health_label_hp)
 
 	_health_label_numeral = Label.new()
-	_health_label_numeral.text = ""  # populated by HC-003 from player_health_changed
+	_health_label_numeral.text = "100"  # HC-006 visual fallback
+	_health_label_numeral.add_theme_color_override(&"font_color", _HEALTH_PARCHMENT)
+	_health_label_numeral.add_theme_font_size_override(&"font_size", 22)
 	hp_box.add_child(_health_label_numeral)
 
 	# ── BR Weapon + Ammo field ───────────────────────────────────────────────
-	var br_margin: MarginContainer = MarginContainer.new()
-	br_margin.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	br_margin.add_theme_constant_override(&"margin_right", 16)
-	br_margin.add_theme_constant_override(&"margin_bottom", 16)
-	_root_control.add_child(br_margin)
+	var br_panel: PanelContainer = PanelContainer.new()
+	br_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	br_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	br_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	br_panel.position = Vector2(-16, -16)
+	_root_control.add_child(br_panel)
 
 	var ammo_box: VBoxContainer = VBoxContainer.new()
-	br_margin.add_child(ammo_box)
+	br_panel.add_child(ammo_box)
 
 	_weapon_name_label = Label.new()
-	_weapon_name_label.text = ""  # populated post-VS
+	_weapon_name_label.text = ""
 	ammo_box.add_child(_weapon_name_label)
 
 	_ammo_label = Label.new()
-	_ammo_label.text = ""  # populated post-VS
+	_ammo_label.text = ""
 	ammo_box.add_child(_ammo_label)
 
 	# ── TR Gadget tile (scaffold only) ───────────────────────────────────────
 	_gadget_tile = PanelContainer.new()
 	_gadget_tile.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_gadget_tile.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_gadget_tile.grow_vertical = Control.GROW_DIRECTION_END
+	_gadget_tile.position = Vector2(-16, 16)
 	_root_control.add_child(_gadget_tile)
 
 	# ── CB Prompt strip ──────────────────────────────────────────────────────
-	var cb_center: CenterContainer = CenterContainer.new()
-	cb_center.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_root_control.add_child(cb_center)
-
-	var cb_margin: MarginContainer = MarginContainer.new()
-	cb_center.add_child(cb_margin)
+	# Anchor center-bottom; grow upward + horizontally outward from the anchor.
+	var cb_panel: PanelContainer = PanelContainer.new()
+	cb_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	cb_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	cb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	cb_panel.position = Vector2(0, -64)  # 64 px above bottom edge
+	_root_control.add_child(cb_panel)
 
 	var prompt_box: HBoxContainer = HBoxContainer.new()
 	prompt_box.add_theme_constant_override(&"separation", 6)
-	cb_margin.add_child(prompt_box)
+	cb_panel.add_child(prompt_box)
 
 	_prompt_label = Label.new()
-	_prompt_label.text = ""  # set by HC-004 prompt resolver
-	_prompt_label.visible = false  # HC-004: initial state HIDDEN until resolver runs
+	_prompt_label.text = ""
+	_prompt_label.add_theme_color_override(&"font_color", _HEALTH_PARCHMENT)
+	_prompt_label.add_theme_font_size_override(&"font_size", 14)
+	_prompt_label.visible = false  # HIDDEN until resolver / memo activates
 	prompt_box.add_child(_prompt_label)
 
 	_prompt_key_rect = PanelContainer.new()
+	_prompt_key_rect.visible = false
 	prompt_box.add_child(_prompt_key_rect)
 
 	_prompt_key_label = Label.new()

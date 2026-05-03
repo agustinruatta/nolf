@@ -35,6 +35,17 @@ func before_test() -> void:
 	_inst.global_position = Vector3.ZERO
 
 
+# Sprint 05 close-out documented these 3 tests as full-suite-only flakies due
+# to PhysicsServer3D space pollution from prior test files' auto_free'd bodies.
+# Sprint 06 attempted a `await get_tree().physics_frame` drain in before_test
+# but it broke isolation timing without resolving the full-suite case.
+# Tech-debt: the fix needs PhysicsServer3D-level space introspection (which
+# bodies are queued for removal) — beyond the scope of a one-line cleanup.
+# Defer to a follow-up TD-009 entry: investigate PhysicsServer3D.space_get_*
+# APIs OR move these tests to an isolated suite that runs in its own headless
+# Godot session (no shared physics state with the rest of the suite).
+
+
 func _build_stub(priority: int, position: Vector3) -> StubInteractable:
 	var body: StubInteractable = StubInteractable.new()
 	body.priority = priority

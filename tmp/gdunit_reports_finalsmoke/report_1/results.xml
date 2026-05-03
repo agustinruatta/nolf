@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="77" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="hud_core_subscription_lifecycle_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T04:19:56" hostname="localhost" tests="12" failures="0" errors="0" skipped="0" flaky="0" time="0.526">
+		<testcase name="test_all_14_connections_established_after_ready" classname="hud_core_subscription_lifecycle_test" time="0.071">
+		</testcase>
+		<testcase name="test_all_14_disconnections_on_exit_tree" classname="hud_core_subscription_lifecycle_test" time="0.057">
+		</testcase>
+		<testcase name="test_no_connect_calls_outside_ready_in_hud_core_src" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+		<testcase name="test_no_double_connect_when_ready_runs_twice" classname="hud_core_subscription_lifecycle_test" time="0.053">
+		</testcase>
+		<testcase name="test_hud_core_emits_zero_events_signals" classname="hud_core_subscription_lifecycle_test" time="0.021">
+		</testcase>
+		<testcase name="test_hud_core_does_not_modify_input_context" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+		<testcase name="test_hud_core_does_not_poll_non_authorised_systems" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+		<testcase name="test_hud_core_does_not_connect_to_weapon_dry_fire_click" classname="hud_core_subscription_lifecycle_test" time="0.013">
+		</testcase>
+		<testcase name="test_hud_core_does_not_access_pc_properties_directly" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+		<testcase name="test_hud_core_has_no_save_load_registration" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+		<testcase name="test_hud_core_has_no_pillar_2_pillar_5_excluded_tokens" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+		<testcase name="test_hud_core_has_no_raw_tree_walk_singleton_lookups" classname="hud_core_subscription_lifecycle_test" time="0.014">
+		</testcase>
+	</testsuite>
+	<testsuite id="1" name="hud_core_health_widget_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T04:19:57" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.607">
+		<testcase name="test_health_below_25_percent_triggers_alarm_orange_override" classname="hud_core_health_widget_test" time="0.051">
+		</testcase>
+		<testcase name="test_health_repeated_critical_emits_does_not_re_apply_override" classname="hud_core_health_widget_test" time="0.057">
+		</testcase>
+		<testcase name="test_health_recovery_above_25_percent_reverts_to_parchment" classname="hud_core_health_widget_test" time="0.052">
+		</testcase>
+		<testcase name="test_first_damage_event_fires_immediately_when_gate_open" classname="hud_core_health_widget_test" time="0.052">
+		</testcase>
+		<testcase name="test_second_damage_event_within_window_latches_pending_flash" classname="hud_core_health_widget_test" time="0.050">
+		</testcase>
+		<testcase name="test_photosensitivity_opt_out_suppresses_damage_flash" classname="hud_core_health_widget_test" time="0.054">
+		</testcase>
+		<testcase name="test_photosensitivity_opt_in_unsuppresses_flash" classname="hud_core_health_widget_test" time="0.052">
+		</testcase>
+		<testcase name="test_context_change_to_menu_hides_hud_and_safely_kills_tweens_when_null" classname="hud_core_health_widget_test" time="0.046">
+		</testcase>
+		<testcase name="test_context_change_back_to_gameplay_shows_hud" classname="hud_core_health_widget_test" time="0.054">
+		</testcase>
+	</testsuite>
+	<testsuite id="2" name="hud_core_settings_memo_context_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T04:19:57" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.647">
+		<testcase name="test_crosshair_toggle_responds_to_crosshair_enabled_setting" classname="hud_core_settings_memo_context_test" time="0.042">
+		</testcase>
+		<testcase name="test_locale_change_invalidates_tr_caches" classname="hud_core_settings_memo_context_test" time="0.052">
+		</testcase>
+		<testcase name="test_unknown_category_setting_change_is_silently_ignored" classname="hud_core_settings_memo_context_test" time="0.053">
+		</testcase>
+		<testcase name="test_document_collected_renders_memo_and_starts_timer" classname="hud_core_settings_memo_context_test" time="0.046">
+		</testcase>
+		<testcase name="test_memo_timer_timeout_hides_prompt_label" classname="hud_core_settings_memo_context_test" time="0.051">
+		</testcase>
+		<testcase name="test_empty_document_id_payload_is_ignored_by_memo_handler" classname="hud_core_settings_memo_context_test" time="0.052">
+		</testcase>
+		<testcase name="test_context_change_to_menu_stops_process_and_all_timers" classname="hud_core_settings_memo_context_test" time="0.051">
+		</testcase>
+		<testcase name="test_context_restore_re_enables_process_and_visibility" classname="hud_core_settings_memo_context_test" time="0.053">
+		</testcase>
+		<testcase name="test_document_collected_signal_is_15th_connection" classname="hud_core_settings_memo_context_test" time="0.052">
+		</testcase>
+		<testcase name="test_document_collected_disconnects_on_exit_tree" classname="hud_core_settings_memo_context_test" time="0.052">
+		</testcase>
+	</testsuite>
+	<testsuite id="3" name="hud_core_prompt_strip_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T04:19:58" hostname="localhost" tests="8" failures="0" errors="0" skipped="0" flaky="0" time="0.489">
+		<testcase name="test_target_present_and_hand_free_shows_interact_prompt" classname="hud_core_prompt_strip_test" time="0.057">
+		</testcase>
+		<testcase name="test_no_target_hides_prompt" classname="hud_core_prompt_strip_test" time="0.042">
+		</testcase>
+		<testcase name="test_target_present_but_hand_busy_hides_prompt" classname="hud_core_prompt_strip_test" time="0.050">
+		</testcase>
+		<testcase name="test_null_pc_hides_prompt_and_does_not_crash" classname="hud_core_prompt_strip_test" time="0.050">
+		</testcase>
+		<testcase name="test_text_write_change_guard_skips_redundant_writes" classname="hud_core_prompt_strip_test" time="0.053">
+		</testcase>
+		<testcase name="test_freed_target_falls_to_hidden_state" classname="hud_core_prompt_strip_test" time="0.056">
+		</testcase>
+		<testcase name="test_get_prompt_label_returns_same_label_used_by_resolver" classname="hud_core_prompt_strip_test" time="0.053">
+		</testcase>
+		<testcase name="test_hud_core_only_calls_authorised_pc_methods" classname="hud_core_prompt_strip_test" time="0.014">
+		</testcase>
+	</testsuite>
+	<testsuite id="4" name="hud_core_scaffold_test" package="tests/unit/feature/hud_core" timestamp="2026-05-03T04:19:58" hostname="localhost" tests="12" failures="0" errors="0" skipped="0" flaky="0" time="0.500">
+		<testcase name="test_hud_core_root_is_canvas_layer_with_layer_index_one" classname="hud_core_scaffold_test" time="0.041">
+		</testcase>
+		<testcase name="test_hud_core_is_not_registered_as_autoload" classname="hud_core_scaffold_test" time="0.021">
+		</testcase>
+		<testcase name="test_hud_theme_loads_as_theme_resource" classname="hud_core_scaffold_test" time="0.014">
+		</testcase>
+		<testcase name="test_project_theme_loads" classname="hud_core_scaffold_test" time="0.014">
+		</testcase>
+		<testcase name="test_font_registry_at_22_px_returns_futura_branch" classname="hud_core_scaffold_test" time="0.016">
+		</testcase>
+		<testcase name="test_font_registry_at_15_px_returns_din_branch" classname="hud_core_scaffold_test" time="0.020">
+		</testcase>
+		<testcase name="test_font_registry_at_18_px_returns_futura_branch" classname="hud_core_scaffold_test" time="0.021">
+		</testcase>
+		<testcase name="test_font_registry_at_17_px_returns_din_branch" classname="hud_core_scaffold_test" time="0.014">
+		</testcase>
+		<testcase name="test_no_hardcoded_text_literals_in_hud_core_src" classname="hud_core_scaffold_test" time="0.014">
+		</testcase>
+		<testcase name="test_every_hud_control_has_mouse_filter_ignore_and_focus_none" classname="hud_core_scaffold_test" time="0.055">
+		</testcase>
+		<testcase name="test_hud_widget_tree_contains_all_required_widgets" classname="hud_core_scaffold_test" time="0.044">
+		</testcase>
+		<testcase name="test_hud_root_control_has_focus_disabled_recursively_meta" classname="hud_core_scaffold_test" time="0.048">
+		</testcase>
+	</testsuite>
+	<testsuite id="5" name="hss_alert_cue_test" package="tests/unit/feature/hud_state_signaling" timestamp="2026-05-03T04:19:59" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.570">
+		<testcase name="test_first_alert_event_enters_alert_cue_state" classname="hss_alert_cue_test" time="0.046">
+		</testcase>
+		<testcase name="test_same_severity_event_within_cooldown_is_suppressed" classname="hss_alert_cue_test" time="0.049">
+		</testcase>
+		<testcase name="test_different_actor_alert_passes_per_actor_gate" classname="hss_alert_cue_test" time="0.051">
+		</testcase>
+		<testcase name="test_alert_cue_timer_timeout_clears_state" classname="hss_alert_cue_test" time="0.047">
+		</testcase>
+		<testcase name="test_unaware_new_state_never_triggers_alert_cue" classname="hss_alert_cue_test" time="0.034">
+		</testcase>
+		<testcase name="test_freed_actor_refs_are_erased_from_rate_gate_dicts" classname="hss_alert_cue_test" time="0.053">
+		</testcase>
+		<testcase name="test_upward_severity_bypasses_cooldown_and_re_fires_alert_cue" classname="hss_alert_cue_test" time="0.052">
+		</testcase>
+		<testcase name="test_ui_context_leave_kills_alert_cue" classname="hss_alert_cue_test" time="0.052">
+		</testcase>
+		<testcase name="test_hss_source_has_no_process_or_physics_process" classname="hss_alert_cue_test" time="0.020">
+		</testcase>
+		<testcase name="test_hss_source_has_no_assertive_live_region" classname="hss_alert_cue_test" time="0.021">
+		</testcase>
+	</testsuite>
+	<testsuite id="6" name="hss_memo_notification_test" package="tests/unit/feature/hud_state_signaling" timestamp="2026-05-03T04:20:00" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.572">
+		<testcase name="test_document_collected_activates_memo_state_when_idle" classname="hss_memo_notification_test" time="0.052">
+		</testcase>
+		<testcase name="test_document_collected_queues_memo_when_alert_active" classname="hss_memo_notification_test" time="0.044">
+		</testcase>
+		<testcase name="test_queued_memo_activates_when_alert_cue_dismisses_within_freshness" classname="hss_memo_notification_test" time="0.052">
+		</testcase>
+		<testcase name="test_stale_queued_memo_is_discarded_on_alert_cue_dismiss" classname="hss_memo_notification_test" time="0.050">
+		</testcase>
+		<testcase name="test_empty_document_id_is_rejected" classname="hss_memo_notification_test" time="0.051">
+		</testcase>
+		<testcase name="test_ui_context_leave_kills_memo_and_clears_queue" classname="hss_memo_notification_test" time="0.052">
+		</testcase>
+		<testcase name="test_hss_emits_zero_signals_after_memo_notification_added" classname="hss_memo_notification_test" time="0.013">
+		</testcase>
+		<testcase name="test_document_collected_subscribed_in_ready_and_disconnected_in_exit" classname="hss_memo_notification_test" time="0.074">
+		</testcase>
+		<testcase name="test_memo_timer_wait_time_is_3_seconds" classname="hss_memo_notification_test" time="0.053">
+		</testcase>
+	</testsuite>
+	<testsuite id="7" name="hss_structural_scaffold_test" package="tests/unit/feature/hud_state_signaling" timestamp="2026-05-03T04:20:00" hostname="localhost" tests="7" failures="0" errors="0" skipped="0" flaky="0" time="0.429">
+		<testcase name="test_alert_state_changed_signal_connected_once_after_ready" classname="hss_structural_scaffold_test" time="0.055">
+		</testcase>
+		<testcase name="test_hss_holds_label_and_registers_resolver_extension" classname="hss_structural_scaffold_test" time="0.049">
+		</testcase>
+		<testcase name="test_exit_tree_unregisters_resolver_and_clears_rate_gates" classname="hss_structural_scaffold_test" time="0.060">
+		</testcase>
+		<testcase name="test_hss_disabled_when_hud_core_absent" classname="hss_structural_scaffold_test" time="0.029">
+		</testcase>
+		<testcase name="test_hss_emits_zero_events_signals" classname="hss_structural_scaffold_test" time="0.014">
+		</testcase>
+		<testcase name="test_resolve_hss_state_returns_hidden_sentinel_when_inactive" classname="hss_structural_scaffold_test" time="0.054">
+		</testcase>
+		<testcase name="test_context_leave_clears_hss_state" classname="hss_structural_scaffold_test" time="0.054">
+		</testcase>
+	</testsuite>
+</testsuites>

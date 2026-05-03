@@ -71,8 +71,33 @@ func _ready() -> void:
 	_spawn_player()
 	_attach_outline_compositor()
 	_spawn_toast_overlay()
+	_spawn_hud_core()  # HC-006 visual sign-off scaffold
 	_push_gameplay_context()
 	_connect_savesignal_feedback()
+
+
+## HC-006 — instance HUD Core + HUDStateSignaling for the Plaza VS playtest.
+## HUD Core is a CanvasLayer instanced as a child of the main scene; the
+## Player reference is injected BEFORE add_child(hud) per the HC-004 CR-3
+## injection contract. HSS is a section-scoped Node added underneath.
+func _spawn_hud_core() -> void:
+	var hud_script: GDScript = load("res://src/ui/hud_core/hud_core.gd")
+	var hud: CanvasLayer = hud_script.new()
+	hud.name = &"HUDCore"
+	# Inject PC BEFORE add_child so HUD's _ready() sees a non-null pc.
+	hud.pc = _player
+	add_child(hud)
+
+	var hss_script: GDScript = load("res://src/ui/hud_state_signaling.gd")
+	var hss: Node = hss_script.new()
+	hss.name = &"HUDStateSignaling"
+	add_child(hss)
+
+	# HC-006 visual sign-off seed: emit a starting health value so the BL
+	# numeral renders on first frame (PC's full-health value reaches HUD via
+	# the player_health_changed burst once Combat is wired; until then this
+	# placeholder makes the BL widget visible to the developer playtest).
+	Events.player_health_changed.emit(100.0, 100.0)
 
 
 # ── World setup ────────────────────────────────────────────────────────────

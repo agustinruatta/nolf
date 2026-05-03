@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-05-03" name="report_1" tests="3" failures="5" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="player_interact_cap_warning_test" package="tests/unit/core/player_character" timestamp="2026-05-03T04:12:14" hostname="localhost" tests="3" failures="5" errors="0" skipped="0" flaky="0" time="0.411">
+		<testcase name="test_resolve_cap_exceeded_returns_within_cap" classname="player_interact_cap_warning_test" time="0.135">
+			<failure message="FAILED: res://tests/unit/core/player_character/player_interact_cap_warning_test.gd:76" type="FAILURE">
+<![CDATA[
+Cap-exceeded must still return a non-null best candidate from within the iteration window.
+]]>
+			</failure>
+			<failure message="FAILED: res://tests/unit/core/player_character/player_interact_cap_warning_test.gd:86" type="FAILURE">
+<![CDATA[
+Resolved target must be one of the first 4 stubs (cap=4); 5th stub beyond cap.
+]]>
+			</failure>
+		</testcase>
+		<testcase name="test_resolve_cap_one_returns_a_stub" classname="player_interact_cap_warning_test" time="0.117">
+			<failure message="FAILED: res://tests/unit/core/player_character/player_interact_cap_warning_test.gd:107" type="FAILURE">
+<![CDATA[
+Cap=1 must still return a non-null target.
+]]>
+			</failure>
+			<failure message="FAILED: res://tests/unit/core/player_character/player_interact_cap_warning_test.gd:112" type="FAILURE">
+<![CDATA[
+Cap=1 should resolve to the geometrically-first hit (nearer stub).
+]]>
+			</failure>
+		</testcase>
+		<testcase name="test_resolve_within_cap_returns_priority_winner" classname="player_interact_cap_warning_test" time="0.117">
+			<failure message="FAILED: res://tests/unit/core/player_character/player_interact_cap_warning_test.gd:138" type="FAILURE">
+<![CDATA[
+Within-cap mixed priorities → Document (0) wins over Door (3) and Pickup (2).
+]]>
+			</failure>
+		</testcase>
+	</testsuite>
+</testsuites>

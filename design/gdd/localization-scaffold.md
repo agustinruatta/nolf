@@ -70,7 +70,7 @@ Players will never praise the Scaffold. They will praise *The Paris Affair* feel
    var text = tr("hud.collection.count") % {"count": n, "plural": "" if n == 1 else "s"}
    ```
 
-5. **Plural forms use Godot 4.6 CSV plural columns.** For strings with plural variants, add a `# plural_rule` annotation in the context column and define additional columns per Godot 4.6's CSV plural format (`en_0`, `en_1`, etc. for zero/one/other). MVP applies only to a small set (document count, item count).
+5. **Plural forms use Godot 4.6 CSV plural marker + directive row format** (verified 2026-05-03 LOC-003 against `editor/import/resource_importer_csv_translation.cpp`). The CSV header gains a `?plural` marker column; one `?pluralrule` directive row per locale specifies the locale's plural-rule expression; each plural key is encoded as N consecutive rows (one per plural form, distinguished by `?plural` value 0/1/2/...). Per-locale plural-form count varies (English = 2, Polish = 4). MVP applies only to a small set (document count, item count). Reference implementation: `translations/hud.csv` (`hud.collection.count`). See LOC-003 Completion Notes for the worked example. *(Note: prior text described `en_0`/`en_1`/`en_other` locale-suffixed columns — that was a hallucinated format that does not exist in Godot 4.6's importer.)*
 
 6. **Developer workflow for adding a new user-visible string:**
    1. Choose the domain CSV for the string's feature area.
@@ -265,7 +265,7 @@ At MVP, the locale picker ships with only one option ("English"), so the UI can 
 
 ### Plural forms
 
-10. **GIVEN** a plural key `hud.collection.count` with CSV plural columns `en_0="no documents"`, `en_1="1 document"`, `en_other="{count} documents"`, **WHEN** code calls the key with `count = 1`, **THEN** "1 document" is returned; with `count = 7`, "7 documents collected" is returned.
+10. **GIVEN** a plural key `hud.collection.count` encoded with the Godot 4.6 `?plural` marker column populated for two row-repetitions (singular + other forms) and a `?pluralrule` directive row declaring English's `n != 1` rule (or a custom 3-form `n==0?0:n==1?1:2` rule), **WHEN** code calls `tr_n("hud.collection.count", "1 document", count)`, **THEN** count=0 returns "no documents", count=1 returns "1 document", count=7 returns "7 documents collected" (after `String.format({"count": 7})` substitution on the form-2 template).
 
 ### Locale switching
 

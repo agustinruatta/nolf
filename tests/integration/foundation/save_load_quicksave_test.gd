@@ -70,6 +70,14 @@ func _on_hud_toast_requested(toast_id: StringName, payload: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 
 func before_test() -> void:
+	# Sprint 06 fix for full-suite cross-test-file pollution: drain
+	# InputContext stack to GAMEPLAY in case a prior test (different file)
+	# left LOADING/MENU/SETTINGS on the stack. after_test handles same-file
+	# cleanup; before_test handles cross-file.
+	var safety: int = 16
+	while InputContext.current() != InputContextStack.Context.GAMEPLAY and safety > 0:
+		InputContext.pop() # dismiss-order-ok: test fixture cleanup, no real input event
+		safety -= 1
 	_game_saved_calls.clear()
 	_game_loaded_slots.clear()
 	_save_failed_reasons.clear()

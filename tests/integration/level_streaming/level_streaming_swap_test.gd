@@ -28,12 +28,28 @@ func before_test() -> void:
 			await get_tree().process_frame
 			elapsed += get_process_delta_time()
 
+	# Sprint 06 fix for full-suite test pollution: drain InputContext stack
+	# back to GAMEPLAY so the LOADING-context pre-condition (line 62) starts
+	# clean even when a prior suite left LOADING on the stack.
+	_reset_input_context()
+
 	_exited_args = []
 	_entered_args = []
 	if not Events.section_exited.is_connected(_on_section_exited):
 		Events.section_exited.connect(_on_section_exited)
 	if not Events.section_entered.is_connected(_on_section_entered):
 		Events.section_entered.connect(_on_section_entered)
+
+
+## Drain the InputContext stack to GAMEPLAY. Pops anything other than the
+## bottom GAMEPLAY context that prior tests left on the stack — necessary
+## for full-suite isolation per Sprint 05 close-out finding.
+func _reset_input_context() -> void:
+	# Pop until we're back at GAMEPLAY (the bottom of the stack).
+	var safety: int = 16
+	while InputContext.current() != InputContext.Context.GAMEPLAY and safety > 0:
+		InputContext.pop() # dismiss-order-ok: test fixture cleanup, no real input event
+		safety -= 1
 
 
 func after_test() -> void:

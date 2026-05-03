@@ -1,7 +1,7 @@
 # Story 001: MissionLevelScripting autoload scaffold + load-order registration
 
 > **Epic**: Mission & Level Scripting
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S — new file + project.godot entry + one test)
@@ -144,3 +144,15 @@ All handler method signatures must declare typed parameters: `func _on_section_e
 
 - Depends on: Story 001 of Signal Bus epic (Events autoload must exist); ADR-0007 line-9 amendment confirmed present (RESOLVED 2026-04-27)
 - Unlocks: Story 002 (mission state machine requires this scaffold), Story 003, Story 004, Story 005
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02. **Criteria**: 6/6 PASSING. **Tests**: 6/6 in `tests/unit/feature/mission_level_scripting/autoload_order_test.gd`. **Suite**: 784/784 (was 778; +6 MLS-001 tests).
+
+Files: MODIFIED `src/gameplay/mission_level_scripting/mission_level_scripting.gd` — class_name MissionLevelScriptingService extends Node; section_entered + respawn_triggered subscribers; _exit_tree disconnect with is_connected guards; stub handlers for Story MLS-002.
+
+ACs covered: AC-1 class declaration; AC-2 project.godot line 9 placement; AC-3 no `_init` body; AC-4 typed callable connect; AC-5 disconnect guards; AC-6 load-order invariant.
+
+**Tech debt**: NONE. **Code Review**: APPROVED.

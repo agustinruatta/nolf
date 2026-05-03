@@ -1,7 +1,7 @@
 # Story 003: respawn_triggered signal emission — ordering contract + subscriber re-entrancy fence + sting suppression
 
 > **Epic**: Failure & Respawn
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (S-M — signal emission, ordering test, re-entrancy lint, sting suppression path)
@@ -120,3 +120,15 @@
 
 - Depends on: Story 001 (autoload scaffold) MUST be Done; Story 002 (CAPTURING body places the emit call) MUST be Done; Signal Bus story-002 (`Events.respawn_triggered` signal declared on `events.gd`) MUST be Done
 - Unlocks: Story 006 (CI lint for sole-publisher and re-entrancy fence depends on the emit call existing)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02. **Criteria**: 6/6 PASSING (6 tests). **Tests**: `tests/unit/feature/failure_respawn/respawn_triggered_ordering_test.gd`.
+
+Files: `src/gameplay/failure_respawn/failure_respawn_service.gd` modified — replaced FR-002's `# TODO FR-003` marker with `Events.respawn_triggered.emit(_resolve_current_section_id())` at step 5, BEFORE step 6's `transition_to_section`. Doc comment explains CR-8 ordering contract + sting suppression timing window (≤100 ms guarantee via synchronous capture body).
+
+ACs: AC-1 ordering verified by inner _TestLSDouble + ordering_log; AC-2 no-subscriber clean completion; AC-3 soft-error subscriber path; AC-4 sole-publisher source-grep across `src/**/*.gd` (only `failure_respawn_service.gd` contains `respawn_triggered.emit`); AC-5 section_id matches `_current_section_id`; AC-6 non-empty StringName via fallback to `_ls_service.get_current_section_id()`.
+
+Tech debt: NONE. Code Review: APPROVED (sole publisher invariant clean; no await between emit and transition; ADR-0002:183 satisfied).

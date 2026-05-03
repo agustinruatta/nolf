@@ -22,3 +22,10 @@ extends Resource
 ## Required per MLS CR-7 (savepoint-persistent-beats invariant — beats fired
 ## before a save must remain fired across save/load).
 @export var fired_beats: Dictionary = {}
+
+## StringName -> int mapping from objective_id to ObjectiveState enum value.
+## The int values correspond to MissionLevelScriptingService.ObjectiveState:
+##   0 = PENDING, 1 = ACTIVE, 2 = COMPLETED
+## This field is the authoritative per-objective state for save/load (MLS-002).
+## Key: StringName objective_id; Value: int (MissionLevelScriptingService.ObjectiveState).
+@export var objective_states: Dictionary = {}

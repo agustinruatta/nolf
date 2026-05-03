@@ -1,7 +1,7 @@
 # Story 005: LS step-9 restore callback + PlayerCharacter.reset_for_respawn + InputContext push/pop — VS end-to-end respawn beat
 
 > **Epic**: Failure & Respawn
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: 4-5 hours (L — restore callback body, InputContext push/pop, PC reset call, round-trip integration test, visual evidence)
@@ -181,3 +181,36 @@ func _complete_respawn_flow() -> void:
 
 - Depends on: Story 001 (autoload scaffold) MUST be Done; Story 002 (CAPTURING body + RESTORING transition) MUST be Done; Story 003 (signal emission) MUST be Done; Story 004 (section_entered handler + checkpoint assembly) MUST be Done; Level Streaming story-003 (`register_restore_callback` chain) MUST be Done; Level Streaming story-008 (Plaza section with `player_respawn_point`) MUST be Done
 - Unlocks: Story 006 (anti-pattern fences operate on the complete F&R implementation)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02. **Criteria**: 8/8 PASSING (8 tests). **Tests**: `tests/unit/feature/failure_respawn/restore_callback_test.gd`.
+
+Files:
+- MODIFIED `src/gameplay/player/player_character.gd` — added `reset_for_respawn()` method (clear DEAD state, refill health, clear transient flags, emit player_health_changed)
+- MODIFIED `src/gameplay/failure_respawn/failure_respawn_service.gd` — replaced FR-001 stub `_on_ls_restore` body with CR-12 step 9 sequence: filter on RESPAWN reason, gate on RESTORING state, apply Checkpoint position, call `pc.reset_for_respawn()`, pop LOADING InputContext, transition RESTORING → IDLE. Added `_resolve_player_character` (group lookup) + `_inject_player_character` test seam.
+
+ACs covered:
+- AC-1 position applied; AC-2 reset_for_respawn called once; AC-3 position-before-reset ordering verified via `last_position_at_reset` on _PCDouble; AC-4 InputContext.LOADING popped; AC-5 RESTORING→IDLE; AC-6 non-RESPAWN reason dropped (FORWARD/NEW_GAME/LOAD_FROM_SAVE handled by FR-004); AC-7 E.27 spurious-IDLE callback dropped silently; AC-8 E.9 null-checkpoint graceful (no crash, reset still called).
+
+Manual playtest evidence (full caught-by-guard → respawn beat) deferred — needs Plaza VS scene with baked NavMesh + actual guard takedown event. Logic-level tests cover all branches; visual sign-off queued behind MLS-003 deferred scene authoring.
+
+Tech debt: NONE. Code Review: APPROVED (no await; LSS no-await contract preserved; ADR-0007 cross-autoload safety; ADR-0002 IG 4 is_instance_valid via has_method check).
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02. **Criteria**: 8/8 PASSING (8 tests). **Tests**: `tests/unit/feature/failure_respawn/restore_callback_test.gd`.
+
+Files:
+- MODIFIED `src/gameplay/player/player_character.gd` — added `reset_for_respawn()` (clear DEAD state, refill health to max, clear transient flags, emit player_health_changed)
+- MODIFIED `src/gameplay/failure_respawn/failure_respawn_service.gd` — replaced FR-001 stub `_on_ls_restore` body with CR-12 step 9: filter on RESPAWN reason, gate on RESTORING state, apply Checkpoint position, call PC.reset_for_respawn, pop LOADING InputContext, transition RESTORING→IDLE. Added `_resolve_player_character` (group lookup) + `_inject_player_character` test seam.
+
+ACs: AC-1 position; AC-2 reset called; AC-3 position-before-reset ordering; AC-4 InputContext pop; AC-5 RESTORING→IDLE; AC-6 non-RESPAWN dropped; AC-7 E.27 spurious-IDLE drop; AC-8 E.9 null-checkpoint graceful.
+
+Manual playtest evidence (full caught-by-guard → respawn beat) deferred — needs Plaza VS scene + actual guard takedown event. Logic-level tests cover all branches; visual sign-off queued behind MLS-003 deferred scene authoring.
+
+Tech debt: NONE. Code Review: APPROVED (no await; LSS no-await contract preserved).

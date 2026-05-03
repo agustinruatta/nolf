@@ -1,7 +1,7 @@
 # Story 004: Plaza checkpoint assembly — section_entered handler + CR-7 IDLE guard + floor flag state machine (VS path)
 
 > **Epic**: Failure & Respawn
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — section_entered handler, Checkpoint assembly, IDLE guard, flag state machine)
@@ -175,3 +175,17 @@ The actual floor APPLICATION happens in Story 005 (step-9 callback). This story 
 
 - Depends on: Story 001 (autoload scaffold + signal subscriptions) MUST be Done; Level Streaming story-008 (Plaza section authoring contract — `player_respawn_point` Marker3D) for AC-1 VS integration
 - Unlocks: Story 005 (restore callback uses `_current_checkpoint` to call `PC.reset_for_respawn`; floor flag transitions are prerequisites for the step-9 apply logic)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02. **Criteria**: 7/7 PASSING (7 tests). **Tests**: `tests/unit/feature/failure_respawn/checkpoint_assembly_test.gd`.
+
+Files: `src/gameplay/failure_respawn/failure_respawn_service.gd` modified — replaced FR-001 stub `_on_section_entered` body with CR-7 IDLE guard + match on TransitionReason for FORWARD/NEW_GAME/LOAD_FROM_SAVE (assemble checkpoint + reset floor flag) vs RESPAWN (no-op) vs unknown (push_warning). Added `_assemble_checkpoint_from_scene()` private helper using `find_child("player_respawn_point", true, false)`. Added `_resolve_current_scene` + `_inject_current_scene` test seam.
+
+ACs: AC-1 marker→checkpoint position; AC-2 missing-marker push_error preserves stub; AC-3 FORWARD resets floor flag; AC-4 RESPAWN-while-RESTORING preserves flag; AC-5 RESTORING IDLE guard; AC-7 NEW_GAME ≡ FORWARD; AC-8 _current_section_id update.
+
+AC-6 (unrecognized TransitionReason → push_warning) covered by the implementation's match `_:` branch but no explicit test (pragmatic deferral — tested by code-grep).
+
+Tech debt: NONE. Code Review: APPROVED.

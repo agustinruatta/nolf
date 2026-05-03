@@ -89,6 +89,13 @@ signal save_failed(reason: int)
 signal game_saved(slot: int, section_id: StringName)
 signal game_loaded(slot: int)
 
+## HUD toast request — emitted by gameplay systems; consumed by HUD State Signaling.
+## toast_id is a registered StringName from the toast taxonomy; payload carries
+## optional context (e.g., {"slot": 0} for quicksave success, {} for unavailable).
+## First emitter: QuicksaveInputHandler (Story SL-007). HUD State Signaling epic
+## owns the visual rendering layer that consumes this signal.
+signal hud_toast_requested(toast_id: StringName, payload: Dictionary)
+
 # ─── Settings domain ──────────────────────────────────────────────────────
 signal setting_changed(category: StringName, name: StringName, value: Variant)
 signal settings_loaded()

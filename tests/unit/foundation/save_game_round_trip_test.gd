@@ -239,7 +239,7 @@ func test_save_game_round_trip_preserves_all_fields() -> void:
 	sg.mission.fired_beats[&"beat_intro"] = true
 
 	# FailureRespawnState
-	sg.failure_respawn.last_section_id = &"test_section"
+	sg.failure_respawn.floor_applied_this_checkpoint = true
 
 	# -------------------------------------------------------------------------
 	# Act — save then load
@@ -320,6 +320,6 @@ func test_save_game_round_trip_preserves_all_fields() -> void:
 	assert_bool(loaded.mission.fired_beats.has(&"beat_intro")).is_true()
 	assert_bool(loaded.mission.fired_beats[&"beat_intro"]).is_true()
 
-	# FailureRespawnState (proves placeholder scaffold round-trips)
+	# FailureRespawnState (FR-002 production schema round-trips)
 	assert_object(loaded.failure_respawn).is_not_null()
-	assert_str(String(loaded.failure_respawn.last_section_id)).is_equal("test_section")
+	assert_bool(loaded.failure_respawn.floor_applied_this_checkpoint).is_true()

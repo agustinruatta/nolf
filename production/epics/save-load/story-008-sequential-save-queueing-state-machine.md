@@ -1,7 +1,7 @@
 # Story 008: Sequential save queueing (IDLE / SAVING / LOADING state machine)
 
 > **Epic**: Save / Load
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Logic
 > **Estimate**: 1-2 hours (S — internal state machine wrapping save_to_slot / load_from_slot; sequential queue)
@@ -214,3 +214,44 @@ If a future audit shows synchronous-return-when-busy is too brittle, refactor to
 
 - Depends on: Story 002 (`save_to_slot` core path is wrapped here), Story 003 (`load_from_slot` core path is wrapped here), Story 006 (slot scheme — public `save_to_slot` includes CR-4 mirror, queue sees the public boundary)
 - Unlocks: Story 007 (F5/F9 path correctness depends on state machine catching concurrent calls); Mission Scripting epic (autosave + manual save coordination relies on queueing)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 10/10 PASSING (covered by 19 unit tests)
+**Test Evidence**: `tests/unit/foundation/save_load_state_machine_test.gd` — 19/19 PASS
+
+**Files modified/created**:
+- MODIFIED `src/core/save_load/save_load_service.gd` — added `enum State { IDLE, SAVING, LOADING }`, `current_state: int` field, `MAX_QUEUE_DEPTH = 4` const, `_queue: Array[Callable]` queue, `_set_state()` private setter, `_do_save()` / `_do_load()` private wrappers; refactored existing `_save_to_slot_atomic` to delegate IO to a new `_save_to_slot_io_only` helper that does NOT touch state (AC-9 invariant)
+- CREATED `tests/unit/foundation/save_load_state_machine_test.gd` (~880 LOC) — 19 test functions covering all 10 ACs with state-spy, IO fault injection (`_IOFailingService` subclass), AC-9 source-grep verification
+
+**Test counts**:
+- File alone: 19 tests, 0 failures
+- Full suite delta: 742 → 761 (+19 SL-008 tests)
+- Suite total: 761 / 0 errors / 0 failures / 0 flaky / 0 orphans / 0 skipped
+
+**Deviations** (advisory):
+- **AC-9 grep test refinement**: initial `count("_set_state(")` over the whole file caught the function definition line and a doc-comment mention as false positives (6 vs expected 4). Fixed by stripping `## ` doc-comment lines and the `func _set_state(` definition line before counting.
+- **AC-10 retry test guard**: initial test caused infinite recursion when the `save_failed` handler retried the failing save (each retry fired its own `save_failed`, re-entering the handler). Fixed with a one-shot `retried_once` guard.
+- **Doc-comment wording**: rephrased one comment in `save_load_service.gd` to avoid the substring `current_state` inside `_save_to_slot_io_only`'s following doc comment (test extraction is greedy across function boundaries).
+- **Renamed internal helper**: `_save_to_slot_atomic` retained for backward compatibility (it now delegates to `_save_to_slot_io_only`), so existing tests that called the public boundary continue to work. The state machine path goes through `_do_save` → `_save_to_slot_io_only` directly, not via `_save_to_slot_atomic`.
+- **Forward-compat note for SL-007**: `test_quicksave_fire_and_forget_no_internal_queue` still passes because the second save_to_slot in the same synchronous frame is now enqueued and drained on the first's completion. Both `game_saved` emits eventually fire as before.
+
+**AC coverage summary**:
+| AC | Test function(s) |
+|----|-----------------|
+| AC-1 | `test_state_machine_default_state_is_idle`, `test_state_machine_current_state_is_readable` |
+| AC-2 | `test_state_machine_save_transitions_idle_saving_idle`, `test_state_machine_state_spy_log_idle_saving_idle` |
+| AC-3 | `test_state_machine_concurrent_save_calls_queue_sequentially` |
+| AC-4 | `test_state_machine_queue_processes_in_fifo_order` |
+| AC-5 | `test_state_machine_loading_state_blocks_save_via_queue` |
+| AC-6 | `test_state_machine_concurrent_load_calls_queue` |
+| AC-7 | `test_state_machine_autosave_and_f5_same_frame_both_complete` |
+| AC-8 | `test_state_machine_queue_overflow_drops_with_warning_returns_false` |
+| AC-9 | `test_state_machine_only_do_save_and_do_load_modify_state`, `test_state_machine_io_only_helper_does_not_touch_state` |
+| AC-10 | `test_state_machine_state_idle_before_save_failed_emits`, `test_state_machine_save_failed_subscriber_can_retry_synchronously` |
+
+**Tech debt logged**: NONE
+**Code Review**: APPROVED (ADR-0003 compliant; 6/6 standards; CI lints clean)

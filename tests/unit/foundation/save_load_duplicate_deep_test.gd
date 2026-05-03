@@ -66,7 +66,7 @@ func _build_populated_save_game() -> SaveGame:
 	sg.mission.section_id = &"plaza"
 	sg.mission.objectives_completed.append(&"obj_1")
 	sg.mission.fired_beats[&"beat_intro"] = true
-	sg.failure_respawn.last_section_id = &"plaza"
+	sg.failure_respawn.floor_applied_this_checkpoint = true
 	return sg
 
 

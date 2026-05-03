@@ -21,6 +21,18 @@
 # EventLogger/SignalBusEventLogger precedents — class_name `SaveLoadService`
 # is distinct from autoload key `SaveLoad`, avoiding any class-hides-singleton
 # parser conflict.
+#
+# State machine (Story SL-008, ADR-0003 §States and Transitions):
+#   IDLE    — no I/O in progress; default state; any call proceeds immediately.
+#   SAVING  — atomic write in flight; second save or quickload are queued.
+#   LOADING — ResourceLoader read in flight; any save or second load are queued.
+# Queue is FIFO, max depth MAX_QUEUE_DEPTH (4). A 5th queued op is rejected
+# (returns false / null) with a logged warning. Drain occurs after every
+# completed operation.
+#
+# AC-10 state-exit discipline: state transitions to IDLE BEFORE any
+# save_failed / game_saved / game_loaded signal emission. A subscriber that
+# synchronously calls save_to_slot from a failure handler will see IDLE.
 
 class_name SaveLoadService
 extends Node
@@ -35,6 +47,14 @@ enum FailureReason {
 	CORRUPT_FILE,       ## ResourceLoader.load() returned null or wrong type (Story 003)
 	SLOT_NOT_FOUND,     ## slot_N.res does not exist (Story 003)
 	RENAME_FAILED,      ## DirAccess.rename() returned non-OK
+}
+
+## Internal state machine states (Story SL-008, GDD §Detailed Design States).
+## Read via the public current_state property. Do NOT set externally.
+enum State {
+	IDLE,    ## No I/O in progress. Default. All calls proceed immediately.
+	SAVING,  ## Atomic write in flight. Further saves + quickload are queued.
+	LOADING, ## ResourceLoader read in flight. All saves + further loads are queued.
 }
 
 ## Directory under user:// where save slots and metadata sidecars live.
@@ -56,6 +76,33 @@ const AUTOSAVE_SLOT: int = 0
 ## A save to any slot in this range also writes slot 0 as a mirror (CR-4).
 const MANUAL_SLOT_RANGE: Vector2i = Vector2i(1, 7)
 
+## Maximum number of pending operations in the FIFO queue (Story SL-008 AC-8).
+## 4 gives 2× headroom over the realistic worst-case of 2 (autosave + F5).
+## A 5th enqueue attempt is rejected with a warning — defense against runaway
+## signal cascades. Future: revisit if 4 is too low.
+const MAX_QUEUE_DEPTH: int = 4
+
+# ---------------------------------------------------------------------------
+# State machine fields (Story SL-008)
+# ---------------------------------------------------------------------------
+
+## Current service state. One of the State enum values: IDLE, SAVING, LOADING.
+## Read-only from outside this class — no public setter.
+## Use _set_state(new_state) internally for all transitions.
+##
+## Usage example:
+##   if SaveLoad.current_state == SaveLoadService.State.IDLE:
+##       SaveLoad.save_to_slot(0, sg)
+##   else:
+##       # service is busy; save_to_slot will queue the call automatically
+##       SaveLoad.save_to_slot(0, sg)
+var current_state: int = State.IDLE
+
+## FIFO queue of pending I/O operations (Callables). Each entry is a zero-arg
+## Callable that performs a _do_save or _do_load operation.
+## Max depth: MAX_QUEUE_DEPTH. See _enqueue() and _drain_queue().
+var _queue: Array = []
+
 
 # ---------------------------------------------------------------------------
 # Lifecycle
@@ -69,7 +116,13 @@ func _ready() -> void:
 	# reference Events (line 1) and EventLogger (line 2) only. We do not need
 	# to reference either at boot for now — emit-time references happen in
 	# save_to_slot below, after the autoload tree is fully constructed.
-	pass
+	#
+	# Story SL-007: Attach QuicksaveInputHandler as a child Node. The helper
+	# queries the input-routing context only inside its _unhandled_input callback
+	# (guaranteed post tree-init), not here. ADR-0007 §Cross-Autoload Reference
+	# Safety rule 3: line 3 must not reference line 4 during boot. AC-9 of SL-007.
+	var handler: QuicksaveInputHandler = QuicksaveInputHandler.new()
+	add_child(handler)
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +161,12 @@ func slot_exists(slot: int) -> bool:
 ## Atomically writes the given SaveGame to user://saves/slot_<slot>.res and
 ## writes a paired metadata sidecar to user://saves/slot_<slot>_meta.cfg.
 ##
+## State machine (Story SL-008): if the service is IDLE, the write runs
+## immediately and returns true on success / false on failure. If the service
+## is SAVING or LOADING, the call is queued (FIFO) and returns true to signal
+## "accepted". Returns false only when the queue is full (MAX_QUEUE_DEPTH
+## exceeded) — an exceptional condition that indicates a runaway signal cascade.
+##
 ## CR-4 mirror (ADR-0003 IG 7 + GDD CR-4): if slot is in the manual save
 ## range [1, 7], this method also writes slot 0 as an autosave mirror so
 ## that death respawn (which always loads slot 0) lands at the player's most
@@ -121,9 +180,12 @@ func slot_exists(slot: int) -> bool:
 ## (manual save committed), then game_saved(0, ...) fires for the mirror.
 ## Subscribers that only care about manual saves filter to slot != 0.
 ##
-## Returns true on success (including partial-success where sidecar failed);
-## false only when the primary slot write itself failed. Mirror failure is
-## non-fatal (returns true, push_warning logged).
+## AC-10 re-entrance contract: state is IDLE before any signal emits. A
+## save_failed subscriber that immediately calls save_to_slot again will see
+## current_state == IDLE and proceed normally.
+##
+## Returns true on success OR on accepted queue enqueue.
+## Returns false only when queue is full (defense-in-depth) or primary IO fails.
 ##
 ## Usage example:
 ##   var sg := build_save_game()  # caller assembles state from owning systems
@@ -131,29 +193,9 @@ func slot_exists(slot: int) -> bool:
 ##   if not ok:
 ##       show_save_error_dialog()
 func save_to_slot(slot: int, save_game: SaveGame) -> bool:
-	# Write the requested slot atomically (7-step protocol in helper).
-	var ok: bool = _save_to_slot_atomic(slot, save_game)
-	if not ok:
-		return false
-
-	# CR-4: manual save (slots 1–7) also writes slot 0 as the autosave mirror.
-	# Rationale: death respawn always loads slot 0; if the player just saved
-	# manually, they expect respawn to land at the manual save, not section start.
-	# This is the ONLY place in the codebase where a direct slot-0 write is
-	# initiated by the service for the mirror path (AC-7 single-source-of-truth).
-	if slot >= MANUAL_SLOT_RANGE.x and slot <= MANUAL_SLOT_RANGE.y:
-		var mirror_ok: bool = _save_to_slot_atomic(AUTOSAVE_SLOT, save_game)
-		if not mirror_ok:
-			# Manual save committed; mirror failed. game_saved(slot, ...) already
-			# fired inside _save_to_slot_atomic above. save_failed(IO_ERROR) or
-			# save_failed(RENAME_FAILED) was emitted inside the failed mirror
-			# _save_to_slot_atomic call. Return true — manual save semantically
-			# succeeded (ADR-0003 IG 9: never destroy a good save).
-			push_warning(
-				"Save/Load: slot %d saved but slot 0 mirror failed" % slot
-			)
-
-	return true
+	if current_state != State.IDLE:
+		return _enqueue(func() -> void: _do_save(slot, save_game))
+	return _do_save(slot, save_game)
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +203,12 @@ func save_to_slot(slot: int, save_game: SaveGame) -> bool:
 # ---------------------------------------------------------------------------
 
 ## Reads user://saves/slot_<slot>.res and returns the loaded SaveGame.
+##
+## State machine (Story SL-008): if the service is IDLE, the load runs
+## immediately and returns the SaveGame (or null on failure). If the service
+## is SAVING or LOADING, the call is queued and this method returns null with
+## a push_warning. Callers must subscribe to Events.game_loaded to receive
+## the result when the queued load eventually completes.
 ##
 ## Type-guard + version-mismatch protocol (ADR-0003 IG 1 + IG 4):
 ##   1. If file does not exist → emit save_failed(SLOT_NOT_FOUND), return null.
@@ -182,40 +230,18 @@ func save_to_slot(slot: int, save_game: SaveGame) -> bool:
 ## (e.g., Menu System's read-only slot preview).
 ##
 ## Returns the loaded SaveGame on success; null on any failure (with a
-## save_failed emit identifying the reason).
+## save_failed emit identifying the reason). Also returns null when queued —
+## callers must use Events.game_loaded for async completion.
 func load_from_slot(slot: int) -> SaveGame:
-	var path: String = SAVE_DIR + "slot_%d.res" % slot
-
-	# Step 1 — slot file present?
-	if not FileAccess.file_exists(path):
-		Events.save_failed.emit(FailureReason.SLOT_NOT_FOUND)
+	if current_state != State.IDLE:
+		push_warning(
+			"Save/Load: load_from_slot(%d) called while busy (state=%d) — queuing" % [
+				slot, current_state
+			]
+		)
+		_enqueue(func() -> void: _do_load(slot))
 		return null
-
-	# Step 2 — load. CACHE_MODE_IGNORE forces a fresh disk read so callers
-	# always get the on-disk truth (mitigates the cross-call state-leak risk
-	# in AC-8 — Story SL-004 still mandates duplicate_deep at the call site).
-	var loaded: Resource = _load_resource(path)
-
-	# Step 3 — type-guard. Catches both null (load failure / class mismatch)
-	# and class-substitution (a non-SaveGame Resource at the slot path).
-	if loaded == null or not (loaded is SaveGame):
-		Events.save_failed.emit(FailureReason.CORRUPT_FILE)
-		return null
-
-	var save_game: SaveGame = loaded as SaveGame
-
-	# Step 4 — version compare. Both lower (older save) and higher (future
-	# build) versions are refused. No migration path at MVP per TR-SAV-008.
-	if save_game.save_format_version != SaveGame.FORMAT_VERSION:
-		Events.save_failed.emit(FailureReason.VERSION_MISMATCH)
-		return null
-
-	# Step 5 — success. Emit game_loaded with slot.
-	# Caller is responsible for calling .duplicate_deep() before handing
-	# nested state to live systems. See ADR-0003 IG 3 + Story SL-004.
-	# Forbidden pattern: forgotten_duplicate_deep_on_load (lint in Story 009).
-	Events.game_loaded.emit(slot)
-	return save_game
+	return _do_load(slot)
 
 
 # ---------------------------------------------------------------------------
@@ -268,31 +294,159 @@ func slot_metadata(slot: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
+# Internal — state machine operations (Story SL-008)
+# ---------------------------------------------------------------------------
+
+## Transitions internal state to new_state. All state changes MUST go through
+## this helper — never assign current_state directly outside this method.
+## Centralises the transition point for state-spy hooks in tests.
+func _set_state(new_state: int) -> void:
+	current_state = new_state
+
+
+## Performs a guarded save: sets SAVING, runs the full save (primary + CR-4
+## mirror), sets IDLE, drains queue, THEN emits signals. This ordering satisfies
+## AC-10: state is IDLE before any save_failed or game_saved emit fires.
+##
+## Returns true if the primary slot write succeeded (mirror failure is
+## non-fatal and returns true per ADR-0003 IG 9).
+func _do_save(slot: int, sg: SaveGame) -> bool:
+	_set_state(State.SAVING)
+
+	# Run IO for primary slot — no signals emitted yet.
+	var primary: Dictionary = _save_to_slot_io_only(slot, sg)
+
+	# CR-4 mirror: manual save (slots 1–7) also writes slot 0.
+	var mirror_result: Dictionary = {}
+	if primary["ok"] and slot >= MANUAL_SLOT_RANGE.x and slot <= MANUAL_SLOT_RANGE.y:
+		mirror_result = _save_to_slot_io_only(AUTOSAVE_SLOT, sg)
+
+	# AC-10: transition to IDLE BEFORE emitting any signals. A save_failed
+	# subscriber that calls save_to_slot synchronously will see IDLE.
+	_set_state(State.IDLE)
+	_drain_queue()
+
+	# Emit signals after state is IDLE and queue drain has started.
+	if not primary["ok"]:
+		# Primary slot failed — emit failure and return false.
+		Events.save_failed.emit(primary["reason"])
+		return false
+
+	# Primary slot succeeded — emit game_saved for the primary slot.
+	Events.game_saved.emit(slot, primary["section_id"])
+
+	# Handle mirror result if a mirror was attempted.
+	if not mirror_result.is_empty():
+		if mirror_result["ok"]:
+			Events.game_saved.emit(AUTOSAVE_SLOT, mirror_result["section_id"])
+		else:
+			push_warning(
+				"Save/Load: slot %d saved but slot 0 mirror failed" % slot
+			)
+			Events.save_failed.emit(mirror_result["reason"])
+
+	return true
+
+
+## Performs a guarded load: sets LOADING, runs the full load (IO + type-guard
+## + version check), sets IDLE, drains queue, THEN emits signals.
+## AC-10 ordering applies: state is IDLE before game_loaded or save_failed emit.
+##
+## Returns the loaded SaveGame on success; null on any failure.
+func _do_load(slot: int) -> SaveGame:
+	_set_state(State.LOADING)
+
+	var path: String = SAVE_DIR + "slot_%d.res" % slot
+	var failure_reason: int = FailureReason.NONE
+	var loaded_sg: SaveGame = null
+
+	# Step 1 — slot file present?
+	if not FileAccess.file_exists(path):
+		failure_reason = FailureReason.SLOT_NOT_FOUND
+	else:
+		# Step 2 — load from disk.
+		var loaded: Resource = _load_resource(path)
+
+		# Step 3 — type-guard.
+		if loaded == null or not (loaded is SaveGame):
+			failure_reason = FailureReason.CORRUPT_FILE
+		else:
+			var sg: SaveGame = loaded as SaveGame
+			# Step 4 — version compare.
+			if sg.save_format_version != SaveGame.FORMAT_VERSION:
+				failure_reason = FailureReason.VERSION_MISMATCH
+			else:
+				# Step 5 — success.
+				loaded_sg = sg
+
+	# AC-10: transition to IDLE BEFORE emitting any signals.
+	_set_state(State.IDLE)
+	_drain_queue()
+
+	# Emit signals after state is IDLE.
+	if failure_reason != FailureReason.NONE:
+		Events.save_failed.emit(failure_reason)
+	else:
+		Events.game_loaded.emit(slot)
+
+	return loaded_sg
+
+
+## Appends a Callable to the FIFO queue if depth permits.
+## Returns true ("accepted") if queued successfully.
+## Returns false ("rejected") if the queue is already at MAX_QUEUE_DEPTH.
+func _enqueue(op: Callable) -> bool:
+	if _queue.size() >= MAX_QUEUE_DEPTH:
+		push_warning(
+			"Save/Load: queue full (%d) — dropping operation" % _queue.size()
+		)
+		return false
+	_queue.append(op)
+	return true
+
+
+## Pops and executes the next queued operation (if any). Called after every
+## completed _do_save / _do_load. The executed op may itself enqueue more —
+## recursion is bounded by MAX_QUEUE_DEPTH (4).
+func _drain_queue() -> void:
+	if _queue.is_empty():
+		return
+	var next: Callable = _queue.pop_front()
+	next.call()
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers — overridable for fault injection in tests
 # ---------------------------------------------------------------------------
 
 ## Executes the full 7-step atomic write protocol for a single slot.
+## Returns a result Dictionary with keys:
+##   ok         : bool          — true on full success
+##   reason     : int           — FailureReason value (NONE on success)
+##   section_id : StringName    — populated on success (from save_game)
 ##
-## This is the internal building block used by save_to_slot (once for the
-## primary slot, and once for the CR-4 mirror on manual saves). It is NOT
-## a test seam — it is a private implementation detail. To fault-inject at
-## the ResourceSaver or DirAccess level, override _save_resource or
-## _rename_file respectively (the existing test seams below).
+## NO SIGNALS are emitted from this method. Signal emission is the
+## responsibility of _do_save (after state transitions to IDLE — AC-10).
+## This is the only internal building block for IO — _save_resource and
+## _rename_file are the override seams for fault injection.
 ##
 ## Steps:
 ##   1. Ensure SAVE_DIR exists (idempotent).
 ##   2. ResourceSaver.save to tmp file.
-##   3. If non-OK: emit save_failed(IO_ERROR), return false.
+##   3. If non-OK: return {ok=false, reason=IO_ERROR}.
 ##   4. DirAccess.rename(tmp, final).
-##   5. If non-OK: clean up tmp, emit save_failed(RENAME_FAILED), return false.
-##   6. Write metadata sidecar (partial-success: sidecar fail logs, does not abort).
-##   7. Emit Events.game_saved(slot, section_id), return true.
-func _save_to_slot_atomic(slot: int, save_game: SaveGame) -> bool:
+##   5. If non-OK: clean up tmp, return {ok=false, reason=RENAME_FAILED}.
+##   6. Write metadata sidecar (partial-success: sidecar fail logs only).
+##   7. Return {ok=true, reason=NONE, section_id=save_game.section_id}.
+func _save_to_slot_io_only(slot: int, save_game: SaveGame) -> Dictionary:
 	# Step 1 — ensure SAVE_DIR exists. Idempotent; a no-op if it already does.
 	var dir_err: Error = DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	if dir_err != OK and dir_err != ERR_ALREADY_EXISTS:
-		Events.save_failed.emit(FailureReason.IO_ERROR)
-		return false
+		return {
+			"ok": false,
+			"reason": FailureReason.IO_ERROR,
+			"section_id": &"",
+		}
 
 	var tmp_path: String = SAVE_DIR + "slot_%d.tmp.res" % slot
 	var final_path: String = SAVE_DIR + "slot_%d.res" % slot
@@ -300,26 +454,29 @@ func _save_to_slot_atomic(slot: int, save_game: SaveGame) -> bool:
 	# Step 2 — write to tmp file. tmp suffix MUST end in `.res` per F1.
 	var save_err: Error = _save_resource(save_game, tmp_path, ResourceSaver.FLAG_COMPRESS)
 
-	# Step 3 — bail out on save failure. Previous final file untouched.
+	# Step 3 — bail out on save failure.
 	if save_err != OK:
-		# Best-effort tmp cleanup (may not exist if save_err was an early
-		# failure). Ignore cleanup failures — IG 9 forbids destructive recovery.
 		_remove_if_exists(tmp_path)
-		Events.save_failed.emit(FailureReason.IO_ERROR)
-		return false
+		return {
+			"ok": false,
+			"reason": FailureReason.IO_ERROR,
+			"section_id": &"",
+		}
 
-	# Step 4 — atomic rename. Linux verified in Sprint 01 G2; Windows TBD.
+	# Step 4 — atomic rename.
 	var rename_err: Error = _rename_file(tmp_path, final_path)
 
-	# Step 5 — bail out on rename failure. Previous final file still untouched.
+	# Step 5 — bail out on rename failure.
 	if rename_err != OK:
 		_remove_if_exists(tmp_path)
-		Events.save_failed.emit(FailureReason.RENAME_FAILED)
-		return false
+		return {
+			"ok": false,
+			"reason": FailureReason.RENAME_FAILED,
+			"section_id": &"",
+		}
 
-	# Step 6 — write metadata sidecar. The .res is already committed above, so
-	# sidecar failure is a partial-success: log, do not abort. Callers may
-	# observe the fallback path from slot_metadata() on subsequent reads.
+	# Step 6 — write metadata sidecar (partial-success path; sidecar fail is
+	# not fatal since the .res is already committed above).
 	var meta_path: String = SAVE_DIR + "slot_%d_meta.cfg" % slot
 	var cfg: ConfigFile = ConfigFile.new()
 	cfg.set_value("meta", "section_id", String(save_game.section_id))
@@ -336,8 +493,32 @@ func _save_to_slot_atomic(slot: int, save_game: SaveGame) -> bool:
 			]
 		)
 
-	# Step 7 — success. Emit game_saved with slot + section_id.
-	Events.game_saved.emit(slot, save_game.section_id)
+	# Step 7 — success.
+	return {
+		"ok": true,
+		"reason": FailureReason.NONE,
+		"section_id": save_game.section_id,
+	}
+
+
+## Executes the full 7-step atomic write protocol for a single slot AND emits
+## signals. This wrapper delegates IO to _save_to_slot_io_only and then emits
+## game_saved or save_failed.
+##
+## This is NOT called by _do_save (which handles signal emission itself for
+## AC-10 ordering). It exists for any external caller that needs atomic-write
+## semantics with synchronous signal emission (e.g., post-MVP callers that
+## bypass the state machine intentionally — not recommended).
+##
+## AC-9: _save_to_slot_atomic is NOT a test seam — override _save_resource or
+## _rename_file for fault injection. This method MUST NOT modify the
+## SaveLoadService state-machine field (see AC-9 enforcement test).
+func _save_to_slot_atomic(slot: int, save_game: SaveGame) -> bool:
+	var result: Dictionary = _save_to_slot_io_only(slot, save_game)
+	if not result["ok"]:
+		Events.save_failed.emit(result["reason"])
+		return false
+	Events.game_saved.emit(slot, result["section_id"])
 	return true
 
 
@@ -361,9 +542,10 @@ func _rename_file(from_path: String, to_path: String) -> Error:
 
 
 ## Test seam: subclasses may override to force a specific result from the
-## load step. CACHE_MODE_IGNORE forces a fresh disk read so the state-leak
-## test (AC-8) sees on-disk truth on every call. Production code MUST NOT
-## call this directly — use load_from_slot.
+## load step. CACHE_MODE_IGNORE forces a fresh disk read so callers
+## always get the on-disk truth (mitigates the cross-call state-leak risk
+## in AC-8 — Story SL-004 still mandates duplicate_deep at the call site).
+## Production code MUST NOT call this directly — use load_from_slot.
 func _load_resource(path: String) -> Resource:
 	return ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
 

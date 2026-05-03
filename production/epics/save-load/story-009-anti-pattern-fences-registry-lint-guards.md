@@ -1,7 +1,7 @@
 # Story 009: Anti-pattern fences + registry entries + lint guards
 
 > **Epic**: Save / Load
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Foundation
 > **Type**: Config/Data
 > **Estimate**: 1 hour (S — registry edits + 3 lint test cases)
@@ -243,3 +243,44 @@ func test_forgotten_duplicate_deep_on_load_registry_present() -> void:
 
 - Depends on: Story 001 (sub-resource files exist for Pattern 2 lint to inspect), Story 002 (`save_load_service.gd` exists for Pattern 1 lint to inspect), Story 004 (runtime proof of `duplicate_deep` discipline complements this static lint)
 - Unlocks: future epics that touch SaveLoad (Mission Scripting, F&R, Menu System) — they inherit the static fences automatically; if a future PR introduces a forbidden pattern, the lint catches it
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 8/8 PASSING (covered by 7 lint tests + AC-7 implicit pass via standard runner discovery)
+**Test Evidence**: `tests/unit/foundation/save_load_anti_pattern_lint_test.gd` — 7/7 PASS
+
+**Files modified/created**:
+- CREATED `tests/unit/foundation/save_load_anti_pattern_lint_test.gd` (~230 LOC, 7 test functions)
+- VERIFIED `docs/registry/architecture.yaml` already has the 3 forbidden_patterns entries (added 2026-04-19, lines 528-547)
+- VERIFIED `docs/architecture/control-manifest.md` references all 3 patterns; cross-reference test enforces consistency
+
+**Test counts**:
+- File alone: 7 tests, 0 failures
+- Full suite delta: 761 → 768 (+7 SL-009 lint tests)
+- Suite total: 768 / 0 errors / 0 failures / 0 flaky / 0 orphans / 0 skipped
+
+**Deviations** (advisory):
+1. **Schema fields**: story's example used `pattern_name` / `severity: HIGH`. Existing project convention uses `pattern` / `status` / `description` / `why` / `adr` / `added` (no `severity` field). Test asserts on the project's actual schema.
+2. **`Combat` removed from Pattern 1 forbidden-class list**: too short a substring, would catch unrelated identifiers in comments. Remaining 7 unambiguous class names retained: `PlayerCharacter, StealthAI, CivilianAI, Inventory, MissionLevelScripting, FailureRespawn, DocumentCollection`.
+3. **Violation-array pattern**: instead of `assert_str(...).does_not_contain(X)`, the test collects violations into an `Array[String]` and asserts `violations.size() == 0` with `override_failure_message` listing all violating items at once. Matches the project's existing lint test convention (`audio_subscriber_only_lint.gd`, `anti_pattern_grep_test.gd`).
+4. **`RegEx.new() + .compile()`**: project convention over `RegEx.create_from_string()` (one-shot static call).
+
+**AC coverage summary**:
+| AC | Test function |
+|----|--------------|
+| AC-1 | `test_lint_registry_save_service_assembles_state_entry_present` |
+| AC-2 | `test_lint_registry_save_state_uses_node_references_entry_present` |
+| AC-3 | `test_lint_registry_forgotten_duplicate_deep_on_load_entry_present` |
+| AC-4 Pattern 1 + AC-5 GDD AC-24 + AC-6 | `test_lint_save_service_no_gameplay_class_references` |
+| AC-4 Pattern 2 + AC-5 GDD AC-25 + AC-6 | `test_lint_state_files_no_node_or_nodepath_export` |
+| AC-4 Pattern 3 (deferred MVP) | `test_lint_forgotten_duplicate_deep_registry_entry_only_at_mvp` |
+| AC-7 | Implicit — all 7 tests are discovered by the standard runner |
+| AC-8 | `test_lint_control_manifest_cross_references_registry` |
+
+**Tech debt logged**: NONE
+**Code Review**: APPROVED (project convention matches; CI lint discipline enforced)
+
+**Save / Load EPIC COMPLETE**: SL-001 through SL-009 (9/9 stories) all DONE. Atomic-write protocol + load type-guard + duplicate_deep + slot scheme + metadata sidecar + quicksave/quickload + state machine queueing + anti-pattern fences. Foundation persistence layer ready for consumers (F&R + MLS).

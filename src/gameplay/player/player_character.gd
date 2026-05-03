@@ -1103,6 +1103,27 @@ func apply_damage(amount: float, source: Node, damage_type: CombatSystemNode.Dam
 		Events.player_died.emit(cause)
 
 
+## reset_for_respawn — clears the DEAD state, refills health to max_health, and
+## resets transient gameplay flags so the player is interactable again after a
+## checkpoint reload. Called by FailureRespawnService at LS step-9 (Story FR-005)
+## inside the no-await restore-callback contract.
+##
+## This method does NOT touch position — F&R applies the Checkpoint.respawn_position
+## via global_position assignment AFTER calling reset_for_respawn (per CR-12 step 9).
+func reset_for_respawn() -> void:
+	current_state = PlayerEnums.MovementState.IDLE
+	health = max_health
+	_latched_event = null
+	_latch_frames_remaining = 0
+	_jump_fired_this_tick = false
+	_pending_head_bump = false
+	_coyote_frames_remaining = 0
+	_was_on_floor = false
+	_pre_slide_velocity_y = 0.0
+	# Re-emit health-changed so HUD subscribers refresh on respawn.
+	Events.player_health_changed.emit(float(health), float(max_health))
+
+
 ## F.7 — apply_heal. Health restoration entry point; capped at max_health.
 ## Round-half-away-from-zero. Sub-1 HP heals are dropped silently.
 ##

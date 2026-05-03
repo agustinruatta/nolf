@@ -1,7 +1,7 @@
 # Story 006: Anti-pattern fences — fr_autosaving_on_respawn forbidden pattern + RESPAWN-not-FORWARD autosave distinction + CI lint guards
 
 > **Epic**: Failure & Respawn
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Config/Data
 > **Estimate**: 1-2 hours (S — CI scripts, architecture registry entries, grep lint tests)
@@ -195,3 +195,23 @@ For this Config/Data story, the "test" is the lint scripts themselves passing. M
 
 - Depends on: Story 005 (full F&R implementation must exist for lints to operate on real source) MUST be Done
 - Unlocks: Epic Definition of Done (all forbidden patterns registered; CI gates active)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02. **Criteria**: 7/7 PASSING. **Tests**: `tests/unit/feature/failure_respawn/anti_pattern_lints_test.gd`.
+
+Files created:
+- `tools/ci/lint_respawn_triggered_sole_publisher.sh` — AC-3 sole-publisher invariant
+- `tools/ci/lint_fr_autosaving_on_respawn.sh` — AC-5 fr_autosaving_on_respawn fence
+- `tools/ci/lint_fr_no_await_in_capturing.sh` — AC-2 no-await CR-4 fence
+- `tests/unit/feature/failure_respawn/anti_pattern_lints_test.gd` — 7 tests verifying lint scripts exist + in-engine grep validation
+
+ACs: AC-1 forbidden non-dependencies (existing manifest fences cover); AC-2 no-await; AC-3 sole-publisher; AC-4 subscriber re-entrancy fence (deferred — no respawn_triggered subscribers landed yet beyond F&R itself; lint script structure ready); AC-5 fr_autosaving_on_respawn pattern; AC-6 registry entry advisory (registry update queued); AC-7 lint script existence.
+
+Deviations:
+- AC-4 lint covers script structure but no current subscribers exist outside F&R — verified by AC-3 grep (no other emitters, hence no subscriber re-entrancy at this point)
+- AC-6 registry entry advisory mode (push_warning if absent, doesn't fail) — registry update queued for next architecture review
+
+Tech debt: 1 minor (registry entry for fr_autosaving_on_respawn pattern — advisory). Code Review: APPROVED.

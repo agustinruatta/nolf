@@ -106,7 +106,7 @@ func _build_populated_save_game(section_id: StringName) -> SaveGame:
 	sg.mission.section_id = section_id
 	sg.mission.objectives_completed.append(&"obj_1")
 	sg.mission.fired_beats[&"beat_intro"] = true
-	sg.failure_respawn.last_section_id = section_id
+	sg.failure_respawn.floor_applied_this_checkpoint = true
 	return sg
 
 
@@ -347,8 +347,8 @@ func test_load_from_slot_round_trip_preserves_all_sub_resources() -> void:
 	assert_str(String(loaded.mission.objectives_completed[0])).is_equal("obj_1")
 	assert_bool(loaded.mission.fired_beats[&"beat_intro"]).is_true()
 
-	# Assert — FailureRespawnState placeholder field
-	assert_str(String(loaded.failure_respawn.last_section_id)).is_equal("plaza")
+	# Assert — FailureRespawnState production field (FR-002)
+	assert_bool(loaded.failure_respawn.floor_applied_this_checkpoint).is_true()
 
 
 # ---------------------------------------------------------------------------

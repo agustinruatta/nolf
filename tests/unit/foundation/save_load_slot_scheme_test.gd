@@ -134,7 +134,7 @@ func _build_save_game(p_section_id: StringName) -> SaveGame:
 	sg.inventory.equipped_gadget = &"silenced_p38"
 	sg.inventory.ammo_magazine[&"silenced_p38"] = 5
 	sg.mission.section_id = p_section_id
-	sg.failure_respawn.last_section_id = p_section_id
+	sg.failure_respawn.floor_applied_this_checkpoint = true
 	return sg
 
 
@@ -392,14 +392,17 @@ func test_save_load_mirror_failure_commits_manual_save_and_preserves_slot_zero()
 # ---------------------------------------------------------------------------
 
 ## Grep test: the save_load_service.gd source must contain exactly ONE call
-## site that writes to slot 0 via _save_to_slot_atomic (the CR-4 branch in
-## save_to_slot). Any future refactor that introduces a second direct slot-0
-## write path will trip this test — which is the intent (AC-7 single-source).
+## site that writes to slot 0 at the IO layer (the CR-4 branch in _do_save).
+## Any future refactor that introduces a second direct slot-0 write path will
+## trip this test — which is the intent (AC-7 single-source).
 ##
-## This test counts occurrences of `_save_to_slot_atomic(AUTOSAVE_SLOT` and
-## `_save_to_slot_atomic(0` in the source file and asserts exactly one total.
+## Story SL-008 refactored the CR-4 mirror to use _save_to_slot_io_only
+## (instead of _save_to_slot_atomic) so that state transitions happen before
+## signal emission (AC-10). The grep pattern is updated accordingly.
+## The check covers both _save_to_slot_io_only(AUTOSAVE_SLOT and
+## _save_to_slot_io_only(0 to catch any future alias variant.
 ## It does NOT count `save_to_slot(0` because F5 Quicksave (Story 007) calls
-## the public API — the check is for direct INTERNAL slot-0 atomic calls.
+## the public API — the check is for direct INTERNAL slot-0 IO calls.
 func test_save_load_slot_zero_mirror_has_exactly_one_call_site() -> void:
 	# Arrange — read the production source file.
 	var src: String = FileAccess.get_file_as_string(
@@ -407,10 +410,11 @@ func test_save_load_slot_zero_mirror_has_exactly_one_call_site() -> void:
 	)
 	assert_str(src).is_not_empty()
 
-	# Act — count occurrences of each variant of a direct slot-0 atomic call.
-	# We use String.count() which counts non-overlapping occurrences.
-	var count_autosave_slot: int = src.count("_save_to_slot_atomic(AUTOSAVE_SLOT")
-	var count_literal_zero: int = src.count("_save_to_slot_atomic(0")
+	# Act — count occurrences of each variant of a direct slot-0 IO call.
+	# Story SL-008: CR-4 mirror now calls _save_to_slot_io_only instead of
+	# _save_to_slot_atomic (state machine refactor — AC-10 ordering requirement).
+	var count_autosave_slot: int = src.count("_save_to_slot_io_only(AUTOSAVE_SLOT")
+	var count_literal_zero: int = src.count("_save_to_slot_io_only(0")
 	var total_direct_slot0_writes: int = count_autosave_slot + count_literal_zero
 
 	# Assert — exactly one direct slot-0 write call site (the CR-4 branch).

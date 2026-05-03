@@ -1,7 +1,7 @@
 # Story 001: FailureRespawn autoload scaffold — state machine + signal subscriptions + restore callback registration
 
 > **Epic**: Failure & Respawn
-> **Status**: Ready
+> **Status**: Complete
 > **Layer**: Feature
 > **Type**: Logic
 > **Estimate**: 2-3 hours (M — new autoload script + stub scene + boot test)
@@ -164,3 +164,35 @@ func _exit_tree() -> void:
 
 - Depends on: Level Streaming story-003 (`register_restore_callback` API must exist — LS stub satisfies the call signature even if the callback chain is not yet wired)
 - Unlocks: Story 002 (CAPTURING body), Story 003 (signal emission), Story 004 (section_entered body), Story 005 (restore callback body)
+
+---
+
+## Completion Notes
+
+**Completed**: 2026-05-02
+**Criteria**: 8/8 PASSING (covered by 10 unit tests)
+**Test Evidence**: `tests/unit/feature/failure_respawn/autoload_scaffold_test.gd` — 10/10 PASS
+**Suite**: **778/778** (was 768; +10 FR-001 tests; 0 regressions)
+
+**Files modified/created**:
+- MODIFIED `src/gameplay/failure_respawn/failure_respawn_service.gd` — replaced Sprint 01 stub (24 lines) with real scaffold (~140 LOC): `class_name FailureRespawnService extends Node`, `enum FlowState { IDLE, CAPTURING, RESTORING }`, `_flow_state`, `_current_checkpoint`, `_ls_service` / `_sl_service` instance refs (DI seams), `_ready()` connects player_died + section_entered + registers LS restore callback, `_exit_tree()` disconnects with `is_connected` guards, `_on_player_died` with CR-2 idempotency drop (transitions IDLE→CAPTURING; non-IDLE states drop), stub `_on_section_entered` and `_on_ls_restore`, `_inject_level_streaming` / `_inject_save_load` test seams.
+- CREATED `src/gameplay/shared/checkpoint.gd` — `class_name Checkpoint extends Resource` with `respawn_position: Vector3`, `section_id: StringName`, `floor_flag: int` (FR-004 will populate floor_flag).
+- CREATED `tests/unit/feature/failure_respawn/autoload_scaffold_test.gd` — 10 tests with DI doubles for LSS + SL.
+
+**Deviations** (advisory):
+- **`_on_ls_restore` signature** — story spec showed `_on_ls_restore(slot_index: int)`. Actual LSS callback signature (per `level_streaming_service.gd:377` `_invoke_restore_callbacks`) is `(target_id: StringName, save_game: SaveGame, reason: int)`. Initial implementation used the story's 1-arg signature, which crashed `tests/integration/level_streaming/level_streaming_swap_test.gd` ("Invalid call... Expected 1 argument"). Fixed signature to the LSS-actual 3-arg form. Documentation updated.
+
+**AC coverage**:
+| AC | Test |
+|----|------|
+| AC-1 | `test_failure_respawn_service_class_name_and_extends`, `test_failure_respawn_flow_state_enum_has_three_members`, `test_failure_respawn_default_state_is_idle` |
+| AC-2 | `test_failure_respawn_ready_connects_to_events`, `test_failure_respawn_exit_tree_disconnects` |
+| AC-3 | `test_failure_respawn_ready_registers_restore_callback` |
+| AC-4 | covered by `test_failure_respawn_default_state_is_idle` |
+| AC-5 | `test_failure_respawn_player_died_idle_transitions_to_capturing` |
+| AC-6 | `test_failure_respawn_player_died_capturing_idempotency_drop` |
+| AC-7 | `test_failure_respawn_player_died_restoring_idempotency_drop` |
+| AC-8 | `test_failure_respawn_project_godot_autoload_entry_at_line_8` |
+
+**Tech debt logged**: NONE
+**Code Review**: APPROVED (ADR-0007 cross-autoload safety preserved; ADR-0002 IG 3 connect/disconnect with guards; static typing throughout)

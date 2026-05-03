@@ -7,13 +7,19 @@
 # production/sprint-status.yaml (auto-managed).
 
 generated: "2026-05-02"
-last_updated: "2026-05-02"
+last_updated: "2026-05-03"  # Sprint 07 closed; Sprint 08 plan authored
 roadmap_doc: "production/sprints/multi-sprint-roadmap-pre-art.md"
 roadmap_goal: "Drive every code-ready story to completion against proxy/placeholder geometry, so when art assets land the integration is a swap rather than new code."
 stop_gate: "Art assets become the critical-path blocker (post-Sprint 08)."
 
-current_sprint: 3
-current_sprint_status: "code-complete; user visual sign-off pending on OUT-005"
+current_sprint: 8
+current_sprint_status: "planned — sprint plan filed at production/sprints/sprint-08-level-streaming-integration.md; awaiting /qa-plan + /story-readiness LS-004 to begin"
+
+closed_sprints:
+  - { sprint: 4, closed: "2026-05-02", artefact: "production/qa/qa-plan-sprint-04-2026-05-02.md" }
+  - { sprint: 5, closed: "2026-05-02", artefact: "production/qa/qa-signoff-sprint-05-2026-05-02.md" }
+  - { sprint: 6, closed: "2026-05-03", artefact: "production/qa/qa-signoff-sprint-06-2026-05-03.md" }
+  - { sprint: 7, closed: "2026-05-03", artefact: "production/qa/qa-signoff-sprint-07-2026-05-03.md", retro: "production/retros/sprint-07-retro.md" }
 
 inventory_at_planning:
   total_stories_in_backlog: 124
@@ -147,7 +153,7 @@ global_stop_conditions:
   - "ADR-0004 status requires action (Sprint 06 close)"
   - "Test failure or regression — never patch by skipping tests"
   - "Cross-sprint dependency invalidates a planned sprint"
-  - "Tech-debt register grows beyond 12 items (currently 7: TD-001..TD-007)"
+  - "Tech-debt register grows beyond 12 items (currently 11: TD-001..TD-011 — Sprint 08 PIC-FIX targets TD-009 to bring back to 10)"
 
 execution:
   mode: "user-driven session per sprint (not claude.ai cron)"

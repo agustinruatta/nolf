@@ -68,6 +68,44 @@ Format: `- [TD-NNN]` (sequential) — debt — origin — owner — trigger.
 - **Re-open trigger**: PC-007 (`reset_for_respawn`) integration — consider clearing `_warned_bodies` on respawn.
 - **Owner**: gameplay-programmer
 
+### TD-008 — GDD + ADR-0004 plural CSV format amendment
+
+- **Origin**: LOC-003 (Plural Forms CSV) Sprint 06 close. Godot 4.6's actual plural CSV format is `?plural` marker + `?pluralrule` directive + row-repetition — NOT the `en_0` / `en_1` / `en_other` column scheme assumed by the GDD §Detailed Design Rule 5 and ADR-0004 §Engine Compatibility verification gate. Production code corrected during LOC-003 implementation; the docs still describe the old scheme.
+- **Documentation gap**:
+  - `design/gdd/localization.md` §Detailed Design Rule 5 — describe the actual `?plural` / `?pluralrule` CSV format
+  - `docs/architecture/adr-0004-*.md` §Engine Compatibility — bump verification gate to reflect Godot 4.6 reality
+- **Risk level**: LOW — production code is correct; this is doc/contract drift.
+- **Re-open trigger**: Next `/architecture-review` pass; or any new LOC story that references the docs.
+- **Owner**: localization-lead / technical-director
+
+### TD-009 — `player_interact_cap_warning.gd` resolution logic bug (5 failing tests)
+
+- **Origin**: Pre-Sprint-06 (logic predates HC-006). Sprint 06 close-out smoke flagged 3 failing tests in `player_interact_cap_warning_test.gd`; Sprint 07 close-out smoke confirmed 5 failing assertions across the same file (cap-exceeded path returns null instead of within-cap target; cap=1 path returns null instead of stub; priority resolver picks Door(3)/Pickup(2) over Document(0)).
+- **Failing tests**:
+  - `test_resolve_cap_exceeded_returns_within_cap` (2 assertion failures)
+  - `test_resolve_cap_one_returns_a_stub` (2 assertion failures)
+  - `test_resolve_within_cap_returns_priority_winner`
+- **Originally suspected root cause** (Sprint 06 sign-off): PhysicsServer3D space pollution from prior test files' auto_free'd `CollisionShape3D` bodies. Sprint 07 re-investigation suggests the issue is in the resolver itself (priority ordering + cap-edge null-return), not test isolation — verify which is dominant before fixing.
+- **Risk level**: MEDIUM — the resolver is on the player interact hot path. Behavior in production may diverge from test expectations.
+- **Re-open trigger**: Sprint 08 buffer slot (recommended). Promote to a focused bug-fix story under `production/epics/player-character/`.
+- **Owner**: gameplay-programmer / qa-lead
+
+### TD-010 — HC-006 debug F-keys use raw `KEY_*` input constants in `main.gd`
+
+- **Origin**: HC-006 visual sign-off prep (Sprint 06). `src/core/main.gd:240..290` houses 8 debug hotkeys (KEY_F1, F2, F3, F4, F6, F7, F8, F10) using raw input constants. Sprint 07's DC-003 implementation removed the KEY_F4 hotkey (CR-7 sole-publisher violation on DocumentCollection), but the remaining 7 keys still violate `input_ci_lints::check_raw_input_constants_passes`.
+- **Required fix**: Migrate each hotkey to a registered InputMap action per AC-INPUT-6.1; debug-build-gate via `OS.is_debug_build()`.
+- **Risk level**: LOW — debug hotkeys only fire in dev builds; lint failure does not block runtime.
+- **Re-open trigger**: Bundle with a focused cleanup story OR opportunistically fold into Sprint 08 if buffer permits.
+- **Owner**: gameplay-programmer
+
+### TD-011 — `hud_core.gd:528` hardcoded `"100"` health-numeral fallback
+
+- **Origin**: HC-006 health widget visual fallback (Sprint 06). `src/ui/hud_core/hud_core.gd:528` sets `_health_label_numeral.text = "100"` as a static fallback before the first `health_changed` signal fires. Violates `localization_lint::lint_no_hardcoded_visible_string_in_src` and ADR-0004 (no hardcoded user-visible strings).
+- **Required fix**: Replace with `tr("hud.health.default")` (key TBD) or use a non-text initial state (e.g. blank label until first signal).
+- **Risk level**: LOW — string is a transient pre-signal placeholder; only visible for one frame on boot.
+- **Re-open trigger**: Bundle with TD-010 cleanup OR pick up during Sprint 08 buffer.
+- **Owner**: ui-programmer / localization-lead
+
 ---
 
 ## Closed / Promoted
@@ -76,4 +114,4 @@ Format: `- [TD-NNN]` (sequential) — debt — origin — owner — trigger.
 
 ---
 
-**Last updated**: 2026-05-01 — initial register; 7 active items from sprint-02 close-out.
+**Last updated**: 2026-05-03 — Sprint 07 close. 11 active items / 12 hard-stop threshold. TD-008..TD-011 added: TD-008 + TD-009 carried forward from Sprint 06 sign-off (formal register entry; previously tracked only in sign-off prose); TD-010 + TD-011 surfaced from Sprint 07 smoke (Sprint 06 anti-pattern violations re-detected). Producer note: schedule TD-009 fix into Sprint 08 buffer to keep register below the 12-item hard stop.

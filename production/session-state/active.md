@@ -98,28 +98,36 @@
 
 ## Next Action — START HERE
 
-Sprint 02 critical path is closed. The remaining Sprint 02 backlog is Should-Have / Nice-to-Have only — they ship Sprint 02 if time permits, or roll to Sprint 03.
+**Sprint 07 CLOSED 2026-05-03** — committed (`107204d Finished sprint 7`); QA sign-off APPROVED WITH CONDITIONS; scope verdict PASS; retro filed; tech-debt register reconciled (7 → 11 entries / 12 hard-stop threshold).
 
-**Ready Should-Have stories** (any can be picked next):
+**Sprint 08 is the FINAL pre-art-integration sprint** per `production/sprints/multi-sprint-roadmap-pre-art.md` §Sprint 08 (lines 94–112).
 
-- **LS-003** (register_restore_callback chain + step 9 sync invocation) — **READY** per `/story-readiness` 2026-05-01. Dep LS-002 ✅; ADR-0007 + ADR-0003 Accepted; TR-LS-013 active; manifest current. Path: `production/epics/level-streaming/story-003-register-restore-callback-step9-sync-invocation.md`. Logic story, 2h estimate.
-- **SL-005** (DI-friendly SaveLoadService — corruption-recovery + slot-isolation) — Save/Load epic continuation.
-- **SL-006** (NEW_GAME path + autosave throttle policy) — Save/Load epic continuation.
-- **AUD-001** (BusManager autoload + SoundCategoryRegistry) — Audio Foundation kickoff.
+**Sprint 08 scope (6 stories + buffer)**:
+- Level Streaming remaining: **LS-001, LS-004, LS-005, LS-006, LS-009, LS-010** (performance budget P90 measurement, error fallback, anti-pattern lint guards, focus-loss cache mode, queue-during-transition, registry failure recovery)
+- Buffer: spillover from Sprint 04–07 + regression-suite expansion across all Sprint 04–07 outputs
+- Estimated agent-days: 3
 
-**Ready Nice-to-Have stories**:
-- **OUT-001** (Outline pipeline kickoff — material + post-process slot)
-- **PPS-001** (Post-Process Stack — 4.6 glow rework verification)
+**Sprint 08 close = roadmap close = art-integration-ready milestone.** At close, surface to user: `.glb` deliverables list for hero asset commission (Eve FPS hands, Eve full body, PHANTOM grunt + variants, Eiffel bay modules, Plaza props).
 
-**Recommended next**: **LS-003** (closes the Level Streaming critical-path step 9 ahead of Mission Scripting / F&R / Menu integration). Alternatively, commit current 120-file working tree first (24 Must-Have story implementations + tests + ADR-0008 spike + 7 evidence docs + tech-debt register).
+**Recommended next**: run `/sprint-plan` to generate `production/sprints/sprint-08-level-streaming-integration.md` from the roadmap entry. Then `/story-readiness production/epics/level-streaming/story-001-*.md` to begin.
 
-Sprint plan: `production/sprints/sprint-02-foundation-core.md` (24 Must-Have / 5 Should-Have / 2 Nice-to-Have stories, 3-week cadence).
-QA plan: `production/qa/qa-plan-sprint-02-2026-04-30.md`.
+**Open carryforward items into Sprint 08 buffer**:
+- **TD-009** — `player_interact_cap_warning.gd` resolver bug (5 failing tests; promote to focused bug-fix story)
+- **TD-010 + TD-011** — Sprint 06 anti-pattern leftovers (raw KEY_* constants in main.gd; hardcoded "100" in hud_core.gd). Opportunistic.
+- **HC-006 visual sign-off** — re-probe `scenes/sections/` filesystem permission at sprint plan time
+- **PPS-007 + DC-005 AC-7 visual evidence** — populate when MVP build is producible
+
+Sprint plan: `production/sprints/sprint-07-audio-body-and-document-logic.md` (12/12 Must-Have Complete).
+QA sign-off: `production/qa/qa-signoff-sprint-07-2026-05-03.md`.
+Retro: `production/retros/sprint-07-retro.md`.
+Tech-debt register: `docs/tech-debt-register.md` (11 active items).
 Sprint status: `production/sprint-status.yaml` (machine-readable; auto-updated by `/story-done`).
 
 ## Current Stage
 
-**Pre-Production** (per `production/stage.txt`). Gate to Production still requires the Vertical Slice build + ≥3 playtests + playtest report. Sprint 02 is the vehicle that closes those.
+**Pre-Production** (per `production/stage.txt`). Sprint 02 (Foundation Core) closed 2026-05-01 with 24/24 Must-Have + 3 Should-Have done. Sprints 03–07 (autonomous-execution sprints) closed all code-ready stories across stealth AI, mission/failure/respawn, UI shell, audio body, document collection, post-process stack. **Sprint 08 is the FINAL pre-art-integration sprint** — Level Streaming hardening + regression-suite expansion. After Sprint 08 closes, the project is **art-integration-ready** and the gate is "asset commission package authored" (no longer "VS build + playtests").
+
+Roadmap source: `production/sprints/multi-sprint-roadmap-pre-art.md`. Status YAML: `production/sprint-roadmap-status.yaml` (current_sprint: 7 — needs bump to 8 after `/sprint-plan` runs).
 
 ## What's Ready (the asset base for Sprint 02)
 

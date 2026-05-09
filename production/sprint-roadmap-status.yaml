@@ -7,19 +7,20 @@
 # production/sprint-status.yaml (auto-managed).
 
 generated: "2026-05-02"
-last_updated: "2026-05-03"  # Sprint 07 closed; Sprint 08 plan authored
+last_updated: "2026-05-03"  # Sprint 08 closed; Sprint 09 kicked off as pivot (Blender MCP hybrid pipeline)
 roadmap_doc: "production/sprints/multi-sprint-roadmap-pre-art.md"
 roadmap_goal: "Drive every code-ready story to completion against proxy/placeholder geometry, so when art assets land the integration is a swap rather than new code."
-stop_gate: "Art assets become the critical-path blocker (post-Sprint 08)."
+stop_gate: "Pre-art roadmap CLOSED at Sprint 08. Sprint 09+ executes the post-roadmap pivot: in-session hybrid Blender MCP asset generation."
 
-current_sprint: 8
-current_sprint_status: "planned — sprint plan filed at production/sprints/sprint-08-level-streaming-integration.md; awaiting /qa-plan + /story-readiness LS-004 to begin"
+current_sprint: 9
+current_sprint_status: "in-progress — sprint plan filed at production/sprints/sprint-09-asset-commission-hybrid.md; user-paced (NOT autonomous-executable); Context 1 (player-character) next"
 
 closed_sprints:
   - { sprint: 4, closed: "2026-05-02", artefact: "production/qa/qa-plan-sprint-04-2026-05-02.md" }
   - { sprint: 5, closed: "2026-05-02", artefact: "production/qa/qa-signoff-sprint-05-2026-05-02.md" }
   - { sprint: 6, closed: "2026-05-03", artefact: "production/qa/qa-signoff-sprint-06-2026-05-03.md" }
   - { sprint: 7, closed: "2026-05-03", artefact: "production/qa/qa-signoff-sprint-07-2026-05-03.md", retro: "production/retros/sprint-07-retro.md" }
+  - { sprint: 8, closed: "2026-05-03", artefact: "production/qa/smoke-2026-05-03-sprint-08.md" }
 
 inventory_at_planning:
   total_stories_in_backlog: 124
@@ -138,9 +139,22 @@ sprints:
 
 post_roadmap_preview:
   - sprint: 9
-    note: "Asset spec authoring + pause for art commission. NOT autonomous-executable."
+    status: "in-progress — pivoted to hybrid Blender MCP generation pipeline"
+    plan: "production/sprints/sprint-09-asset-commission-hybrid.md"
+    note: |
+      Hero-asset commission package via in-session Blender MCP integration.
+      6 contexts: player-character (Eve), stealth-ai (PHANTOM), inventory-gadgets (bomb device + gadgets),
+      and 3 levels (plaza, restaurant, bomb-chamber). Tiered approach:
+        Tier 1 (full .glb pipeline) — static props, architecture, small devices
+        Tier 2 (base mesh, rig deferred) — riggable humanoids (Eve full body, PHANTOM grunt + variants)
+        Tier 3 (spec only, external) — Eve FPS hands
+      User-paced; NOT autonomous-executable. Discuss-then-implement per context.
+      Pivot supersedes original "pause for external art commission" model — user has Blender + MCP wired up
+      with Hyper3D / Hunyuan3D / Polyhaven / Sketchfab tools available in-session.
+  - sprint: "9b"
+    note: "Post-base-mesh: rigging Tier 2 humanoids (manual or Mixamo-style auto-rigging service). Animations follow."
   - sprint: "10+"
-    note: "Art integration as .glb files arrive. Eve FPS hands first (closes ADR-0005 G4)."
+    note: "Scene integration: replace placeholder geometry in scenes/sections/*.tscn with .glb assets; outline-pipeline stencil ref assignment at scene-load. Eve FPS hands integration closes ADR-0005 G4."
   - sprint: "~12"
     note: "First slice with final look — Plaza section playable end-to-end with final art. This is the user's original target."
 

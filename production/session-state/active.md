@@ -2,6 +2,47 @@
 
 **Last updated:** 2026-05-03 — **Sprint 08 CLOSED** — all 7 Must-Have stories Complete + 1 Should-Have Complete (PIC-FIX with notes — TD-009 verified as cross-suite physics-pollution flake, not resolver bug; production code verified correct in isolation 141/141 PASS). Sprint 08 added **30 new test functions** across 7 new test files + LS-006-driven test isolation upgrades to 5 existing test files. Level Streaming epic 100% closed (LS-001..LS-010 complete). `tests/unit/level_streaming + tests/integration/level_streaming` 103/103 PASS, 0 errors, 0 failures, 0 flaky, exit 0. Smoke-check **PASS WITH WARNINGS** (Sprint 07 baseline 7 failures persist; spawn_gate.tscn parse error blocks full-suite headless count). Scope-check **PASS** (0% creep — exactly 8 stories delivered per plan). Tech-debt register at **11/12** (1 below hard-stop threshold — TD-009 downgraded MEDIUM → LOW). **Project is now ART-INTEGRATION-READY**: every code-ready system implemented and proven on placeholder geometry. Roadmap closed. Sprint 09+ pivots to `/asset-spec` hero-asset commission package + post-asset integration sprints. Prior: 2026-05-03 — **Sprint 08 STARTED** — Sprint 08 plan filed; QA plan filed; LS-004 (Concurrency control: forward-drop, respawn-queue, abort recovery) **COMPLETE** with 8/8 ACs PASS via 11 unit tests. `tests/unit/level_streaming` subset 34/34 PASS, exit 0. Pre-existing 7 baseline failures from Sprint 07 (TD-008..TD-011) unchanged. Solo-mode review (PR-SPRINT, QL-STORY-READY, QL-TEST-COVERAGE, LP-CODE-REVIEW gates skipped per `production/review-mode.txt`). Sprint 08 scope = LS-004..LS-010 (7 Must-Have) + PIC-FIX TD-009 (1 Should-Have); LS-001/002/003 closed in earlier sprints, LS-007/008 pulled in to fix roadmap-text staleness. Prior: 2026-05-03 — **Sprint 07 CLOSED**
 
+## Session Extract — Sprint 09 Kickoff 2026-05-03 (Pivot to Hybrid Blender MCP Pipeline)
+
+- **Verdict**: SPRINT PLANNED + PIPELINE PIVOTED
+- **Sprint scope**: Hero-asset commission package — 6 contexts, tiered Blender MCP generation pipeline
+- **Pivot trigger**: User confirmed Blender is integrated via MCP (`mcp__blender__generate_hyper3d_model_via_text`, `generate_hunyuan3d_model`, `execute_blender_code`, `import_generated_asset`, `get_viewport_screenshot`, plus Polyhaven + Sketchfab tools). Original roadmap §Post-Roadmap Sprint Preview line 143 ("Asset spec authoring + pause for art commission. NOT autonomous-executable.") is **superseded** by an in-session hybrid pipeline.
+- **Tier classification**:
+  - **Tier 1** (spec → MCP-generate → Blender cleanup → export `.glb` to `assets/models/<context>/`): static props, architecture, small devices — Plaza props, Eiffel bay modules ×3, bomb device, gadgets
+  - **Tier 2** (spec → MCP-generate base mesh → save reference; rig deferred): riggable humanoids — Eve full body, PHANTOM grunt + variants
+  - **Tier 3** (spec only — external commission): Eve FPS hands (rigged 1st-person topology, weapon slots, finger rig — out of scope for AI generators)
+- **Contexts in execution order (option A — one by one, discuss-then-implement)**:
+  1. `/asset-spec system:player-character` — `design/gdd/player-character.md` (Eve hands T3 + Eve full body T2)
+  2. `/asset-spec system:stealth-ai` — `design/gdd/stealth-ai.md` (PHANTOM grunt + variants T2; accessory props T1)
+  3. `/asset-spec system:inventory-gadgets` — `design/gdd/inventory-gadgets.md` (bomb device + gadgets T1)
+  4. `/asset-spec level:plaza` — needs new `design/levels/plaza.md` (Plaza props T1)
+  5. `/asset-spec level:restaurant` — needs new `design/levels/restaurant.md` (bay module #2 T1)
+  6. `/asset-spec level:bomb-chamber` — needs new `design/levels/bomb-chamber.md` (bay module #3 T1)
+- **Files written this kickoff**:
+  - `production/sprints/sprint-09-asset-commission-hybrid.md` (formal sprint plan; full tier definitions, per-asset workflow, stop conditions, ACs, resume protocol)
+  - `production/sprint-roadmap-status.yaml` updated (current_sprint 8 → 9; Sprint 9 post_roadmap_preview note rewritten)
+  - User memory `project_asset_creation_approach.md` superseded — new content describes Blender MCP hybrid pipeline + tier definitions
+  - User memory `feedback_language_split.md` added — Spanish in chat / English in every artifact
+- **Mode**: user-paced (NOT autonomous-executable). Per-context flow: discuss high-level direction in chat → write spec to `design/assets/specs/<context>-assets.md` → generate via MCP → review viewport → cleanup in Blender → export `.glb` → update `design/assets/asset-manifest.md`.
+- **Current asset directories**:
+  - `assets/` exists with `assets/data/` only (no `assets/models/` yet — to be created on first Tier 1/2 export)
+  - `design/assets/` empty (no manifest, no specs/ dir yet — first run creates them)
+  - `design/narrative/characters/` does not exist (Eve / PHANTOM character info lives inside system GDDs, not separate profiles)
+  - `design/levels/` does not exist (must be created for contexts 4–6)
+- **Stage transition pending**: `production/stage.txt` still says `Pre-Production`. Sprint 08 close-out flagged a need to advance. With hybrid pipeline, candidate values are `Art-Integration-Active` (preferred) or hold at `Pre-Production` until first `.glb` integrates into a scene. **Decision deferred to user**; not auto-changed.
+- **Out of scope for Sprint 09**: rigging, animations, texture authoring beyond generative defaults, scene integration / placeholder replacement (Sprint 10+), audio, VFX, Eve FPS hands generation.
+- **Stop conditions (from sprint plan)**: >3 MCP retries with quality fail → tier downgrade; visual review fails twice → re-spec or downgrade; token-cost spike → surface to user; style drift → regenerate or downgrade; missing source doc for level contexts → pause for level-doc authoring.
+- **Cross-session resume artifacts** (in priority order):
+  1. `production/session-state/active.md` (this file — START HERE section points at Sprint 09)
+  2. `production/sprints/sprint-09-asset-commission-hybrid.md` (formal sprint plan)
+  3. `design/assets/asset-manifest.md` (created on first context — identifies next un-done asset)
+- **Carryforward from Sprint 08 (opportunistic)**: TD-008 spawn_gate parse error; TD-009 cross-suite physics pollution split; TD-010 + TD-011 HC-006 leftovers; LS-006 AC-9 memory-invariant activation; MVP build manual evidence stubs (LS-005, LS-007, PPS-007, DC-005). Not blocking sprint close.
+- **Documentation gaps surfaced** (NOT in scope): 3 gameplay systems without GDDs — `mission_level_scripting/` (6 files), `documents/` (7 files), `stealth/` (19 files). Action: `/reverse-document design <path>` if user elects.
+- **Next recommended**: User reviews this plan + the sprint plan file, then we kick off **Context 1** with a high-level discussion of the Player Character (Eve) visual direction before authoring the spec.
+
+
+---
+
 ## Session Extract — Sprint 08 Close-Out 2026-05-03
 
 - **Verdict**: SPRINT CLOSED
@@ -163,36 +204,54 @@
 
 ## Next Action — START HERE
 
-**Sprint 07 CLOSED 2026-05-03** — committed (`107204d Finished sprint 7`); QA sign-off APPROVED WITH CONDITIONS; scope verdict PASS; retro filed; tech-debt register reconciled (7 → 11 entries / 12 hard-stop threshold).
+**Sprint 08 CLOSED 2026-05-03** — committed (`d2ffb6c Fixes`); Level Streaming epic 100% closed; project art-integration-ready on placeholder geometry.
 
-**Sprint 08 is the FINAL pre-art-integration sprint** per `production/sprints/multi-sprint-roadmap-pre-art.md` §Sprint 08 (lines 94–112).
+**Sprint 09 KICKED OFF 2026-05-03** as a **pivot from the original roadmap entry** — user has Blender integrated via MCP, so the originally-planned "spec authoring + pause for external commission" becomes an **in-session hybrid generation pipeline**. Full plan: `production/sprints/sprint-09-asset-commission-hybrid.md`.
 
-**Sprint 08 scope (6 stories + buffer)**:
-- Level Streaming remaining: **LS-001, LS-004, LS-005, LS-006, LS-009, LS-010** (performance budget P90 measurement, error fallback, anti-pattern lint guards, focus-loss cache mode, queue-during-transition, registry failure recovery)
-- Buffer: spillover from Sprint 04–07 + regression-suite expansion across all Sprint 04–07 outputs
-- Estimated agent-days: 3
+**Sprint 09 scope** — 6 contexts, tiered:
+- **Tier 1** (full pipeline → `.glb` on disk): static props, architecture, small devices
+- **Tier 2** (base mesh only, rig deferred): riggable humanoids (Eve full body, PHANTOM grunt + variants)
+- **Tier 3** (spec only, external commission): Eve FPS hands
 
-**Sprint 08 close = roadmap close = art-integration-ready milestone.** At close, surface to user: `.glb` deliverables list for hero asset commission (Eve FPS hands, Eve full body, PHANTOM grunt + variants, Eiffel bay modules, Plaza props).
+**Execution order — option A confirmed** (one context at a time, discuss-then-implement):
 
-**Recommended next**: run `/sprint-plan` to generate `production/sprints/sprint-08-level-streaming-integration.md` from the roadmap entry. Then `/story-readiness production/epics/level-streaming/story-001-*.md` to begin.
+1. `/asset-spec system:player-character` ← **NEXT**
+2. `/asset-spec system:stealth-ai`
+3. `/asset-spec system:inventory-gadgets`
+4. `/asset-spec level:plaza` (needs `design/levels/plaza.md` first)
+5. `/asset-spec level:restaurant` (needs `design/levels/restaurant.md` first)
+6. `/asset-spec level:bomb-chamber` (needs `design/levels/bomb-chamber.md` first)
 
-**Open carryforward items into Sprint 08 buffer**:
-- **TD-009** — `player_interact_cap_warning.gd` resolver bug (5 failing tests; promote to focused bug-fix story)
-- **TD-010 + TD-011** — Sprint 06 anti-pattern leftovers (raw KEY_* constants in main.gd; hardcoded "100" in hud_core.gd). Opportunistic.
-- **HC-006 visual sign-off** — re-probe `scenes/sections/` filesystem permission at sprint plan time
-- **PPS-007 + DC-005 AC-7 visual evidence** — populate when MVP build is producible
+**Resume protocol for next session**: read this file's top "Sprint 09 Kickoff" Session Extract → read `production/sprints/sprint-09-asset-commission-hybrid.md` → read `design/assets/asset-manifest.md` (when it exists) → resume at next un-done asset.
 
-Sprint plan: `production/sprints/sprint-07-audio-body-and-document-logic.md` (12/12 Must-Have Complete).
-QA sign-off: `production/qa/qa-signoff-sprint-07-2026-05-03.md`.
-Retro: `production/retros/sprint-07-retro.md`.
-Tech-debt register: `docs/tech-debt-register.md` (11 active items).
-Sprint status: `production/sprint-status.yaml` (machine-readable; auto-updated by `/story-done`).
+**Per-context workflow**: discuss high-level visual direction in chat (concrete options, no open-ended) → write spec to `design/assets/specs/<context>-assets.md` (English) → MCP generate → viewport review → Blender cleanup → export `.glb` to `assets/models/<context>/` → manifest update.
+
+**Open carryforward items from Sprint 08 (opportunistic, not blocking)**:
+- TD-008 — `spawn_gate.tscn` parse error (apply LS-008 duck-typing pattern)
+- TD-009 — split level_streaming integration tests to separate CI matrix job
+- TD-010 + TD-011 — HC-006 KEY_F* migration; hud_core.gd hardcoded "100"
+- LS-006 AC-9 memory-invariant test activation (focus_memory_test early `return`)
+- MVP build manual evidence stubs (LS-005, LS-007, PPS-007, DC-005)
+
+**Documentation gaps surfaced** (NOT in scope): `mission_level_scripting/` (6 files), `documents/` (7 files), `stealth/` (19 files) lack GDDs. Action: `/reverse-document design <path>` if user elects.
+
+Sprint plan: `production/sprints/sprint-09-asset-commission-hybrid.md`.
+Prior sprint plan: `production/sprints/sprint-08-level-streaming-integration.md` (8/8 Must-Have+Should-Have Complete).
+QA sign-off (Sprint 08): `production/qa/smoke-2026-05-03-sprint-08.md`.
+Tech-debt register: `docs/tech-debt-register.md` (11 active items / 12 hard-stop threshold).
+Sprint status YAML: `production/sprint-status.yaml` (per-story).
+Roadmap status YAML: `production/sprint-roadmap-status.yaml` (current_sprint: 9).
 
 ## Current Stage
 
-**Pre-Production** (per `production/stage.txt`). Sprint 02 (Foundation Core) closed 2026-05-01 with 24/24 Must-Have + 3 Should-Have done. Sprints 03–07 (autonomous-execution sprints) closed all code-ready stories across stealth AI, mission/failure/respawn, UI shell, audio body, document collection, post-process stack. **Sprint 08 is the FINAL pre-art-integration sprint** — Level Streaming hardening + regression-suite expansion. After Sprint 08 closes, the project is **art-integration-ready** and the gate is "asset commission package authored" (no longer "VS build + playtests").
+**Pre-Production** (per `production/stage.txt` — STAGE TRANSITION PENDING USER DECISION). Sprint 08 close-out flagged that the project is structurally art-integration-ready: every code-ready system implemented and proven on placeholder geometry. With Sprint 09's pivot to in-session asset generation, candidate stage values are:
 
-Roadmap source: `production/sprints/multi-sprint-roadmap-pre-art.md`. Status YAML: `production/sprint-roadmap-status.yaml` (current_sprint: 7 — needs bump to 8 after `/sprint-plan` runs).
+- **`Art-Integration-Active`** — preferred if hybrid generation+integration becomes the new norm
+- **`Pre-Production`** (no change) — defer flip until first `.glb` integrates into a live scene
+
+Surfaced; **not auto-changed**. User to decide.
+
+Roadmap source: `production/sprints/multi-sprint-roadmap-pre-art.md` (closed at Sprint 08). Status YAML: `production/sprint-roadmap-status.yaml` (current_sprint: 9).
 
 ## What's Ready (the asset base for Sprint 02)
 

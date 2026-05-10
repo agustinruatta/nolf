@@ -27,7 +27,9 @@
 
 | Total | Needed | In Progress | Done | Base mesh | External |
 |---|---|---|---|---|---|
-| 9 | 2 | 0 | **2** | **4** | 1 |
+| 17 | 0 | 0 | **12** | **4** | 1 |
+
+**🎉 SPRINT 09 PIPELINE COMPLETE 2026-05-10** — all 17 assets either shipped (16) or flagged for external commission (1). 12 done T1 + 4 base mesh T2 + 1 external commission T3 (ASSET-001 Eve hands).
 
 **Sprint 09 hero-set commission COMPLETE** (assets 1-6) — all 6 hero assets either shipped or flagged for external commission. ASSET-001 (Eve FPS hands T3) remains as external commission per spec; all other 5 assets delivered as base mesh / done T1 props.
 
@@ -69,8 +71,34 @@ Spec file: `design/assets/specs/plaza-assets.md`
 | Asset ID | Name | Category | Tier | Status | `.glb` path | Visual reference |
 |---|---|---|---|---|---|---|
 | ASSET-007 | Eiffel bay module — plaza-tier (wide heavy base) | Environment — tiling architecture | T1 | **Done** (2026-05-10) — code-authored | `assets/models/level-plaza/env_eiffel_bay_module_plaza.glb` (4 KB, 60 tris) | `design/assets/specs/references/eiffel_bay_module_plaza_reference_2026-05-10.png` (design intent) |
-| ASSET-008 | Period sodium street lamp | Environment — period prop | T1 | Needed | `assets/models/level-plaza/env_period_street_lamp.glb` (target) | (pending) |
-| ASSET-009 | Plaza kiosk / guard post | Environment — period structure | T1 | Needed | `assets/models/level-plaza/env_plaza_guard_post.glb` (target) | (pending) |
+| ASSET-008 | Period sodium street lamp | Environment — period prop | T1 | **Done** (2026-05-10) | `assets/models/level-plaza/env_period_street_lamp.glb` (39 KB, 500 tris) | `design/assets/specs/references/period_street_lamp_reference_2026-05-10.png` |
+| ASSET-009 | Plaza kiosk / guard post | Environment — period structure | T1 | **Done** (2026-05-10) | `assets/models/level-plaza/env_plaza_guard_post.glb` (46 KB, 600 tris) | `design/assets/specs/references/plaza_guard_post_reference_2026-05-10.png` |
+
+---
+
+### Level: Restaurant (1889 Eiffel Tower dining salon, 1965 occupied)
+
+Source: `design/art/art-bible.md` §6.1/§6.2/§6.3/§4.3 (level doc skipped — extracted directly from art bible)
+Spec file: `design/assets/specs/restaurant-assets.md`
+
+| Asset ID | Name | Category | Tier | Status | `.glb` path | Visual reference |
+|---|---|---|---|---|---|---|
+| ASSET-010 | Eiffel bay module — mid-scaffold (tapering) | Environment — tiling architecture | T1 | **Done** (2026-05-10) — code-authored | `assets/models/level-restaurant/env_eiffel_bay_module_mid_scaffold.glb` (4 KB, 60 tris) | (no image needed — code-authored) |
+| ASSET-011 | Period dining table cluster | Hero prop — table + place setting | T1 | **Done** (2026-05-10) | `assets/models/level-restaurant/prop_dining_table_cluster.glb` (46 KB, 600 tris) | `design/assets/specs/references/dining_table_cluster_reference_2026-05-10.png` |
+| ASSET-012 | Crystal pendant chandelier | Environment — period lighting fixture | T1 | **Done** (2026-05-10) | `assets/models/level-restaurant/env_crystal_chandelier.glb` (45 KB, 600 tris) | `design/assets/specs/references/crystal_chandelier_reference_2026-05-10.png` |
+| ASSET-013 | Period drinks trolley | Prop — period rolling cart | T1 | **Done** (2026-05-10) | `assets/models/level-restaurant/prop_drinks_trolley.glb` (39 KB, 500 tris) | `design/assets/specs/references/drinks_trolley_reference_2026-05-10.png` |
+
+### Level: Bomb Chamber (1889 antenna maintenance alcove, 1965 PHANTOM-occupied)
+
+Source: `design/art/art-bible.md` §6.1/§6.2/§6.3/§4.3 (level doc skipped)
+Spec file: `design/assets/specs/bomb-chamber-assets.md`
+
+| Asset ID | Name | Category | Tier | Status | `.glb` path | Visual reference |
+|---|---|---|---|---|---|---|
+| ASSET-014 | Eiffel bay module — upper-structure (narrow compressed) | Environment — tiling architecture | T1 | **Done** (2026-05-10) — code-authored | `assets/models/level-bomb-chamber/env_eiffel_bay_module_upper_structure.glb` (4 KB, 60 tris) | (no image needed — code-authored) |
+| ASSET-015 | **Bomb device (NAMED hero prop)** | Hero prop — climax target, HEAVIEST outline tier 1 | T1 | **Done** (2026-05-10) | `assets/models/level-bomb-chamber/prop_bomb_device_hero.glb` (191 KB, 2,500 tris) | `design/assets/specs/references/bomb_device_hero_reference_2026-05-10.png` |
+| ASSET-016 | PHANTOM relay-rack | Environment — period electronics | T1 | **Done** (2026-05-10) | `assets/models/level-bomb-chamber/prop_phantom_relay_rack.glb` (46 KB, 600 tris) | `design/assets/specs/references/phantom_relay_rack_reference_2026-05-10.png` |
+| ASSET-017 | Equipment crate (stackable, instanced 2× in scene) | Prop — small functional crate | T1 | **Done** (2026-05-10) | `assets/models/level-bomb-chamber/prop_equipment_crate.glb` (31 KB, 399 tris) | `design/assets/specs/references/equipment_crate_reference_2026-05-10.png` |
 
 ---
 
@@ -80,9 +108,7 @@ Per `production/sprints/sprint-09-asset-commission-hybrid.md` execution order:
 
 | # | Context | Source doc | Spec file (target) |
 |---|---|---|---|
-| 3 | System: Inventory Gadgets | `design/gdd/inventory-gadgets.md` | `design/assets/specs/inventory-gadgets-assets.md` (DEFERRED — bomb device covered in Bomb Chamber context per spec scope decision) |
-| 5 | Level: Restaurant | art bible §6 (level doc skipped) | `design/assets/specs/restaurant-assets.md` |
-| 6 | Level: Bomb Chamber | art bible §6 (level doc skipped) | `design/assets/specs/bomb-chamber-assets.md` |
+| 3 | System: Inventory Gadgets | `design/gdd/inventory-gadgets.md` | `design/assets/specs/inventory-gadgets-assets.md` (DEFERRED — bomb device covered in Bomb Chamber context as ASSET-015 per spec scope decision) |
 
 ## Resume Protocol
 

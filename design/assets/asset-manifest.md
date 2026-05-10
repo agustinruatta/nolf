@@ -27,7 +27,7 @@
 
 | Total | Needed | In Progress | Done | Base mesh | External |
 |---|---|---|---|---|---|
-| 2 | 1 | 0 | 0 | 0 | 1 |
+| 6 | 4 | 0 | 0 | **1** | 1 |
 
 ## Assets by Context
 
@@ -36,10 +36,22 @@
 Source GDD: `design/gdd/player-character.md` · Art Bible §5.1
 Spec file: `design/assets/specs/player-character-assets.md`
 
-| Asset ID | Name | Category | Tier | Status | `.glb` path |
-|---|---|---|---|---|---|
-| ASSET-001 | Eve FPS Hands | Character — rigged 1st-person | T3 | External commission needed | `assets/models/player-character/char_eve_fps_hands.glb` (target — not yet produced) |
-| ASSET-002 | Eve Full Body (base mesh) | Character — base mesh, rig deferred | T2 | Needed | `assets/models/player-character/char_eve_sterling.glb` (target) |
+| Asset ID | Name | Category | Tier | Status | `.glb` path | Visual reference |
+|---|---|---|---|---|---|---|
+| ASSET-001 | Eve FPS Hands | Character — rigged 1st-person | T3 | External commission needed | `assets/models/player-character/char_eve_fps_hands.glb` (target — not yet produced) | inherits ASSET-002 reference for navy/glove palette |
+| ASSET-002 | Eve Full Body (base mesh) | Character — base mesh, rig deferred | T2 | **Base mesh — rig deferred** (2026-05-09) | `assets/models/player-character/char_eve_sterling.glb` (196 KB, 4,500 tris) | `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` |
+
+### System: Stealth AI (PHANTOM)
+
+Source GDD: `design/gdd/stealth-ai.md` · Art Bible §5.2
+Spec file: `design/assets/specs/stealth-ai-assets.md`
+
+| Asset ID | Name | Category | Tier | Status | `.glb` path | Visual reference |
+|---|---|---|---|---|---|---|
+| ASSET-003 | PHANTOM Grunt — Bowl Helmet | Character — base mesh, rig deferred | T2 | Reference approved 2026-05-10 — awaiting image-to-3D conversion | `assets/models/stealth-ai/char_phantom_grunt_bowl_helmet.glb` (target) | `design/assets/specs/references/phantom_grunt_bowl_helmet_reference_2026-05-10.png` |
+| ASSET-004 | PHANTOM Grunt — Open-Face Helmet | Character — base mesh, rig deferred | T2 | Needed | `assets/models/stealth-ai/char_phantom_grunt_open_face.glb` (target) | (pending) |
+| ASSET-005 | PHANTOM Elite — Bomb Chamber Boss | Character — base mesh, rig deferred | T2 | Needed | `assets/models/stealth-ai/char_phantom_elite_peaked_cap.glb` (target) | (pending) |
+| ASSET-006 | Walkie-talkie radio (chest accessory) | Prop — static, no rig | T1 | Needed | `assets/models/stealth-ai/prop_walkie_talkie_phantom.glb` (target) | (pending) |
 
 ---
 

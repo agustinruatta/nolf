@@ -137,7 +137,22 @@ References to send:  art bible §5.1 + this brief + this game's
 | Outline implementation | **ADR-0001 stencil tier 1** (HEAVIEST) — at scene-load time, MeshInstance3D for Eve sets stencil ref to tier 1 per ADR-0001. (Distinct from ASSET-001's ADR-0005 inverted-hull — full body uses world-pipeline outline.) |
 | Use case | VS-tier mirror reflection (per `player-character.md` §Visual-Mirror-Reflection — OQ-4); cutscenes; promotional / key-art reference |
 | UV mapping | Two UV unwraps: body (UV0) + face (UV1, separated atlas at 512²). No overlapping. Seams hidden inside costume edges or back of head. 4 px margin at 1024 px. |
-| Status | **Needed (base mesh; rig deferred)** |
+| Status | **Base mesh — rig deferred** (DONE 2026-05-09) |
+| Visual reference (canonical) | `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` |
+| Final `.glb` on disk | `assets/models/player-character/char_eve_sterling.glb` (196 KB, 4,500 tris exactly, single material) |
+| Image-to-3D source | Tripo3D / equivalent — 9,124 tris raw input (`mesh.glb` from project root) |
+| Cleanup pipeline date | 2026-05-09 |
+
+### Approved Visual Reference
+
+The canonical character reference image at `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` is the **single source of truth** for ASSET-002's silhouette, color, and proportion. Approved 2026-05-09 after 2 iterations (iter 1 had 3 deviations from §5.1 — mandarin collar, waist-positioned belt, visible buttons; iter 2 corrected all three to match the canonical "collarless + low-slung gadget belt + piped seam closure" spec). All §5.1 spec checkpoints pass on this image (17/17 match).
+
+This image was generated via ChatGPT (image generation), NOT via Blender MCP text-to-3D. Two prior text-to-3D attempts produced unusable silhouettes (binaries deleted 2026-05-09 after lessons captured):
+
+- **v1** (Hyper3D Rodin text mode, `.glb` raw output): produced a mod miniskirt + knee-high boots silhouette; period-correct mid-60s but diverged from §5.1 Courrèges navy tailored canon.
+- **v2** (different generator, `.obj` raw output): produced a cropped top + shorts + bare midriff silhouette; anachronistic for 1965, broke Pillar 5 (Period Authenticity).
+
+The approved iter 2 image is now the input to the image-to-3D conversion step (next sub-step of the per-asset workflow). Failure-mode lessons are encoded in this spec and in `production/session-state/active.md`; the raw binaries themselves were not retained.
 
 ### Visual Description
 
@@ -229,21 +244,34 @@ NEGATIVE PROMPT:
   colored bodysuit.
 ```
 
-### Generation Strategy
+### Generation Strategy (revised 2026-05-09 — Path 4 image-first)
 
-1. **First pass**: full prompt above via `mcp__blender__generate_hyper3d_model_via_text`
-2. **Viewport review**: `mcp__blender__get_viewport_screenshot` — check silhouette against art bible §3.1 (geometric A-line, square shoulders, narrow trouser line, gadget belt mass)
-3. **Pass criteria** (apply art bible §3.2 outline-first silhouette check): render the mesh in flat-lit white with a 1 px black edge trace; if the silhouette reads as deliberate geometric figure with separable jacket/trouser/belt/hair shapes, pass; if outlines merge or shape collapses, regenerate.
-4. **Iteration limit**: 3 retries. If 3 retries fail, downgrade to T3 (spec only) and surface to user.
-5. **Fallback**: try Hunyuan3D (`mcp__blender__generate_hunyuan3d_model`) if Hyper3D fails on silhouette.
-6. **Cleanup in Blender** (`mcp__blender__execute_blender_code`):
-   - Apply scale (1 Blender unit = 1 metre; Eve standing height ~1.7 m per `player-character.md` §F.8)
-   - Decimate to 4,500 tris if over budget
+The original "Generation Prompt" block above was authored for text-to-3D (Hyper3D / Hunyuan3D). Two text-to-3D attempts (v1 + v2 in `assets/staging/`) failed on silhouette: generators bias toward modern or mod-skirt-and-boots interpretations of "1965 female spy" prompts and reliably ignore "tapered ankle trousers" instructions in favor of mini-skirts or shorts. **Text-to-3D is no longer the primary path for ASSET-002.**
+
+The new workflow is **image-first → image-to-3D**:
+
+1. **Image generation (USER, external)**: feed the prompt above to a 2D image generator (ChatGPT image / Flux / Midjourney / SDXL). 2D iteration is much cheaper than 3D iteration, and a clamped silhouette image is the most reliable input for image-to-3D services.
+2. **Image approval (CLAUDE in chat)**: evaluate the generated image against §5.1 checklist; iterate or approve.
+3. **Approved reference saved**: at `design/assets/specs/references/eve_sterling_reference_<YYYY-MM-DD>.png`. **Done 2026-05-09 for ASSET-002.**
+4. **Image-to-3D (USER, external)**: run the approved reference through Tripo3D (preferred) / Hyper3D Rodin image mode / Meshy.ai / Hunyuan3D 2 image mode. Output: raw `.glb` or `.obj`.
+5. **Cleanup in Blender (CLAUDE via `mcp__blender__execute_blender_code`)**:
+   - Reset to clean homefile (`bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True)`)
+   - Import the raw mesh (use `bpy.ops.wm.obj_import` with window-context override for OBJ; `bpy.ops.import_scene.gltf` for `.glb`)
+   - Inspect via `get_objects_summary` / `get_object_detail_summary` — verify mesh count, tri count, materials, dimensions
+   - Apply scale (1 Blender unit = 1 metre; Eve standing height ~1.7 m per `player-character.md` §F.8 — image-to-3D outputs typically come at ~1.9 m and need rescaling)
+   - Decimate to 4,500 tris if over budget. Image-to-3D outputs typically arrive at 100k+ tris (24-27× over budget); use `bpy.ops.object.modifier_add(type='DECIMATE')` with collapse ratio ~0.04. Verify silhouette survives via outline test render.
+   - Strip any imported PBR maps (no normal/roughness/metallic per art bible §8A)
+   - Assign single flat unlit material with §5.1 hex anchors (jacket `#15264A` / piping `#1B3A6B` / belt `#6B7280` / boots `#1A1A1A`)
    - Remove orphan data (loose verts, duplicate UVs, unused materials)
-   - Strip any imported PBR maps; assign single flat unlit material
-   - Set sRGB albedo only
-7. **Export**: `.glb` (binary glTF 2.0) to `assets/models/player-character/char_eve_sterling.glb`
-8. **Manifest update**: status `Base mesh — rig deferred`
+6. **Outline-test render (CLAUDE via `render_viewport_to_path`)**: render front + side at 800×1200 against flat white world background; verify silhouette against art bible §3.2 outline-first check
+7. **Viewport screenshot (CLAUDE via `get_screenshot_of_area_as_image`)**: capture for user inline review
+8. **User approval (USER)**: review screenshots; approve or request regenerate (back to step 4 with refined prompt or different image-to-3D service)
+9. **Export (CLAUDE via `execute_blender_code`)**: `.glb` (binary glTF 2.0) to `assets/models/player-character/char_eve_sterling.glb`
+10. **Manifest update (CLAUDE)**: status `Base mesh — rig deferred`
+
+### Iteration cap
+
+Same as Sprint 09 plan: if image-to-3D conversion fails to produce an acceptable mesh after 3 prompt iterations or 3 service attempts, downgrade to T3 (spec only) and surface to user. Do not burn unbounded effort on a single asset.
 
 ### Out of Scope for Sprint 09 (this asset)
 

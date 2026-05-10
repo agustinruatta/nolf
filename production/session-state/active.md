@@ -2,6 +2,49 @@
 
 **Last updated:** 2026-05-03 — **Sprint 08 CLOSED** — all 7 Must-Have stories Complete + 1 Should-Have Complete (PIC-FIX with notes — TD-009 verified as cross-suite physics-pollution flake, not resolver bug; production code verified correct in isolation 141/141 PASS). Sprint 08 added **30 new test functions** across 7 new test files + LS-006-driven test isolation upgrades to 5 existing test files. Level Streaming epic 100% closed (LS-001..LS-010 complete). `tests/unit/level_streaming + tests/integration/level_streaming` 103/103 PASS, 0 errors, 0 failures, 0 flaky, exit 0. Smoke-check **PASS WITH WARNINGS** (Sprint 07 baseline 7 failures persist; spawn_gate.tscn parse error blocks full-suite headless count). Scope-check **PASS** (0% creep — exactly 8 stories delivered per plan). Tech-debt register at **11/12** (1 below hard-stop threshold — TD-009 downgraded MEDIUM → LOW). **Project is now ART-INTEGRATION-READY**: every code-ready system implemented and proven on placeholder geometry. Roadmap closed. Sprint 09+ pivots to `/asset-spec` hero-asset commission package + post-asset integration sprints. Prior: 2026-05-03 — **Sprint 08 STARTED** — Sprint 08 plan filed; QA plan filed; LS-004 (Concurrency control: forward-drop, respawn-queue, abort recovery) **COMPLETE** with 8/8 ACs PASS via 11 unit tests. `tests/unit/level_streaming` subset 34/34 PASS, exit 0. Pre-existing 7 baseline failures from Sprint 07 (TD-008..TD-011) unchanged. Solo-mode review (PR-SPRINT, QL-STORY-READY, QL-TEST-COVERAGE, LP-CODE-REVIEW gates skipped per `production/review-mode.txt`). Sprint 08 scope = LS-004..LS-010 (7 Must-Have) + PIC-FIX TD-009 (1 Should-Have); LS-001/002/003 closed in earlier sprints, LS-007/008 pulled in to fix roadmap-text staleness. Prior: 2026-05-03 — **Sprint 07 CLOSED**
 
+## Session Extract — Sprint 09 CLOSED 2026-05-10 (Hero-Asset Commission COMPLETE; Sprint 09b opening)
+
+- **Verdict**: SPRINT 09 CLOSED. **16 of 17 assets shipped** to canonical paths in `assets/models/<context>/`. 1 asset flagged for external commission (ASSET-001 Eve FPS hands T3 — out of in-session pipeline scope per spec).
+- **Final tally**:
+  - 12 T1 done assets (props + architecture + walkie + bomb device hero)
+  - 4 T2 base mesh assets (Eve full body + 3 PHANTOM humanoids — rigging deferred to Sprint 09b)
+  - 1 T3 external commission pending (ASSET-001 Eve FPS hands)
+  - **Total disk**: ~1.8 MB across 16 .glb files, 20,480 tris combined
+- **Production methods used**:
+  - 13 assets via **gen3dhub Hunyuan3D-2 mini** + Blender MCP cleanup (organic / character / detailed-prop)
+  - 3 assets via **code-author bmesh primitives** (architectural primitives: Eiffel bay modules at plaza-tier 4×3m + mid-scaffold 3.2×3m + upper-structure 2.4×3m)
+- **Workflow rule established for future sprints**:
+  - Architectural primitives (thin-beam structures, geometric crates) → code-author from bmesh primitives via `mcp__blender__execute_blender_code`
+  - Organic / character / detailed-prop → image-first (USER generates ChatGPT image) → image-to-3D (CLAUDE runs `gen3dhub run --model hunyuan3d-2 --image <ref> --output <staging.glb> --yes`) → Blender MCP cleanup (rotate to face -Y if humanoid, scale to spec height, decimate to art-bible §8D budget, strip materials, flat unlit emission with §5.x hex anchors, export final)
+- **gen3dhub CLI workflow validated**: 13 assets generated via single `gen3dhub run` CLI call each (~30s/asset on GPU), zero manual user-side image-to-3D step. Pipeline now fully agent-automated end-to-end except the initial 2D image generation.
+- **Scope-check verdict**: PASS WITH NOTES (+42% discovered scope, NOT creep) — original plan loosely enumerated Contexts 4-6; we filled in concrete asset enumeration per art bible §6 explicit requirements. Zero arbitrary additions; every asset traces to art bible §6.x source.
+- **Sprint-status verdict**: COMPLETE — 100% of in-session pipeline shipped. ASSET-001 properly flagged as external (not blocking).
+- **Files modified this close-out**:
+  - `production/sprint-roadmap-status.yaml` — Sprint 9 added to closed_sprints (closed 2026-05-10); current_sprint bumped 9 → 9b; post_roadmap_preview Sprint 9 entry updated to CLOSED status
+  - **NEW**: `production/sprints/sprint-09b-rigging.md` — Sprint 09b plan (rigging post-base-mesh for 4 humanoids: ASSET-002 Eve, ASSET-003/004 grunts, ASSET-005 Elite). 4 stories, ~3 agent-days estimate. Method: Mixamo auto-rig for grunts (chunky proportions = sweet spot), manual rig for Elite (tall narrow may confuse auto-rig), validate Mixamo on Eve first.
+  - This `active.md` — current close-out extract
+- **Sprint 09 commits (this session)**:
+  - `19781be` — ASSET-008 + ASSET-009 Plaza completion (Context 4 close)
+  - `de0d8e6` — Context 5 Restaurant — spec + 4 assets shipped (ASSET-010..013)
+  - `6c0cd29` — Context 6 Bomb Chamber + Sprint 09 PIPELINE COMPLETE (ASSET-014..017)
+  - Plus 4 prior commits (Sprint 09 plan + Context 1+2 specs + ASSET-002/007 + redo)
+- **Carryforward to Sprint 09b**:
+  - 4 humanoids need rigging (Eve + 3 PHANTOM characters)
+  - L/R hand attach points (`LeftHandIK`, `RightHandIK`) for weapon slots per `stealth-ai.md` §Visual
+  - Eve also needs `HandAnchor` for ASSET-001 FPS hands integration when external commission ships
+  - Animations (patrol_walk, investigate_sweep, combat_fire, dead_slump, chloroformed_slump, chloroformed_rising, weapon_draw, head_turn IK) DEFERRED to Sprint 09c
+- **Carryforward to Sprint 10+** (scene integration):
+  - Replace placeholder geometry in `scenes/sections/*.tscn` with the 16 `.glb`s
+  - Wire walkie-talkie attachment via socket constraint to PHANTOM grunt chest harness
+  - Texture pass with full §5.1/§5.2/§6.x palette per asset
+  - Outline pipeline stencil ref assignment at scene-load (HEAVIEST tier 1 for Eve + ASSET-015 bomb device; MEDIUM tier 2 for PHANTOM characters; LIGHTEST tier 3 for environment/civilian props)
+- **Stage transition pending**: `production/stage.txt` still at `Pre-Production`. Recommended bump → `Art-Production` now that Sprint 09 hero-set commission is COMPLETE. Surfaced to user; awaiting decision.
+- **Documentation gaps still surfaced** (NOT in scope for 09b): `mission_level_scripting/`, `documents/`, `stealth/` lack GDDs. Action: `/reverse-document design <path>` if user elects.
+- **Next recommended**: User reviews + commits any pending changes; runs `/sprint-plan` for Sprint 09b refinement OR proceeds manually with rigging workflow per `production/sprints/sprint-09b-rigging.md`. Decision needed on `production/stage.txt` bump.
+
+
+---
+
 ## Session Extract — Sprint 09 REDO 2026-05-10 (5 assets re-shipped via gen3dhub + Hunyuan3D-2; full agent automation)
 
 - **Verdict**: 5 previously-shipped assets **re-done** with higher-quality image-to-3D pipeline. ASSET-002 (Eve), ASSET-003 (PHANTOM bowl), ASSET-004 (PHANTOM open-face), ASSET-005 (PHANTOM Elite), ASSET-006 (Walkie-talkie) — all final `.glb` files at canonical paths now sourced from Hunyuan3D-2 instead of prior Tripo3D-class output.

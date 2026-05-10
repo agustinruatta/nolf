@@ -7,13 +7,13 @@
 # production/sprint-status.yaml (auto-managed).
 
 generated: "2026-05-02"
-last_updated: "2026-05-03"  # Sprint 08 closed; Sprint 09 kicked off as pivot (Blender MCP hybrid pipeline)
+last_updated: "2026-05-10"  # Sprint 09 closed (16/17 assets shipped via gen3dhub + code-author pipeline); Sprint 09b opening (rigging)
 roadmap_doc: "production/sprints/multi-sprint-roadmap-pre-art.md"
 roadmap_goal: "Drive every code-ready story to completion against proxy/placeholder geometry, so when art assets land the integration is a swap rather than new code."
-stop_gate: "Pre-art roadmap CLOSED at Sprint 08. Sprint 09+ executes the post-roadmap pivot: in-session hybrid Blender MCP asset generation."
+stop_gate: "Pre-art roadmap CLOSED at Sprint 08. Sprint 09 (asset commission) CLOSED 2026-05-10. Sprint 09b (rigging post-base-mesh) opening."
 
-current_sprint: 9
-current_sprint_status: "in-progress — sprint plan filed at production/sprints/sprint-09-asset-commission-hybrid.md; user-paced (NOT autonomous-executable); Context 1 (player-character) next"
+current_sprint: "9b"
+current_sprint_status: "planned — sprint plan filed at production/sprints/sprint-09b-rigging.md; targets 4 humanoid base meshes shipped in Sprint 09 (Eve + 3 PHANTOM characters)"
 
 closed_sprints:
   - { sprint: 4, closed: "2026-05-02", artefact: "production/qa/qa-plan-sprint-04-2026-05-02.md" }
@@ -21,6 +21,7 @@ closed_sprints:
   - { sprint: 6, closed: "2026-05-03", artefact: "production/qa/qa-signoff-sprint-06-2026-05-03.md" }
   - { sprint: 7, closed: "2026-05-03", artefact: "production/qa/qa-signoff-sprint-07-2026-05-03.md", retro: "production/retros/sprint-07-retro.md" }
   - { sprint: 8, closed: "2026-05-03", artefact: "production/qa/smoke-2026-05-03-sprint-08.md" }
+  - { sprint: 9, closed: "2026-05-10", artefact: "design/assets/asset-manifest.md", scope_check_verdict: "PASS WITH NOTES (+42% discovered scope, not creep)", note: "16/17 assets shipped — 12 done T1 + 4 base mesh T2 + 1 external commission (ASSET-001 Eve FPS hands T3). 13 via gen3dhub Hunyuan3D-2, 3 via code-author bmesh primitives. Pipeline now fully agent-automated. Sprint 09 hero-asset commission package COMPLETE." }
 
 inventory_at_planning:
   total_stories_in_backlog: 124
@@ -139,20 +140,30 @@ sprints:
 
 post_roadmap_preview:
   - sprint: 9
-    status: "in-progress — pivoted to hybrid Blender MCP generation pipeline"
+    status: "CLOSED 2026-05-10 — pipeline now fully agent-automated via gen3dhub CLI + Blender MCP cleanup"
     plan: "production/sprints/sprint-09-asset-commission-hybrid.md"
+    artefact: "design/assets/asset-manifest.md (17 assets, 16 shipped, 1 external)"
     note: |
-      Hero-asset commission package via in-session Blender MCP integration.
-      6 contexts: player-character (Eve), stealth-ai (PHANTOM), inventory-gadgets (bomb device + gadgets),
-      and 3 levels (plaza, restaurant, bomb-chamber). Tiered approach:
-        Tier 1 (full .glb pipeline) — static props, architecture, small devices
-        Tier 2 (base mesh, rig deferred) — riggable humanoids (Eve full body, PHANTOM grunt + variants)
-        Tier 3 (spec only, external) — Eve FPS hands
-      User-paced; NOT autonomous-executable. Discuss-then-implement per context.
-      Pivot supersedes original "pause for external art commission" model — user has Blender + MCP wired up
-      with Hyper3D / Hunyuan3D / Polyhaven / Sketchfab tools available in-session.
+      Hero-asset commission COMPLETE. 17 assets specced across 5 contexts
+      (Player Character + Stealth AI + Plaza + Restaurant + Bomb Chamber;
+      Inventory Gadgets context substituted into Bomb Chamber per spec scope decision).
+      Final tally: 12 done T1 + 4 base mesh T2 (rig deferred to 09b) + 1 external commission T3 (Eve FPS hands).
+      Production methods: 13 via gen3dhub Hunyuan3D-2 (organic/character/detailed-prop) + 3 via code-author
+      bmesh primitives (architectural primitives — Eiffel bay modules at 3 altitude tiers).
+      Total disk: ~1.8 MB across 16 .glbs, total 20,480 tris.
+      Workflow rule established: code-author for architectural primitives (thin-beam topology survives decimation poorly via image-to-3D);
+      gen3dhub Hunyuan3D-2 for everything else.
   - sprint: "9b"
-    note: "Post-base-mesh: rigging Tier 2 humanoids (manual or Mixamo-style auto-rigging service). Animations follow."
+    status: "planned — opening 2026-05-10"
+    plan: "production/sprints/sprint-09b-rigging.md"
+    note: |
+      Rigging post-base-mesh: 4 humanoid base meshes from Sprint 09 (ASSET-002 Eve full body,
+      ASSET-003 PHANTOM Bowl, ASSET-004 PHANTOM Open-Face, ASSET-005 PHANTOM Elite Boss).
+      Each needs humanoid biped skeleton + weight painting + L/R hand attach points (weapon slots
+      for grunts/elite per stealth-ai.md §Visual). Method: Mixamo auto-rig for grunts (standard proportions),
+      manual rig in Blender for Elite (tall narrow proportions may confuse Mixamo) and possibly Eve.
+      Animations OUT OF SCOPE — that's Sprint 09c / Sprint 10+. ASSET-001 Eve FPS hands T3 also out of scope
+      (external commission; not in 09b in-session pipeline).
   - sprint: "10+"
     note: "Scene integration: replace placeholder geometry in scenes/sections/*.tscn with .glb assets; outline-pipeline stencil ref assignment at scene-load. Eve FPS hands integration closes ADR-0005 G4."
   - sprint: "~12"

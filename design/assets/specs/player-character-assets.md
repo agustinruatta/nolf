@@ -139,9 +139,9 @@ References to send:  art bible §5.1 + this brief + this game's
 | UV mapping | Two UV unwraps: body (UV0) + face (UV1, separated atlas at 512²). No overlapping. Seams hidden inside costume edges or back of head. 4 px margin at 1024 px. |
 | Status | **Base mesh — rig deferred** (DONE 2026-05-09) |
 | Visual reference (canonical) | `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` |
-| Final `.glb` on disk | `assets/models/player-character/char_eve_sterling.glb` (196 KB, 4,500 tris exactly, single material) |
-| Image-to-3D source | Tripo3D / equivalent — 9,124 tris raw input (`mesh.glb` from project root) |
-| Cleanup pipeline date | 2026-05-09 |
+| Final `.glb` on disk | `assets/models/player-character/char_eve_sterling.glb` (343 KB, 4,500 tris exactly, single material) |
+| Image-to-3D source | **Hunyuan3D-2 (mini)** via `gen3dhub` CLI — 242,672 tris raw input (re-do 2026-05-10 from the canonical reference image; replaces prior Tripo3D-class output that had 9,124 tris raw) |
+| Cleanup pipeline date | 2026-05-10 (redo) — original 2026-05-09 |
 
 ### Approved Visual Reference
 

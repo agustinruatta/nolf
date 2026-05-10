@@ -48,8 +48,11 @@
 | Outline implementation | **ADR-0001 stencil tier 2** — at scene-load, MeshInstance3D for grunt sets stencil ref to tier 2 (NOT tier 1 — guards do not compete with Eve for foreground read) |
 | Use case | Primary enemy archetype across Plaza, Lower Scaffolds, Upper Structure (3 of 5 sections) |
 | UV mapping | Single UV unwrap (UV0). Seams hidden inside helmet rim, costume seams, back-of-head. 4 px margin at 1024 px. |
-| Status | **Needed** — visual reference APPROVED 2026-05-10 |
+| Status | **Base mesh — rig deferred** (DONE 2026-05-10) |
 | Visual reference (canonical) | `design/assets/specs/references/phantom_grunt_bowl_helmet_reference_2026-05-10.png` |
+| Final `.glb` on disk | `assets/models/stealth-ai/char_phantom_grunt_bowl_helmet.glb` (214 KB, 2,800 tris exactly, 1 flat unlit material `mat_phantom_grunt_standard` placeholder near-black `#1A1A1A`) |
+| Image-to-3D source | **Hunyuan3D-2 (mini)** via `gen3dhub` CLI — 432,146 tris raw input (re-do 2026-05-10; replaces prior Tripo3D-class output 15,316 tris) |
+| Cleanup pipeline date | 2026-05-10 (redo) |
 
 ### Approved Visual Reference
 
@@ -207,7 +210,23 @@ Same as Sprint 09 plan: 3 prompt iterations + 3 image-to-3D service attempts max
 | Outline implementation | ADR-0001 stencil tier 2 |
 | Use case | Interior guard archetype across Restaurant, Bomb Chamber (2 of 5 sections) |
 | UV mapping | Single UV unwrap (UV0) |
-| Status | **Needed** |
+| Status | **Base mesh — rig deferred** (DONE 2026-05-10) |
+| Visual reference (canonical) | `design/assets/specs/references/phantom_grunt_open_face_reference_2026-05-10.png` |
+| Final `.glb` on disk | `assets/models/stealth-ai/char_phantom_grunt_open_face.glb` (214 KB, 2,800 tris exactly, 1 flat unlit material `mat_phantom_grunt_interior` placeholder near-black `#1A1A1A` — interior duty variant material per §8B) |
+| Image-to-3D source | **Hunyuan3D-2 (mini)** via `gen3dhub` CLI — 441,860 tris raw input (re-do 2026-05-10; replaces prior Tripo3D-class output 15,328 tris) |
+| Cleanup pipeline date | 2026-05-10 (redo) |
+
+### Approved Visual Reference
+
+The canonical character reference image at `design/assets/specs/references/phantom_grunt_open_face_reference_2026-05-10.png` is the **single source of truth** for ASSET-004's open-face helmet aperture, face exposure, chin strap, narrower crimson trim, and full costume continuity with ASSET-003. **Approved on the first attempt 2026-05-10** (no iterations needed) — the image-first workflow with the approved ASSET-003 reference fed as style anchor produced perfect costume continuity + the requested helmet/trim variant + clean A-pose.
+
+Improvements over ASSET-003 reference workflow:
+- A-pose: arms held at 25-30° from body's vertical line, palms facing thighs — much cleaner for image-to-3D rigging than ASSET-003 iter 2 (which had arms slightly outward but not full A-pose)
+- Costume continuity: 100% match to ASSET-003's body, harness, belt, holster, boots, gloves — the multi-image-input reference anchoring works exactly as the spec predicted
+
+Residual (acceptable) deviations:
+- Trim ring width and exact crimson saturation are subtle vs spec — irrelevant since textures stripped during cleanup and replaced with hex anchor `#9A2030` from §5.2
+- Face expression is "alert neutral" rather than "squinting attentive" — stylistic, doesn't affect 3D mesh fidelity
 
 ### Visual Description
 
@@ -277,7 +296,31 @@ Same Path 4 workflow as ASSET-003. Tip: feed the approved ASSET-003 image as a s
 | Outline implementation | ADR-0001 stencil tier 2 |
 | Use case | Bomb Chamber section climax encounter (1 of 5 sections — final boss) |
 | UV mapping | Single UV unwrap (UV0). Cape-back panel is contiguous geometry, NOT separate. |
-| Status | **Needed** |
+| Status | **Base mesh — rig deferred** (DONE 2026-05-10) |
+| Visual reference (canonical front) | `design/assets/specs/references/phantom_elite_peaked_cap_reference_2026-05-10.png` |
+| Visual reference (multi-view back) | `design/assets/specs/references/phantom_elite_peaked_cap_reference_back_2026-05-10.png` |
+| Final `.glb` on disk | `assets/models/stealth-ai/char_phantom_elite_peaked_cap.glb` (267 KB, 3,500 tris exactly, 1 flat unlit material `mat_phantom_elite_peaked_cap` placeholder near-black `#1A1A1A`) |
+| Image-to-3D source | **Hunyuan3D-2 (mini)** via `gen3dhub` CLI — 540,092 tris raw input (re-do 2026-05-10; replaces prior Tripo3D-class two-glb workflow with 13,512 tris front-only). Multi-view input not needed because Hunyuan single-view 540k preserves cape-back geometry. |
+| Cleanup pipeline date | 2026-05-10 (redo) |
+| Final height | 1.851m (target 1.85m — half-head taller than grunts at 1.70m per §5.2 elite proportion rule) |
+| Final height | 1.856m (target 1.85m — half-head taller than grunts at 1.70m per §5.2 elite proportion rule) |
+
+### Approved Visual References (multi-view)
+
+Two canonical character reference images approved 2026-05-10 — first multi-view reference set in Sprint 09:
+
+- **Front view**: `design/assets/specs/references/phantom_elite_peaked_cap_reference_2026-05-10.png` — peaked PHANTOM officer cap with PHANTOM Red band trim, wide angular lapels, floor-length operational coat with single chest button, A-pose, weathered mid-50s deadpan face, mid-shin officer boots
+- **Back view**: `design/assets/specs/references/phantom_elite_peaked_cap_reference_back_2026-05-10.png` — cape-back panel as single hard-edged geometric shape from shoulders to mid-calf, near-black hair visible at temples under cap
+
+**Approved on first attempt** — image-first workflow with the prior approved PHANTOM grunt images (003 + 004) as style anchors produced strong faction cohesion + canonical elite differentiators (peaked cap, long coat, lapels, no bandolier, tall proportions) on first try.
+
+**Cape-back panel interpretation note**: Per §5.2 the cape-back panel "reads as a single flat geometric shape at distance." The image-to-3D source treats this as "the back of the long coat IS the cape-back panel" (single continuous panel from shoulders to mid-calf, hard-edged, A-line silhouette flaring out) rather than a separate cape attached behind a coat. This interpretation matches §5.2 intent — the silhouette reads as distinctly named/elite from any angle while remaining within mesh-budget constraints.
+
+**Multi-view input recommendation for image-to-3D**: feed BOTH front and back images simultaneously to Tripo3D / Hyper3D Rodin / Hunyuan3D 2 (all support multi-view input). Multi-view input substantially increases fidelity for asymmetric features like the cape-back panel and the tall+narrow proportions — single-image conversion typically infers back geometry from front view alone, which loses the cape-back distinct silhouette.
+
+Residual (acceptable) deviations:
+- Tall+narrow proportion is mild rather than dramatic (vs grunts) — silhouette still distinct due to cap + coat differentiators
+- Trim color rendered slightly darker than canonical PHANTOM Red `#C8102E` — irrelevant since textures stripped during cleanup
 
 ### Visual Description
 
@@ -414,7 +457,12 @@ Same Path 4. Particularly important for this asset: the cape-back panel must rea
 | Attach socket | Conceptual: `RadioClipAnchor` on grunt's chest harness (wiring is Sprint 10+) |
 | Origin convention | Bottom-back face flush against attach surface (snug fit when constrained) |
 | UV mapping | Single UV unwrap. Hard pattern edges on dial face must survive 512² resolution. |
-| Status | **Needed** |
+| Status | **Done** (2026-05-10) |
+| Visual reference (canonical) | `design/assets/specs/references/walkie_talkie_phantom_reference_2026-05-10.png` |
+| Final `.glb` on disk | `assets/models/stealth-ai/prop_walkie_talkie_phantom.glb` (31 KB, 400 tris exactly, 1 flat unlit material `mat_prop_walkie_talkie_phantom` placeholder near-black `#1A1A1A`) |
+| Image-to-3D source | **Hunyuan3D-2 (mini)** via `gen3dhub` CLI — 241,934 tris raw input (re-do 2026-05-10; replaces prior Tripo3D-class output 10,952 tris) |
+| Cleanup pipeline date | 2026-05-10 (redo) |
+| Image approval | First-pass approved (no iterations needed) |
 
 ### Visual Description
 

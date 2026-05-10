@@ -583,54 +583,110 @@
 
 ## Next Action — START HERE
 
-**Sprint 08 CLOSED 2026-05-03** — committed (`d2ffb6c Fixes`); Level Streaming epic 100% closed; project art-integration-ready on placeholder geometry.
+**Sprint 09 CLOSED 2026-05-10** — committed (`d169ef8` Sprint 09 CLOSED + Sprint 09b plan opened). Hero-asset commission COMPLETE: 16/17 assets shipped (12 done T1 + 4 base mesh T2 + 1 external commission T3 — ASSET-001 Eve FPS hands). Pipeline now fully agent-automated via gen3dhub Hunyuan3D-2 + Blender MCP cleanup. Total 20,480 tris, ~1.8 MB across 16 .glb files.
 
-**Sprint 09 KICKED OFF 2026-05-03** as a **pivot from the original roadmap entry** — user has Blender integrated via MCP, so the originally-planned "spec authoring + pause for external commission" becomes an **in-session hybrid generation pipeline**. Full plan: `production/sprints/sprint-09-asset-commission-hybrid.md`.
+**Sprint 09b READY TO START** — rigging post-base-mesh for the 4 humanoid base meshes from Sprint 09. Full plan: `production/sprints/sprint-09b-rigging.md`.
 
-**Sprint 09 scope** — 6 contexts, tiered:
-- **Tier 1** (full pipeline → `.glb` on disk): static props, architecture, small devices
-- **Tier 2** (base mesh only, rig deferred): riggable humanoids (Eve full body, PHANTOM grunt + variants)
-- **Tier 3** (spec only, external commission): Eve FPS hands
+### Sprint 09b scope at a glance
 
-**Execution order — option A confirmed** (one context at a time, discuss-then-implement):
+| # | Story | Asset | Method | Estimate |
+|---|---|---|---|---|
+| 09b-01 | PHANTOM Grunt Bowl Helmet rigged | ASSET-003 | Mixamo auto-rig | 0.5 day |
+| 09b-02 | PHANTOM Grunt Open-Face rigged | ASSET-004 | Mixamo + reuse 09b-01 rig | 0.25 day |
+| 09b-03 | PHANTOM Elite rigged | ASSET-005 | Manual Blender rig | 1.5 days |
+| 09b-04 | Eve Sterling rigged | ASSET-002 | Mixamo (validate first) or manual | 0.5–1.5 days |
 
-1. `/asset-spec system:player-character` ← **NEXT**
-2. `/asset-spec system:stealth-ai`
-3. `/asset-spec system:inventory-gadgets`
-4. `/asset-spec level:plaza` (needs `design/levels/plaza.md` first)
-5. `/asset-spec level:restaurant` (needs `design/levels/restaurant.md` first)
-6. `/asset-spec level:bomb-chamber` (needs `design/levels/bomb-chamber.md` first)
+**Total estimate**: ~3 agent-days. **Recommended order**: 09b-01 → 09b-02 → 09b-04 → 09b-03 (last and hardest).
 
-**Resume protocol for next session**: read this file's top "Sprint 09 Kickoff" Session Extract → read `production/sprints/sprint-09-asset-commission-hybrid.md` → read `design/assets/asset-manifest.md` (when it exists) → resume at next un-done asset.
+### Sprint 09b kickoff resume protocol (cross-session)
 
-**Per-context workflow**: discuss high-level visual direction in chat (concrete options, no open-ended) → write spec to `design/assets/specs/<context>-assets.md` (English) → MCP generate → viewport review → Blender cleanup → export `.glb` to `assets/models/<context>/` → manifest update.
+To start Sprint 09b in a fresh session:
 
-**Open carryforward items from Sprint 08 (opportunistic, not blocking)**:
+1. Read `production/session-state/active.md` (this file's top extract — "Sprint 09 CLOSED 2026-05-10")
+2. Read `production/sprints/sprint-09b-rigging.md` (full sprint plan)
+3. Read `design/assets/asset-manifest.md` (current asset state — 4 humanoids show "Base mesh — rig deferred")
+4. Decide method per asset (Mixamo vs manual Blender) — recommendations in sprint plan
+5. Begin with story 09b-01 (PHANTOM Grunt Bowl Helmet) — most predictable Mixamo case; validates workflow before reuse on 09b-02
+
+### Sprint 09b out of scope (do NOT pull into 09b)
+
+- Animations (patrol_walk, investigate_sweep, combat_fire, dead_slump, chloroformed_slump, chloroformed_rising, weapon_draw, head_turn IK) → Sprint 09c
+- ASSET-001 Eve FPS hands T3 → external commission, not in-session pipeline
+- Texture pass / multi-color material slots → Sprint 10+
+- Outline stencil ref assignment at scene-load → Sprint 10+ per ADR-0001
+- Scene integration (replacing placeholder geometry in `scenes/sections/*.tscn`) → Sprint 10+
+
+### Sprint 09b stop conditions
+
+- Mixamo auto-rig fails on a humanoid → fall back to manual Blender rigging for that asset
+- Weight painting cannot resolve clipping at >2 problem zones → escalate; may need mesh topology adjustment (pushing back to Sprint 09 territory)
+- Hand attach point IK breaks in Godot import test → investigate Godot 4.6 `SkeletonModifier3D` API per `docs/engine-reference/godot/VERSION.md` ⚠ verify list
+
+### Sprint 09 final state (snapshot for cross-session reference)
+
+Asset paths on disk (final):
+```
+assets/models/player-character/char_eve_sterling.glb        344 KB  (4500 tris, T2 base mesh — needs rig 09b)
+assets/models/stealth-ai/char_phantom_grunt_bowl_helmet.glb 215 KB  (2800 tris, T2 base mesh — needs rig 09b)
+assets/models/stealth-ai/char_phantom_grunt_open_face.glb   215 KB  (2800 tris, T2 base mesh — needs rig 09b)
+assets/models/stealth-ai/char_phantom_elite_peaked_cap.glb  268 KB  (3500 tris, T2 base mesh — needs rig 09b)
+assets/models/stealth-ai/prop_walkie_talkie_phantom.glb      32 KB  (400 tris, T1 done)
+assets/models/level-plaza/env_eiffel_bay_module_plaza.glb     4 KB  (60 tris, T1 done — code-authored)
+assets/models/level-plaza/env_period_street_lamp.glb         40 KB  (500 tris, T1 done)
+assets/models/level-plaza/env_plaza_guard_post.glb           47 KB  (600 tris, T1 done)
+assets/models/level-restaurant/env_eiffel_bay_module_mid_scaffold.glb   4 KB  (60 tris, T1 done — code-authored)
+assets/models/level-restaurant/prop_dining_table_cluster.glb  47 KB  (600 tris, T1 done)
+assets/models/level-restaurant/env_crystal_chandelier.glb     46 KB  (600 tris, T1 done — minor "mesh not valid" warning, functional)
+assets/models/level-restaurant/prop_drinks_trolley.glb        40 KB  (500 tris, T1 done)
+assets/models/level-bomb-chamber/env_eiffel_bay_module_upper_structure.glb  4 KB  (60 tris, T1 done — code-authored)
+assets/models/level-bomb-chamber/prop_bomb_device_hero.glb  192 KB  (2500 tris, T1 done — NAMED HERO, HEAVIEST outline tier)
+assets/models/level-bomb-chamber/prop_phantom_relay_rack.glb 47 KB  (600 tris, T1 done)
+assets/models/level-bomb-chamber/prop_equipment_crate.glb    32 KB  (400 tris, T1 done)
+```
+
+ASSET-001 Eve FPS hands T3 — NOT on disk; external commission documented in `design/assets/specs/player-character-assets.md` ASSET-001 section. Specs include full commission brief for external specialist (Mixamo / FPS-hands marketplace / human modeler).
+
+### Sprint 09 lessons learned (apply to future sprints)
+
+1. **gen3dhub CLI is canonical**: `gen3dhub run --model hunyuan3d-2 --image <ref> --output <staging.glb> --yes` — non-interactive, fully agent-automatable. Replaces prior "USER generates externally" model. Pipeline now fully end-to-end automated except the initial 2D image generation (which user does in ChatGPT).
+2. **Workflow split rule**: organic / character / detailed-prop → gen3dhub Hunyuan3D-2; architectural primitives (thin-beam structures in strict geometric pattern) → code-author from bmesh primitives. Image-to-3D fails on thin-beam topology because aggressive decimation collapses thin members.
+3. **Blender MCP scene reset**: `bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True)` strips screen/window context and breaks subsequent `bpy.ops.export_scene.gltf`. Use manual `bpy.data.objects.remove()` + orphan purge instead — preserves screen context.
+4. **Decimation algorithm**: COLLAPSE single-pass works for organic / character meshes at 18-50% retain. For thin-beam architectural meshes (>99% retain), code-authored alternative is dramatically more reliable.
+5. **Material slot strategy**: each asset uses ONE flat unlit emission material with placeholder hex anchor (per asset's primary surface color from §5.x or §6.x). Multi-color regions deferred to texture pass (Sprint 10+).
+
+### Open items (NOT in 09b scope)
+
+**Documentation gaps still surfaced** (action available via `/reverse-document design <path>`):
+- `mission_level_scripting/` (6 files) — no GDD
+- `documents/` (7 files) — no GDD
+- `stealth/` (19 files) — no GDD
+
+**Buffer items deferred from Sprint 08** (opportunistic, never picked up):
 - TD-008 — `spawn_gate.tscn` parse error (apply LS-008 duck-typing pattern)
 - TD-009 — split level_streaming integration tests to separate CI matrix job
 - TD-010 + TD-011 — HC-006 KEY_F* migration; hud_core.gd hardcoded "100"
-- LS-006 AC-9 memory-invariant test activation (focus_memory_test early `return`)
+- LS-006 AC-9 memory-invariant test activation
 - MVP build manual evidence stubs (LS-005, LS-007, PPS-007, DC-005)
 
-**Documentation gaps surfaced** (NOT in scope): `mission_level_scripting/` (6 files), `documents/` (7 files), `stealth/` (19 files) lack GDDs. Action: `/reverse-document design <path>` if user elects.
+### Key file references for Sprint 09b session
 
-Sprint plan: `production/sprints/sprint-09-asset-commission-hybrid.md`.
-Prior sprint plan: `production/sprints/sprint-08-level-streaming-integration.md` (8/8 Must-Have+Should-Have Complete).
-QA sign-off (Sprint 08): `production/qa/smoke-2026-05-03-sprint-08.md`.
-Tech-debt register: `docs/tech-debt-register.md` (11 active items / 12 hard-stop threshold).
-Sprint status YAML: `production/sprint-status.yaml` (per-story).
-Roadmap status YAML: `production/sprint-roadmap-status.yaml` (current_sprint: 9).
+| File | Role |
+|---|---|
+| `production/sprints/sprint-09b-rigging.md` | Sprint 09b plan (4 stories, ~3 agent-days) |
+| `design/assets/asset-manifest.md` | Authoritative asset state — 17 assets, 16 shipped |
+| `design/assets/specs/player-character-assets.md` | ASSET-002 base mesh + ASSET-001 commission brief |
+| `design/assets/specs/stealth-ai-assets.md` | ASSET-003/004/005 base meshes + ASSET-006 walkie |
+| `design/gdd/stealth-ai.md` | §Visual lines 758-761 — animation state list (informs rig requirements) |
+| `design/gdd/player-character.md` | §Visual — Eve hand attach points (HandAnchor for FPS hands) |
+| `design/art/art-bible.md` | §5.1, §5.2, §5.4 — character LOD philosophy |
+| `production/sprint-roadmap-status.yaml` | current_sprint: 9b; closed_sprints includes Sprint 9 |
+| `docs/architecture/adr-0005-fps-hands-outline-rendering.md` | ADR-0005 — Eve FPS hands rendering (informs ASSET-001 external commission spec) |
 
 ## Current Stage
 
-**Pre-Production** (per `production/stage.txt` — STAGE TRANSITION PENDING USER DECISION). Sprint 08 close-out flagged that the project is structurally art-integration-ready: every code-ready system implemented and proven on placeholder geometry. With Sprint 09's pivot to in-session asset generation, candidate stage values are:
+**Art-Production** (per `production/stage.txt`). Stage transition Pre-Production → Art-Production confirmed 2026-05-10 with Sprint 09 hero-set commission CLOSED. The project now ships through art-production cycles: Sprint 09 hero-set commission (DONE) → Sprint 09b rigging (PLANNED) → Sprint 09c animations (FUTURE) → Sprint 10+ scene integration with the rigged + animated asset base.
 
-- **`Art-Integration-Active`** — preferred if hybrid generation+integration becomes the new norm
-- **`Pre-Production`** (no change) — defer flip until first `.glb` integrates into a live scene
-
-Surfaced; **not auto-changed**. User to decide.
-
-Roadmap source: `production/sprints/multi-sprint-roadmap-pre-art.md` (closed at Sprint 08). Status YAML: `production/sprint-roadmap-status.yaml` (current_sprint: 9).
+Roadmap source: `production/sprints/multi-sprint-roadmap-pre-art.md` (closed at Sprint 08). Post-roadmap pipeline: `production/sprint-roadmap-status.yaml` post_roadmap_preview block (current_sprint: 9b; Sprint 9 in closed_sprints).
 
 ## What's Ready (the asset base for Sprint 02)
 

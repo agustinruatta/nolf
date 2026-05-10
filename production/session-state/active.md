@@ -2,6 +2,111 @@
 
 **Last updated:** 2026-05-03 — **Sprint 08 CLOSED** — all 7 Must-Have stories Complete + 1 Should-Have Complete (PIC-FIX with notes — TD-009 verified as cross-suite physics-pollution flake, not resolver bug; production code verified correct in isolation 141/141 PASS). Sprint 08 added **30 new test functions** across 7 new test files + LS-006-driven test isolation upgrades to 5 existing test files. Level Streaming epic 100% closed (LS-001..LS-010 complete). `tests/unit/level_streaming + tests/integration/level_streaming` 103/103 PASS, 0 errors, 0 failures, 0 flaky, exit 0. Smoke-check **PASS WITH WARNINGS** (Sprint 07 baseline 7 failures persist; spawn_gate.tscn parse error blocks full-suite headless count). Scope-check **PASS** (0% creep — exactly 8 stories delivered per plan). Tech-debt register at **11/12** (1 below hard-stop threshold — TD-009 downgraded MEDIUM → LOW). **Project is now ART-INTEGRATION-READY**: every code-ready system implemented and proven on placeholder geometry. Roadmap closed. Sprint 09+ pivots to `/asset-spec` hero-asset commission package + post-asset integration sprints. Prior: 2026-05-03 — **Sprint 08 STARTED** — Sprint 08 plan filed; QA plan filed; LS-004 (Concurrency control: forward-drop, respawn-queue, abort recovery) **COMPLETE** with 8/8 ACs PASS via 11 unit tests. `tests/unit/level_streaming` subset 34/34 PASS, exit 0. Pre-existing 7 baseline failures from Sprint 07 (TD-008..TD-011) unchanged. Solo-mode review (PR-SPRINT, QL-STORY-READY, QL-TEST-COVERAGE, LP-CODE-REVIEW gates skipped per `production/review-mode.txt`). Sprint 08 scope = LS-004..LS-010 (7 Must-Have) + PIC-FIX TD-009 (1 Should-Have); LS-001/002/003 closed in earlier sprints, LS-007/008 pulled in to fix roadmap-text staleness. Prior: 2026-05-03 — **Sprint 07 CLOSED**
 
+## Session Extract — Sprint 09 Context 2 ASSET-003 Image-Reference Approved 2026-05-10
+
+- **Verdict**: ASSET-003 (PHANTOM Grunt — Bowl Helmet) visual reference **APPROVED**
+- **Workflow**: image-first → image-to-3D → MCP cleanup (Path 4, same as ASSET-002)
+- **Iterations**:
+  1. iter 1 (ChatGPT): helmet full-mask covering face, visor at mouth, trim ring at chin (read as collar, not faction identifier — broke §5.2 silhouette rule)
+  2. iter 2 (ChatGPT, approved): bowl helmet ends at brow with face exposed below, visor at brow hiding eyes, PHANTOM Red ring trim around helmet's lower circumference — silhouette identifier per §5.2 restored
+- **Residual deviations (accepted, addressable in cleanup)**:
+  - Trim color slightly darker than `#C8102E` — irrelevant since textures stripped + hex anchor reapplied during cleanup
+  - Arms slightly out but not full A-pose — minor rigging concern, fixable in Blender if image-to-3D introduces shoulder topology issues
+- **Files written this turn**:
+  - `Eve.png` at project root deleted (hash-verified duplicate of `eve_sterling_reference_2026-05-09.png` — `85957d2874cd297eed5167c7ac4f1547`)
+  - `Phantom1.png` at project root → moved to `design/assets/specs/references/phantom_grunt_bowl_helmet_reference_2026-05-10.png`
+  - `design/assets/specs/stealth-ai-assets.md` — ASSET-003 status updated, "Approved Visual Reference" section added
+  - `design/assets/asset-manifest.md` — ASSET-003 row updated with status "Reference approved 2026-05-10 — awaiting image-to-3D conversion" + visual reference path
+- **Standby**: awaiting user's image-to-3D `.glb` from Tripo3D (preferred) / Hyper3D Rodin image mode / Hunyuan3D 2 / Meshy.ai. When user reports the path, CLAUDE resumes Path 4 cleanup pipeline (import → poly check → scale to ~1.75m height (chunky-grunt proportion) → decimate to **2,800 tris** per art bible §8D PHANTOM grunt budget → strip embedded textures → flat unlit emission material `mat_phantom_grunt_standard` with helmet near-black + body near-black + trim PHANTOM Red `#C8102E` placeholder → outline-test render at MEDIUM tier reference → viewport screenshot → export final `.glb` to `assets/models/stealth-ai/char_phantom_grunt_bowl_helmet.glb`).
+- **Next after ASSET-003 export**: continue Sprint 09 Context 2 with **ASSET-004** (Open-Face Helmet variant) using ASSET-003 approved image as multi-image-input style anchor for costume continuity. Then **ASSET-006** (walkie-talkie, simplest), then **ASSET-005** (Elite Bomb Chamber Boss, most complex).
+
+
+---
+
+## Session Extract — Sprint 09 Context 1 ASSET-002 BASE MESH SHIPPED 2026-05-09
+
+- **Verdict**: ASSET-002 (Eve Full Body) base mesh **DONE** — final `.glb` at `assets/models/player-character/char_eve_sterling.glb` (196 KB, 4,500 tris exactly, 1 flat unlit emission material `mat_eve_sterling_body` navy `#15264A`)
+- **Pipeline executed (Path 4 — image-first → image-to-3D → MCP cleanup)**:
+  1. Approved reference: `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` (ChatGPT iter 2)
+  2. User ran image-to-3D externally → produced `mesh.glb` (9,124 tris, 1.0×0.3×1.0 m, 2 embedded 1024² textures with cel-shading bake, single Material_0)
+  3. CLAUDE moved raw to `assets/staging/eve_full_body_i2to3d.glb`; rendered 4-angle inspection
+  4. CLAUDE assessed: silhouette canónica recognizable (bob, structured jacket, tapered trousers, ankle boots) — first 3D output to faithfully capture §5.1 silhouette across 3 attempts (v1 mod skirt, v2 crop top, this one canónico). Minor deviations (small stand collar, ambiguous piping color, belt position) acceptable for base mesh — invisible after decimation
+  5. CLAUDE executed full cleanup pipeline via single `execute_blender_code` call:
+     - Bake initial transforms; rotate 180° around Z directly into mesh data (model now faces -Y per Godot convention); scale to 1.7m height; decimate to 4,500 tris exactly (collapse mode, ratio 0.4933, use_collapse_triangulate); strip embedded textures and materials; remove orphan datablocks; create new flat unlit material with §5.1 hex anchor `#15264A` via Emission shader → Material Output (glTF unlit-compatible export); rename mesh `geometry_0` → `char_eve_sterling`; rename data block; render front/side/3q verification
+  6. Verification renders confirm silhouette survives decimation cleanly per art bible §3.2 outline-first check — bob hair, structured jacket fitted-at-waist, tapered trousers, ankle boots all read clearly at 4500 tris
+  7. glTF export with `use_selection=True`, `export_yup=True`, `export_apply=True`, lights/cameras off — single primitive, 196 KB, glTF 2.0 binary
+- **Files created/modified**:
+  - **NEW**: `assets/models/player-character/char_eve_sterling.glb` (196 KB) — canonical Eve base mesh
+  - `design/assets/specs/player-character-assets.md` — ASSET-002 status: Done; final path + size + tris
+  - `design/assets/asset-manifest.md` — Progress Summary updated (1 base mesh done); ASSET-002 row updated with final path + tris
+  - This `active.md` — current session extract
+- **Files in staging (post-cleanup)**: `eve_full_body_i2to3d.glb` (raw 616 KB input, kept for archival), 4 inspection PNGs (eve_i2to3d_*), 3 cleanup verification PNGs (eve_cleanup_*). Pending user approval to delete.
+- **Deviations from canonical §5.1 (acceptable in base mesh, addressable in texture pass)**:
+  - Small stand collar interpretation by image-to-3D converter (vs §5.1 "collarless")
+  - Belt position slightly higher than "low-slung" (closer to natural waist)
+  - Front piping ambiguous (gray/silver vs intended BQA-blue `#1B3A6B`)
+  - These deviations are baked into vertex geometry but invisible at 4,500 tris after flat-shading; arguably stylistically defensible. Texture pass (post-rig sprint) can repaint if strict §5.1 enforcement needed.
+- **Carryforward**:
+  - **Sprint 09b (post-base-mesh rigging)** consumes this `.glb` as input. Manual rigging (Mixamo / human modeler) or auto-rigging service required.
+  - **Texture pass** (Sprint 10+ scene integration story) — repaint flat unlit material with full palette: jacket `#15264A` + lapel piping `#1B3A6B` + belt `#6B7280` + boots `#1A1A1A` + hair `#0F1115`. Current single-material navy is a placeholder for cleanup verification only.
+  - **Outline pipeline** — at scene-load time per ADR-0001, MeshInstance3D for Eve sets stencil ref to tier 1 (HEAVIEST). NOT done in this sprint; that's Sprint 10+ scene integration.
+- **Next recommended**: continue Sprint 09 with Context 2 — `/asset-spec system:stealth-ai` (PHANTOM grunt + variants T2; accessory props T1). Apply learned image-first → image-to-3D workflow proven in Context 1. Reuse the per-asset workflow tools (rotation bake to face -Y, decimate to art-bible §8D budget, flat unlit emission material, glTF export).
+
+
+---
+
+## Session Extract — Sprint 09 Context 1 ASSET-002 Image-Reference Approved 2026-05-09
+
+- **Verdict**: ASSET-002 (Eve Full Body) visual reference **APPROVED**
+- **Workflow pivot within Path 4**: text-to-3D path failed twice (v1 Hyper3D Rodin produced mod miniskirt+knee-boots; v2 different generator produced crop-top+shorts+bare-midriff). Both diverged from art bible §5.1 (Courrèges navy structured jacket + tapered ankle trousers). User pivoted to **image-first → image-to-3D** sub-workflow on 2026-05-09.
+- **Image-first sub-workflow**:
+  1. Detailed + condensed image-generation prompts authored in chat (anchored to §5.1 + Pillar 5 Period Authenticity, with explicit negatives against skirts / bare midriff / knee boots / contemporary casual)
+  2. User generated iter 1 in ChatGPT — 3 deviations from §5.1 (mandarin collar, waist-positioned belt, 5 visible buttons)
+  3. CLAUDE issued targeted iteration prompt to fix the 3 deviations only
+  4. User generated iter 2 in ChatGPT — **17/17 §5.1 spec checkpoints pass**
+  5. Image saved to canonical reference path: `design/assets/specs/references/eve_sterling_reference_2026-05-09.png`
+- **Files modified this session**:
+  - **NEW**: `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` (canonical character reference, single source of truth for ASSET-002 silhouette/color/proportion)
+  - `design/assets/specs/player-character-assets.md` — added Approved Visual Reference subsection under ASSET-002; rewrote Generation Strategy as image-first → image-to-3D workflow (steps 1-10)
+  - `design/assets/asset-manifest.md` — updated ASSET-002 row with status "Reference approved 2026-05-09 — awaiting image-to-3D conversion" and visual reference path; added "Visual reference" column
+- **Files preserved at root** (user decision pending): `eve.png` (iter 1 with 3 deviations) — not deleted, not archived; left for user to triage
+- **Staging cleanup 2026-05-09**: `assets/staging/` was cleared on user approval. Removed: `eve_full_body_raw.glb` (v1 Hyper3D text mode), `eve_full_body_raw_v2.obj` (v2 alt generator), and 8 inspection PNGs (4× v1 + 4× v2). Total reclaimed: ~18 MB. Failure-mode lessons preserved in this active.md extract and in `design/assets/specs/player-character-assets.md` Generation Strategy section. Staging dir now empty, ready for the next image-to-3D `.glb` from Tripo3D / Hyper3D image mode.
+- **Tools learned (Blender MCP variant)**:
+  - `bpy.ops.wm.obj_import` requires `temp_override(window, area, region)` with VIEW_3D area for context to be valid (`.glb` import via `bpy.ops.import_scene.gltf` does NOT need this)
+  - `bpy.ops.wm.read_factory_settings` is sandbox-blocked; use `bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True)` instead
+  - `bpy.context.object` is unreliable after `bpy.ops.object.light_add`/`camera_add` — use direct `bpy.data.objects.new` + scene-link pattern for deterministic results
+- **Standby**: awaiting user's image-to-3D `.glb`/`.obj` from Tripo3D (preferred) / Hyper3D Rodin image mode / Meshy.ai / Hunyuan3D 2. When user reports the path, CLAUDE resumes Path 4 cleanup pipeline (import → poly check → scale → decimate to 4500 → strip PBR → flat-unlit material with §5.1 hex anchors → outline-test render → viewport screenshot for user → export final `.glb` to `assets/models/player-character/char_eve_sterling.glb`).
+- **Carryforward**: ASSET-001 (Eve FPS Hands T3) status unchanged — external commission needed. The approved reference image at `design/assets/specs/references/eve_sterling_reference_2026-05-09.png` is also a valid input for the FPS-hands external commission (sleeve/glove palette + cuff geometry are visible and consistent with §5.1).
+- **Next recommended (after ASSET-002 export)**: continue Sprint 09 with Context 2 — `/asset-spec system:stealth-ai` (PHANTOM grunt + variants T2; accessory props T1). Apply learned image-first workflow rather than text-to-3D.
+
+
+---
+
+## Session Extract — Sprint 09 Path 4 Pivot 2026-05-08 (External Generation + MCP Cleanup)
+
+- **Verdict**: PIPELINE RE-PIVOTED — Path 4 split confirmed by user
+- **Trigger**: when MCP tool schemas were actually loaded via ToolSearch on 2026-05-08, the connected Blender MCP variant turned out to expose only `execute_blender_code` + inspection + screenshots + Python API docs. The 2026-05-03 plan assumed `generate_hyper3d_model_via_text`, `generate_hunyuan3d_model`, `download_polyhaven_asset`, `download_sketchfab_model`, `import_generated_asset` were available — they are NOT in this MCP variant. The 2026-05-03 session-state extract that listed those tool names was based on stale info, not on actual `select:` schema fetches.
+- **Resolution**: surfaced 4 options to user (Path 1 spec-only rollback / Path 2 reconnect generative MCP variant / Path 3 code-authored mesh / Path 4 split pipeline). User approved **Path 4** 2026-05-08.
+- **Path 4 split pipeline**:
+  - **External (USER)**: run the spec's "Generation Prompt" in Hyper3D Rodin web, Hunyuan3D web, Mixamo, marketplace, etc. Save raw `.glb` to disk. Report path in chat.
+  - **In-session (CLAUDE via `mcp__blender__execute_blender_code`)**: import → poly check → scale to project units → decimate to art-bible §8D budget → strip PBR maps → assign flat unlit material with art-bible hex anchors → outline-test render via `render_viewport_to_path` → viewport screenshot via `get_screenshot_of_area_as_image` → export final `.glb` to `assets/models/<context>/`
+- **Files written this turn**:
+  - `design/assets/specs/player-character-assets.md` — Context 1 spec (ASSET-001 Eve FPS Hands T3 spec-only / ASSET-002 Eve Full Body T2 base mesh). Includes copy-paste-ready Generation Prompt for ASSET-002.
+  - `design/assets/asset-manifest.md` — initialized; first context tracked
+  - `assets/models/player-character/` directory created (empty until ASSET-002 export)
+- **Files modified**:
+  - `production/sprints/sprint-09-asset-commission-hybrid.md` — Pivot Note section rewritten with chronological history; Per-Asset Workflow rewritten as Path 4 split; Stop Conditions updated
+  - User memory `project_asset_creation_approach.md` overwritten — Path 4 is now canonical
+  - User memory `MEMORY.md` index line updated
+- **Doc-hygiene flag captured in spec**: `player-character.md` line 707 says FPS hands "~5k tris"; art bible §8D says 2,000. Spec follows §8D as authoritative budget; reconciliation deferred to future doc-hygiene pass.
+- **Status of ASSET-001 (Eve FPS Hands T3)**: External commission needed. Sprint 09 ships spec only. Brief is in the spec under "Commission Brief".
+- **Status of ASSET-002 (Eve Full Body T2)**: Needed. Generation prompt ready. Awaiting user external generation + raw `.glb` path report.
+- **Standby state**: CLAUDE awaits user's `.glb` path. While waiting, can author Context 2 spec (PHANTOM grunt + variants from `design/gdd/stealth-ai.md`) in parallel — pending user permission.
+- **Next recommended (after ASSET-002 cleanup completes)**: continue with Context 2 — `/asset-spec system:stealth-ai` (PHANTOM grunt + variants T2; accessory props T1).
+
+
+---
+
 ## Session Extract — Sprint 09 Kickoff 2026-05-03 (Pivot to Hybrid Blender MCP Pipeline)
 
 - **Verdict**: SPRINT PLANNED + PIPELINE PIVOTED

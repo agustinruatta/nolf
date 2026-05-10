@@ -10,18 +10,27 @@
 
 The original roadmap entry for Sprint 09 (line 143) reads: *"Asset spec authoring + pause for art commission. NOT autonomous-executable."* That assumed a workflow where the user procures `.glb` files **outside** the agent session via AI generators or marketplace.
 
-User confirmed on 2026-05-03 that Blender is integrated via MCP with these tools available:
+### Pivot history (chronological)
 
-- `mcp__blender__generate_hyper3d_model_via_text` / `via_images`
-- `mcp__blender__generate_hunyuan3d_model`
-- `mcp__blender__execute_blender_code`
-- `mcp__blender__import_generated_asset`
-- `mcp__blender__get_viewport_screenshot`
-- Polyhaven + Sketchfab MCP search/download
+1. **2026-05-03 — first pivot (in-session generation)**: A session-state extract suggested the Blender MCP exposed `generate_hyper3d_model_via_text` / `generate_hunyuan3d_model` / `import_generated_asset` / `download_polyhaven_asset` / `download_sketchfab_model`. The plan was rewritten as a fully in-session hybrid pipeline.
+2. **2026-05-08 — second pivot (Path 4 split)**: when MCP tool schemas were actually loaded for use, the connected Blender MCP variant turned out to expose **Python automation + inspection + screenshots only** — NOT the generative tools. The 2026-05-03 plan was based on a stale tool list. After surfacing 4 options to the user, **Path 4 (split pipeline)** was approved.
 
-This wraps the AI-generative stack **inside** Blender, so the original "pause for external commission" model becomes a **hybrid in-session generation + Blender cleanup pipeline**. Sprint 09 now produces `.glb` files for feasible asset categories rather than only specs.
+### Path 4 — Split pipeline (canonical from 2026-05-08)
 
-The previous memory `project_asset_creation_approach.md` ("no Blender") has been superseded by the new memory describing this hybrid pipeline.
+Generation happens **externally** (USER): the user runs the spec's "Generation Prompt" in Hyper3D Rodin web / Hunyuan3D web / Mixamo / marketplace / etc., and saves the resulting raw `.glb` to disk.
+
+Cleanup + export happens **in-session** via the connected MCP (CLAUDE): import the raw `.glb`, decimate, strip PBR, assign flat unlit material, render outline-test, screenshot for validation, export final `.glb` to `assets/models/<context>/`.
+
+**Available MCP tools (this variant):**
+- `mcp__blender__execute_blender_code` (and `_for_cli` background variant)
+- `mcp__blender__get_objects_summary` / `get_object_detail_summary` / `get_blendfile_summary_*`
+- `mcp__blender__get_screenshot_of_window/area_as_image` / `render_viewport_to_path` / `render_thumbnail_to_path`
+- `mcp__blender__get_python_api_docs` / `search_api_docs` / `search_manual_docs`
+- `mcp__blender__jump_to_*` (navigation)
+
+**NOT available** in this MCP variant: any `generate_*`, any `download_*`, any `import_generated_asset`, any Polyhaven/Sketchfab tool. If the user later swaps to a generative MCP variant, this section must be updated.
+
+The user memory `project_asset_creation_approach.md` was rewritten 2026-05-08 to reflect Path 4 and supersedes both the original "no Blender" memory and the 2026-05-03 in-session-MCP memory.
 
 ## Sprint Goal
 
@@ -85,24 +94,32 @@ The previous memory `project_asset_creation_approach.md` ("no Blender") has been
 - **Run**: `/asset-spec level:bomb-chamber`
 - **Pre-step**: author level doc.
 
-## Per-Asset Workflow (Tier 1 + Tier 2)
+## Per-Asset Workflow (Tier 1 + Tier 2) — Path 4 Split
 
-For each asset within a context that goes through MCP generation:
+For each asset within a context that goes through generation:
 
 1. **Discuss** high-level direction in chat (propose concrete options per `feedback_artistic_decisions.md`; user decides)
-2. **Spec authoring** — append to `design/assets/specs/<context>-assets.md` in English
-3. **Prompt selection** — Hyper3D, Hunyuan3D, or Polyhaven/Sketchfab marketplace search
-4. **Generate** — call `mcp__blender__generate_hyper3d_model_via_text` (or alternative); poll status
-5. **Import to Blender** — `mcp__blender__import_generated_asset`
-6. **Viewport review** — `mcp__blender__get_viewport_screenshot`; user approves or asks regenerate
-7. **Cleanup** — via `mcp__blender__execute_blender_code`:
-   - Scale to project units (1 Blender unit = 1 metre)
-   - Apply outline-pipeline stencil tagging requirement (asset must support stencil-based outline; tier assignment happens at scene-load in Sprint 10+)
-   - Assign basic material (PBR; texture refinement deferred)
+2. **Spec authoring (CLAUDE)** — append to `design/assets/specs/<context>-assets.md` in English. The spec MUST include a copy-paste-ready generation prompt under a "Generation Prompt" section.
+3. **Hand prompt to user (CLAUDE → USER)** — surface the prompt in chat; tell the user which generator is recommended (Hyper3D Rodin web is the default; Hunyuan3D as fallback; marketplace search if both fail)
+4. **Generate externally (USER, out of session)** — user runs the prompt in their tool of choice, downloads the raw `.glb` to a known path (`/tmp/`, `~/Downloads/`, or a project staging dir), reports the path back in chat
+5. **Import + cleanup (CLAUDE via `mcp__blender__execute_blender_code`)**:
+   - Import the raw `.glb` into a clean Blender scene
+   - Inspect with `get_objects_summary` / `get_object_detail_summary` (verify mesh-count, tri-count, materials, dimensions)
+   - Apply project-units scale (1 Blender unit = 1 metre; Eve standing height ~1.7 m per `player-character.md` §F.8)
+   - Decimate to art-bible §8D budget if over (Eve full body 4,500; PHANTOM grunt 2,800; props 300–600; bay module 800)
+   - Strip any PBR maps (no normal, roughness, metallic per art bible §8A)
+   - Assign single flat unlit material with hex anchors from art bible §4.1 / §5.1 (the spec lists exact hex values)
+   - Set sRGB albedo only; mipmaps per art bible §8E
    - Remove orphan data (loose verts, duplicate UVs, unused materials)
-   - Decimate if over poly budget per art bible §8 Asset Standards
-8. **Export** — `.glb` to `assets/models/<context>/<asset-name>.glb` (snake_case naming per `.claude/docs/technical-preferences.md`)
-9. **Manifest update** — append/update entry in `design/assets/asset-manifest.md` with status `Done` (Tier 1) or `Base mesh — rig deferred` (Tier 2)
+6. **Outline-test render (CLAUDE via `render_viewport_to_path`)** — render the mesh in flat-lit white with a 1 px black edge trace; verify silhouette against art bible §3.2 outline-first check
+7. **Viewport screenshot (CLAUDE via `get_screenshot_of_area_as_image`)** — capture the area screenshot and surface to user
+8. **User approval (USER)** — review screenshot; approve or request regenerate (back to step 4 with refined prompt)
+9. **Export (CLAUDE via `execute_blender_code`)** — `.glb` to `assets/models/<context>/<asset-name>.glb` per art bible §8B naming convention
+10. **Manifest update (CLAUDE)** — append/update entry in `design/assets/asset-manifest.md` with status `Done` (Tier 1) or `Base mesh — rig deferred` (Tier 2)
+
+### Iteration cap
+
+If steps 4–8 cycle more than 3 times without convergence, downgrade tier (T1 → T2 base mesh acceptable; T2 → T3 spec only; surface to user). Do not burn unbounded effort on a single asset.
 
 ## Out of Scope
 
@@ -117,12 +134,13 @@ For each asset within a context that goes through MCP generation:
 
 ## Stop Conditions
 
-- **MCP generation fails consistently** for an asset (>3 retries with refined prompt) → escalate: downgrade Tier 1 → Tier 2 (base mesh acceptable) or Tier 2 → Tier 3 (defer to external).
+- **External generation fails consistently** for an asset (>3 prompt iterations without acceptable result) → escalate: downgrade Tier 1 → Tier 2 (base mesh acceptable) or Tier 2 → Tier 3 (defer to external commission).
 - **Quality fails art-bible compliance** (visual review fails twice) → re-spec and regenerate, or downgrade tier.
-- **Token budget concern** — if MCP round-trips burn excessive tokens on a single asset, surface to user before continuing.
+- **Cleanup-step failure** — if Blender cleanup cannot bring poly count under budget without breaking silhouette → re-generate or downgrade.
 - **Style drift** — generated meshes don't match art bible silhouette / proportion rules → regenerate with stronger prompts or downgrade tier.
 - **Source doc missing** for level contexts (Plaza/Restaurant/Bomb-Chamber) → pause for `design/levels/*.md` authoring.
 - **Test failure or regression** — adding `.glb` to `assets/models/` should not regress smoke check; if it does, investigate and fix root cause (no skipping tests).
+- **MCP tool gap discovered mid-asset** — if the active MCP variant lacks a tool the workflow requires, surface immediately and switch to a workaround (this is what triggered the Path 4 pivot 2026-05-08).
 
 ## Acceptance Criteria
 
